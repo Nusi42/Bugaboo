@@ -52,6 +52,34 @@ pub(crate) struct KnownNames {
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The value of a change to *Found in release* or *Planned for release*: the names of the
+    /// releases of projects the reader sees (ADR-0049, decision 7), as the event kept them, or none
+    /// when nothing is left.
+    pub(super) async fn releases_value(
+        &self,
+        reading: &mut Reading<'_>,
+        value: &Value,
+    ) -> Result<Option<ChangeValue>, AppError> {
+        let items: Vec<&Value> = match value {
+            Value::Array(items) => items.iter().collect(),
+            Value::Object(_) => vec![value],
+            _ => Vec::new(),
+        };
+        let shown = self.shown_for(reading).await?;
+        let names: Vec<String> = items
+            .iter()
+            .filter(|item| {
+                item.get("project")
+                    .and_then(Value::as_str)
+                    .and_then(|text| text.parse::<bb_core::id::ProjectId>().ok())
+                    .is_some_and(|project| shown.sees(project))
+            })
+            .filter_map(|item| item.get("name").and_then(Value::as_str))
+            .map(str::to_owned)
+            .collect();
+        Ok((names.is_empty() == items.is_empty()).then_some(ChangeValue::Names { names }))
+    }
+
     /// The value of a change to the tags: the names of the tags the reader may know (a tag only
     /// projects they do not see know is not told, SEC-06), or none when nothing is left.
     pub(super) async fn tags_value(
@@ -248,7 +276,12 @@ pub(super) fn leaves_nothing(
     before: Option<&ChangeValue>,
     after: Option<&ChangeValue>,
 ) -> bool {
-    if !matches!(member, Member::Catalogue(Field::Labels | Field::Tags)) {
+    if !matches!(
+        member,
+        Member::Catalogue(
+            Field::Labels | Field::Tags | Field::FoundInRelease | Field::PlannedForRelease
+        )
+    ) {
         return false;
     }
     let names = |value: Option<&ChangeValue>| match value {

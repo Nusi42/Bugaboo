@@ -126,6 +126,8 @@ async fn retitle(world: &World, given: &Handed, title: &str) -> Result<(), AppEr
         time_left: None,
         assigned_to: None,
         fields: std::collections::BTreeMap::default(),
+        found_in_release: None,
+        planned_for_release: None,
     };
     change_issue::<_, ChangedIssue>(&world.ctx(), change)
         .await
@@ -199,6 +201,8 @@ async fn issue_of_type(
             estimated_time: None,
             fields: std::collections::BTreeMap::new(),
             parent: None,
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await?
@@ -363,6 +367,8 @@ async fn ai_31_an_agent_changes_nothing_its_hand_over_did_not_name_and_sees_only
             estimated_time: None,
             fields: std::collections::BTreeMap::new(),
             parent: None,
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await;
@@ -378,6 +384,7 @@ async fn ai_31_an_agent_changes_nothing_its_hand_over_did_not_name_and_sees_only
                 cursor: None,
                 limit: 10,
                 labels: false,
+                releases: crate::issues::WithReleases::No,
                 agent: crate::issues::WithAgent::No,
                 time: false,
             },

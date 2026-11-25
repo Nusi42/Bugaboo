@@ -144,11 +144,10 @@ mod tests {
     /// The fields of the catalogue that are no member of the issue row: rows of their own hold them
     /// (the people assigned, labels, tags, releases), they are worked out (time spent), or they are
     /// kept for each person (the time factor).
-    const NOT_ON_THE_ROW: [Field; 7] = [
+    const NOT_ON_THE_ROW: [Field; 6] = [
         Field::AssignedTo,
         Field::Labels,
         Field::Tags,
-        Field::PlannedForRelease,
         Field::FoundInRelease,
         Field::TimeSpent,
         Field::TimeFactor,

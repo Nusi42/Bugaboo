@@ -6,8 +6,8 @@ use bb_core::id::{ProjectId, UserId};
 use serde_json::Value;
 
 use super::inputs::{
-    GetIssueInput, GetMyWorkInput, ListProjectsInput, SearchIssuesInput, SearchTotalsInput,
-    limit_within,
+    GetIssueInput, GetMyWorkInput, ListProjectsInput, ListReleasesInput, SearchIssuesInput,
+    SearchTotalsInput, limit_within,
 };
 use super::preview::proposer;
 use super::registry::{Boxed, Run};
@@ -152,6 +152,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             cursor: None,
             limit: limit.unwrap_or(ISSUES_DEFAULT),
             labels: false,
+            releases: crate::issues::WithReleases::No,
             agent: crate::issues::WithAgent::No,
             time: false,
         };
@@ -339,6 +340,47 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(parts)
     }
 
+    /// `list_releases`: the releases offered in a project the person sees, without those of a
+    /// project kept from AI (ADR-0049, decision 8).
+    pub(super) async fn tool_list_releases(
+        &self,
+        session_token: &str,
+        input: &ListReleasesInput,
+        withheld: &Withheld,
+    ) -> Result<Vec<Part>, AppError> {
+        let page = crate::releases::releases(
+            self,
+            crate::releases::ReleasesQuery {
+                session_token: session_token.to_owned(),
+                project: input.project.clone(),
+                cursor: None,
+                limit: limit_within(input.limit.as_ref())?.unwrap_or(ISSUES_DEFAULT),
+            },
+        )
+        .await?;
+        let value = masked(&page)?;
+        let mut parts = Vec::new();
+        if let Some(Value::Array(items)) = value.get("items") {
+            for item in items {
+                let project: Option<ProjectId> = item
+                    .get("project")
+                    .and_then(|project| project.get("id"))
+                    .and_then(Value::as_str)
+                    .and_then(|text| text.parse().ok());
+                if project.is_none_or(|id| withheld.hides_project(id)) {
+                    continue;
+                }
+                parts.push(Part {
+                    name: "release",
+                    value: item.clone(),
+                    author: AuthorKind::Member,
+                    project,
+                });
+            }
+        }
+        Ok(parts)
+    }
+
     /// `list_projects`: without the projects kept from AI.
     pub(super) async fn tool_list_projects(
         &self,
@@ -446,6 +488,18 @@ pub(super) fn get_issue<'a, S: AuthStore>(
     Box::pin(async move {
         let input: GetIssueInput = run.input()?;
         ctx.tool_get_issue(run.token, &input, run.withheld).await
+    })
+}
+
+/// `list_releases`.
+pub(super) fn list_releases<'a, S: AuthStore>(
+    ctx: &'a Ctx<'_, S>,
+    run: Run<'a>,
+) -> Boxed<'a, Result<Vec<Part>, AppError>> {
+    Box::pin(async move {
+        let input: ListReleasesInput = run.input()?;
+        ctx.tool_list_releases(run.token, &input, run.withheld)
+            .await
     })
 }
 

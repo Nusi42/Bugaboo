@@ -74,7 +74,7 @@ mod tests {
     use super::super::old_rows::insert;
     use super::super::{Database, latest_version};
     use crate::db::StoredId as _;
-    use crate::issues::{issue_select, read_issue};
+    use crate::issues::read_day;
     use crate::schema::{IssueRow, RelationKindRow};
     use crate::test_support::{at, insert_old_task};
 
@@ -151,12 +151,21 @@ mod tests {
                 effects,
                 ["must-finish-first", "none", "none", "none"].map(str::to_owned)
             );
-            // The issue reads as it was, with no dates.
-            let mut read = issue_select();
-            read.and_where(Expr::col(IssueRow::Id).eq(issue.stored()));
-            let row = database.fetch_optional(&read).await?;
-            let kept = read_issue(&row.ok_or("the issue is gone")?)?;
-            assert_eq!((kept.start_date, kept.due_date), (None, None));
+            // The issue keeps its row, with no dates. Only the columns of this migration are read:
+            // a later one adds others that a database at 49 does not have yet.
+            let mut read = sea_query::Query::select();
+            read.columns([IssueRow::StartDate, IssueRow::DueDate])
+                .from(IssueRow::Table)
+                .and_where(Expr::col(IssueRow::Id).eq(issue.stored()));
+            let row = database
+                .fetch_optional(&read)
+                .await?
+                .ok_or("the issue is gone")?;
+            let kept = (
+                read_day(&row, IssueRow::StartDate)?,
+                read_day(&row, IssueRow::DueDate)?,
+            );
+            assert_eq!(kept, (None, None));
             Ok(())
         })
         .await

@@ -62,6 +62,7 @@ pub mod personal;
 pub mod plain;
 pub mod plan;
 pub mod project;
+pub mod project_release;
 pub mod readable_id;
 pub mod relation;
 pub mod release;

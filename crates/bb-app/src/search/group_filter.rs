@@ -12,7 +12,9 @@
 use std::collections::HashMap;
 
 use bb_core::id::UserId;
-use bb_core::id::{ChoiceId, FieldId, GroupId, IssueId, IssueTypeId, LabelId, ProjectId, TagId};
+use bb_core::id::{
+    ChoiceId, FieldId, GroupId, IssueId, IssueTypeId, LabelId, ProjectId, ReleaseId, TagId,
+};
 use bb_core::issue::Issue;
 use bb_core::names::{name_key, same_name};
 use bb_core::own_fields::{DECIMAL_PARTS, FieldType};
@@ -45,6 +47,7 @@ enum Thing {
     Group(GroupId),
     Tag(TagId),
     Label(LabelId),
+    Release(ReleaseId),
     Choice(FieldId, ChoiceId),
     Issue(IssueId),
     Project(ProjectId),
@@ -185,6 +188,7 @@ fn stands_for_only(names: &Names, links: &[ProjectLink], wanted: &Wanted) -> boo
         Thing::Group(id) => entry(&names.groups, &key).is_some_and(|ids| alone(ids, id)),
         Thing::Tag(id) => entry(&names.tags, &key).is_some_and(|ids| alone(ids, id)),
         Thing::Label(id) => entry(&names.labels, &key).is_some_and(|ids| alone(ids, id)),
+        Thing::Release(id) => entry(&names.releases, &key).is_some_and(|ids| alone(ids, id)),
         Thing::Choice(field, id) => names
             .choices
             .iter()
@@ -400,6 +404,10 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .iter()
                 .find(|link| link.id == *id)
                 .map(|link| Wanted::named(&link.short_name.to_string(), Thing::Project(*id))),
+            GroupKey::Release(id) => self
+                .release_name_of(looked, *id, cache)
+                .await?
+                .map(|name| Wanted::named(&name, Thing::Release(*id))),
             GroupKey::IssueType(id) => looked
                 .types
                 .iter()

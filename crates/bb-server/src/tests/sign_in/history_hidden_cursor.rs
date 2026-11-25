@@ -72,6 +72,8 @@ async fn salary_changes(
                         salary_id.to_owned(),
                         json!(format!("band {number}")),
                     )]),
+                    found_in_release: None,
+                    planned_for_release: None,
                 },
             )
             .await?;

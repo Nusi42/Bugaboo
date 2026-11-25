@@ -153,6 +153,13 @@ fn shown_by_us(kind: &EntityKind, field: &str) -> Shown {
             member::label::COLOR,
             member::label::RETIRED,
         ]
+    } else if *kind == EntityKind::from(RecordKind::Release) {
+        &[
+            crate::releases::member::NAME,
+            crate::releases::member::RELEASE_DATE,
+            crate::releases::member::STATE,
+            crate::releases::member::RELEASED_ON,
+        ]
     } else if *kind == EntityKind::from(RecordKind::Theme) {
         &[member::theme::NAME, member::theme::VALUES]
     } else if *kind == EntityKind::from(RecordKind::Setting) {
@@ -293,6 +300,9 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .filter(|theme| crate::themes::known_to(theme, stale.viewer, &held))
                     .map(|theme| theme.version)
             }
+            // A release is told to whoever sees its project (ADR-0049, decision 5); one in the
+            // trash is not there.
+            RecordKind::Release => self.release_version(stale, bytes).await?,
             // A timer and a time entry are their person's own: nobody else is told their version.
             RecordKind::Timer => found(UserId::from_bytes(bytes).ok(), |id| store.timer(id))
                 .await
@@ -384,6 +394,28 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(failed)?
             .filter(|rule| rule.person == stale.viewer)
             .map(|rule| rule.version)
+        })
+    }
+
+    /// The version of a release, told to whoever sees its project; one in the trash is not there.
+    async fn release_version(
+        &self,
+        stale: &Stale,
+        bytes: [u8; 16],
+    ) -> Result<Option<i64>, AppError> {
+        let release = found(bb_core::id::ReleaseId::from_bytes(bytes).ok(), |id| {
+            self.store().release(id)
+        })
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .filter(|release| release.deleted_at.is_none());
+        Ok(match release {
+            Some(release) => self
+                .evaluate(stale.viewer, Place::Project(release.project))
+                .await?
+                .sees_project()
+                .then_some(release.version),
+            None => None,
         })
     }
 

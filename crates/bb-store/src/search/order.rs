@@ -20,7 +20,8 @@ use super::source::{Domain, Rows, Subject};
 use super::{CompileError, Compiler, nothing};
 use crate::db::{Dialect, StoredId as _};
 use crate::schema::{
-    FieldChoiceRow, GroupRow, IssueRow, IssueTypeRow, LabelRow, PersonRow, ProjectRow, TagRow,
+    FieldChoiceRow, GroupRow, IssueRow, IssueTypeRow, LabelRow, PersonRow, ProjectRow, ReleaseRow,
+    TagRow,
 };
 
 /// What a key holds.
@@ -72,6 +73,7 @@ pub(super) enum IdOf {
     Project,
     IssueType,
     Choice,
+    Release,
 }
 
 /// How a field splits the issues into groups.
@@ -202,6 +204,18 @@ impl Compiler<'_> {
                 Ok((value, Kind::Whole))
             }
             Domain::Choice(_) => Ok((self.choice_rank(&subject, domain, &pick)?, Kind::Whole)),
+            // A release sorts by its *Release date*: an issue that names several by the earliest
+            // (or the latest, the other way), one with none of them dated last.
+            Domain::Release => Ok((
+                bigint(Self::named(
+                    &subject,
+                    ReleaseRow::Table.into_iden(),
+                    ReleaseRow::Id.into_iden(),
+                    ReleaseRow::ReleaseDate.into_iden(),
+                    pick,
+                )),
+                Kind::Whole,
+            )),
             named => {
                 let (table, id, name) =
                     names_of(named).ok_or(CompileError::Unsupported("sorting by this field"))?;
@@ -522,7 +536,8 @@ const fn kind_of(domain: Domain) -> Kind {
         | Domain::Duration
         | Domain::Minutes
         | Domain::YesNo
-        | Domain::Time(_) => Kind::Whole,
+        | Domain::Time(_)
+        | Domain::Release => Kind::Whole,
         _ => Kind::Text,
     }
 }
@@ -555,6 +570,7 @@ const fn group_value_of(domain: Domain) -> GroupValue {
         Domain::Minutes => GroupValue::Length,
         Domain::Tag => GroupValue::Id(IdOf::Tag),
         Domain::Label => GroupValue::Id(IdOf::Label),
+        Domain::Release => GroupValue::Id(IdOf::Release),
         Domain::Text | Domain::Status => GroupValue::Text,
     }
 }

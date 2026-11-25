@@ -19,7 +19,9 @@ use bb_app::many_changes::{
     ManyChangeTarget,
 };
 use bb_core::given::SetTo;
-use bb_core::id::{LabelId, RelationKindId, RunId, UserId};
+use bb_core::id::{LabelId, RelationKindId, ReleaseId, RunId, UserId};
+
+use super::releases::set_release;
 use bb_core::issue::{CalendarDay, Priority};
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::own_fields::FieldType;
@@ -76,6 +78,13 @@ pub(crate) struct ManyChangeBody {
     /// The IDs of the people the issues are assigned to from now on: all of them, not the ones to
     /// add.
     assigned_to: Option<Vec<String>>,
+    /// The IDs of the releases the issues were *Found in* from now on: all of them, not the ones to
+    /// add. A release that is not offered where an issue is leaves that issue alone.
+    found_in_release: Option<Vec<String>>,
+    /// The ID of the release the issues are *Planned for*; `null` takes it away.
+    #[serde(default, deserialize_with = "bb_core::given::deserialize")]
+    #[schema(value_type = Option<String>, nullable)]
+    planned_for_release: Option<SetTo<String>>,
     /// The values of own fields to set, by the key (ID) of the field; `null` takes a value away.
     #[serde(default)]
     fields: BTreeMap<String, Value>,
@@ -135,6 +144,16 @@ impl ManyChangeActionBody {
                                 .collect::<Result<Vec<_>, _>>()
                         })
                         .transpose()?,
+                    found_in_release: change
+                        .found_in_release
+                        .map(|releases| {
+                            releases
+                                .iter()
+                                .map(|text| body_id::<ReleaseId>(text))
+                                .collect::<Result<Vec<_>, _>>()
+                        })
+                        .transpose()?,
+                    planned_for_release: set_release(change.planned_for_release)?,
                     fields: change.fields,
                 },
             },

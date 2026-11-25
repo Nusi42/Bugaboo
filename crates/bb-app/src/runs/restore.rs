@@ -55,6 +55,8 @@ pub(super) fn issue_change(
         time_left: None,
         assigned_to: None,
         fields: BTreeMap::new(),
+        found_in_release: None,
+        planned_for_release: None,
     };
     for net in nets {
         let before = net.before.clone();

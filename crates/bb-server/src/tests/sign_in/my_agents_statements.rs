@@ -139,7 +139,7 @@ async fn ai_37_waiting_work_comes_first_and_accepted_work_stays_with_its_person(
             )
             .await?;
         ok(&handed)?;
-        agent_works(&rig, &key, &first, &third).await?;
+        Box::pin(agent_works(&rig, &key, &first, &third)).await?;
         // What waits for the person comes first, though the second piece is newer than the first.
         let mine = work_of(&mut tess).await?;
         let pieces = mine["pieces"].as_array().ok_or("no pieces")?;

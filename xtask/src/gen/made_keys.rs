@@ -142,9 +142,21 @@ pub(crate) struct Made {
 }
 
 /// The messages of the words that have a list of their own above.
+/// The names of the states of a release (ADR-0049).
+fn release_keys() -> Vec<Made> {
+    bb_core::project_release::ReleaseState::ALL
+        .iter()
+        .map(|state| Made {
+            key: state.name(),
+            word: format!("the state of a release `{}`", state.code()),
+        })
+        .collect()
+}
+
 fn listed_keys() -> Vec<Made> {
     [
         agent_work_keys(),
+        release_keys(),
         privacy_keys(),
         holiday_keys(),
         plan_keys(),

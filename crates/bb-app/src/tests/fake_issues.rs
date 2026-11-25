@@ -234,6 +234,7 @@ impl IssueStore for FakeStore {
         found.priority = issue.priority;
         found.estimated_time = issue.estimated_time;
         found.time_left = issue.time_left;
+        found.planned_for_release = issue.planned_for_release;
         found.updated_at = issue.updated_at;
         found.closed_at = issue.closed_at;
         found.version += 1;

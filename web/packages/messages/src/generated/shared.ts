@@ -300,6 +300,8 @@ export const messages = {
     "Manage workflows: change statuses and status changes, and publish them",
   "permission.manage-fields": "Create, change and retire fields",
   "permission.manage-labels": "Manage labels and tags, also rename and combine them",
+  "permission.manage-releases":
+    "Create, rename, date, mark and retire the releases of the project, and delete one that no issue names",
   "permission.create-projects": "Create projects at the top level",
   "permission.create-sub-projects": "Create sub-projects inside the project",
   "permission.move-projects": "Move sub-projects into or out of the project",
@@ -680,6 +682,14 @@ export const messages = {
     "That tag is only for other projects. Choose another tag or ask who looks after tags.",
   "error.label.not-offered":
     "This project does not offer the label group of that label. Choose another label, or ask who looks after labels.",
+  "error.release.name-taken":
+    "This project has a release of that name already. Choose another name.",
+  "error.release.not-offered":
+    "That release is not offered here. Choose a release of this project or a project above it that is not retired.",
+  "error.release.in-use": "Issues name this release. Retire it instead.",
+  "error.release.reason-needed": "Say why the release goes back to Planned.",
+  "error.release.too-many":
+    "An issue can name at most {most, number} releases in Found in release.",
   "error.label.pick-one-conflict":
     "Some issues have more than one label of this label group already, so it cannot be a label group to pick one from. Take the extra labels off first.",
   "common.show-all": "Show all {count, number}",

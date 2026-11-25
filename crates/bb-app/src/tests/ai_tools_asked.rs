@@ -68,11 +68,12 @@ async fn ai_21_a_limit_outside_one_to_a_hundred_is_refused_with_the_range() -> O
 }
 
 /// The tools that read, which every role that sees a project is offered.
-const READS: [&str; 6] = [
+const READS: [&str; 7] = [
     "search_issues",
     "search_totals",
     "get_issue",
     "list_projects",
+    "list_releases",
     "get_my_work",
     "relation_map",
 ];

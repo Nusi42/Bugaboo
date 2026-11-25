@@ -249,19 +249,8 @@ async fn ai_37_the_changes_of_an_agent_over_the_api_count_against_its_limits() -
             change_issue::<_, ChangedIssue>(
                 &ctx,
                 ChangeIssue {
-                    session_token: given.key.clone(),
-                    issue: given.issue.to_string(),
-                    version,
-                    issue_type: None,
                     title: Some(title.to_owned()),
-                    status: None,
-                    priority: None,
-                    start_date: None,
-                    due_date: None,
-                    estimated_time: None,
-                    time_left: None,
-                    assigned_to: None,
-                    fields: std::collections::BTreeMap::default(),
+                    ..ChangeIssue::of(&given.key, given.issue.to_string(), version)
                 },
             )
             .await,
@@ -291,19 +280,8 @@ async fn ai_37_a_change_that_is_refused_counts_nothing() -> Outcome {
         let refusal = change_issue::<_, ChangedIssue>(
             &ctx,
             ChangeIssue {
-                session_token: given.key.clone(),
-                issue: given.issue.to_string(),
-                version,
-                issue_type: None,
                 title: Some(title.to_owned()),
-                status: None,
-                priority: None,
-                start_date: None,
-                due_date: None,
-                estimated_time: None,
-                time_left: None,
-                assigned_to: None,
-                fields: std::collections::BTreeMap::default(),
+                ..ChangeIssue::of(&given.key, given.issue.to_string(), version)
             },
         )
         .await;

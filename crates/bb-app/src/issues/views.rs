@@ -16,11 +16,13 @@ use bb_core::time::{Minutes, TimeLeft, time_left};
 use bb_core::workflow::WorkflowContent;
 use bb_policy::{Evaluation, PeopleContext, PersonRef, Place};
 
+use super::releases::PageReleases;
 use super::types::{AgentMark, IssueTypeRef, IssueView, WithAgent};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::ItemValues;
 use crate::projects::{ProjectRef, Shown};
+use crate::releases::ReleaseRef;
 use crate::tags::{LabelCatalogue, LabelRef};
 use crate::workflows::{StatusChangeView, StatusCheck, StatusView};
 
@@ -51,6 +53,12 @@ pub(crate) struct IssueViews {
     /// The minutes spent on the issues of the page, by issue, when the page asked for them; an
     /// issue not in it has none. The issue page reads them with its time (`time/totals.rs`).
     spent: Option<Arc<HashMap<IssueId, Minutes>>>,
+    /// The releases the issues shown so far name (ISS-08): read for the whole page at once when
+    /// the page asks for them, or for one issue when it is shown on its own; `None` for a page that
+    /// did not ask, whose views do not hold them.
+    releases: Option<Box<PageReleases>>,
+    /// The projects the viewer sees, which decide the releases they are shown; read once.
+    shown: Option<Arc<Shown>>,
 }
 
 /// What a page of issues shows besides what every issue has: each is read only when it is asked
@@ -65,6 +73,8 @@ pub(crate) struct ReadOnRequest {
     pub(crate) agent: WithAgent,
     /// The minutes spent on each issue.
     pub(crate) time: bool,
+    /// The releases each issue names.
+    pub(crate) releases: super::types::WithReleases,
 }
 
 /// A project that a page of issues has issues of: the projects from the top down to it, what the
@@ -101,6 +111,13 @@ impl IssueViews {
     /// Gives the views the agents that work on the issues of the page.
     pub(crate) fn with_agents(mut self, agents: Arc<HashMap<IssueId, AgentMark>>) -> Self {
         self.agents = Some(agents);
+        self
+    }
+
+    /// Gives the views the releases of the issues of the page, and the projects the viewer sees.
+    fn with_releases(mut self, releases: Option<&PageReleases>, shown: &Arc<Shown>) -> Self {
+        self.releases = releases.cloned().map(Box::new);
+        self.shown = Some(Arc::clone(shown));
         self
     }
 
@@ -162,6 +179,17 @@ impl<S: AuthStore> Ctx<'_, S> {
         } else {
             None
         };
+        // One statement for the releases the page names and one for the releases themselves, when
+        // they are asked for.
+        let releases = if extras.releases == super::types::WithReleases::Yes {
+            Some(
+                self.releases_of_page(&issues.iter().collect::<Vec<_>>())
+                    .await?,
+            )
+        } else {
+            None
+        };
+        let shown = Arc::new(seen.clone());
         let mut views: HashMap<ProjectId, IssueViews> = HashMap::new();
         let mut projects: Vec<ProjectId> = issues.iter().map(|issue| issue.project).collect();
         projects.sort_unstable();
@@ -174,7 +202,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .issue_views(actor, Arc::clone(&place.held), place.project.clone())
                 .await?
                 .with_page(place.chain.clone(), values.clone())
-                .with_spent(spent.as_ref());
+                .with_spent(spent.as_ref())
+                .with_releases(releases.as_ref(), &shown);
             if let Some(labels) = &labels {
                 made = made.with_labels(Arc::clone(labels));
             }
@@ -292,6 +321,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             labels: None,
             agents: None,
             spent: None,
+            releases: Some(Box::default()),
+            shown: None,
         })
     }
 
@@ -435,6 +466,40 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(shown)
     }
 
+    /// The two release fields of the issue as the viewer sees them: read with the page, or for this
+    /// issue alone when it is shown on its own.
+    async fn view_releases(
+        &self,
+        views: &mut IssueViews,
+        issue: &Issue,
+    ) -> Result<(Option<Vec<ReleaseRef>>, Option<ReleaseRef>), AppError> {
+        let Some(page) = &views.releases else {
+            return Ok((None, None));
+        };
+        if !page.has(issue) {
+            let read = self.releases_of_page(&[issue]).await?;
+            if let Some(page) = &mut views.releases {
+                page.merge(read);
+            }
+        }
+        let shown = if let Some(shown) = &views.shown {
+            Arc::clone(shown)
+        } else {
+            let shown = Arc::new(self.shown_to(&views.actor).await?);
+            views.shown = Some(Arc::clone(&shown));
+            shown
+        };
+        if views.chain.is_none() {
+            views.chain = Some(self.chain_of(views.project.id).await?);
+        }
+        let chain = views.chain.as_deref().unwrap_or_default();
+        Ok(views
+            .releases
+            .as_ref()
+            .map(|page| page.of(issue, chain, &shown))
+            .map_or((None, None), |(found, planned)| (Some(found), planned)))
+    }
+
     /// The issue as the viewer sees it. `assigned_to` are the people it is assigned to, in order.
     pub(crate) async fn issue_view(
         &self,
@@ -482,6 +547,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .spent
             .as_ref()
             .map(|page| page.get(&issue.id).copied().unwrap_or_default());
+        // Boxed: the read of one issue's releases is rare in a page, and every view stays small.
+        let (found_in_release, planned_for_release) =
+            Box::pin(self.view_releases(views, issue)).await?;
         let shown_people = if views.show_people { assigned_to } else { &[] };
         let mut people = Vec::with_capacity(shown_people.len());
         for person in shown_people {
@@ -511,6 +579,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             updated_at: issue.updated_at,
             closed_at: issue.closed_at,
             own_fields,
+            found_in_release,
+            planned_for_release,
             labels: views
                 .labels
                 .as_ref()

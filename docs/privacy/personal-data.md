@@ -628,26 +628,27 @@ Defined in `crates/bb-core/src/issue.rs`.
 
 A person in its rows: `reported_by` is the author.
 
-| Field            | Personal data | Category   | Legal basis | What it holds                                                                                                             |
-| ---------------- | ------------- | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `id`             | No            | –          | –           | The internal ID, which never changes.                                                                                     |
-| `project`        | No            | –          | –           | The project it is in.                                                                                                     |
-| `issue_type`     | No            | –          | –           | Its issue type.                                                                                                           |
-| `code`           | No            | –          | –           | The code of its readable ID now; the short name of its project comes before it.                                           |
-| `title`          | Yes           | `content`  | `contract`  | What it is about. Free text that could name a person.                                                                     |
-| `description`    | Yes           | `content`  | `contract`  | The long text, in Markdown. Free text that could name a person.                                                           |
-| `status`         | No            | –          | –           | The key of its status in the workflow that counts for it.                                                                 |
-| `priority`       | No            | –          | –           | How important it is.                                                                                                      |
-| `start_date`     | No            | –          | –           | *Start date*: the first day of work, a calendar date with no time of day (ADR-0043); none until somebody gives one.       |
-| `due_date`       | No            | –          | –           | *Due date*: the day it should be done, a calendar date with no time of day (ADR-0043); none until somebody gives one.     |
-| `estimated_time` | No            | –          | –           | *Estimated time*: how long it was expected to take, in whole minutes; none until somebody gives one.                      |
-| `time_left`      | No            | –          | –           | *Time left* as somebody typed it, in whole minutes; none while nobody did, when it is worked out ([`crate::time::left`]). |
-| `reported_by`    | Yes           | `activity` | `contract`  | Who made it.                                                                                                              |
-| `created_at`     | No            | –          | –           | When it was made.                                                                                                         |
-| `updated_at`     | No            | –          | –           | When it was last changed.                                                                                                 |
-| `closed_at`      | No            | –          | –           | When it entered the status group *Done*, while it is in it.                                                               |
-| `deleted_at`     | No            | –          | –           | When it was deleted into the trash, while it is there.                                                                    |
-| `version`        | No            | –          | –           | Counts up with every change, for the check that nobody changed it meanwhile (ADR-0019).                                   |
+| Field                 | Personal data | Category   | Legal basis | What it holds                                                                                                             |
+| --------------------- | ------------- | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | No            | –          | –           | The internal ID, which never changes.                                                                                     |
+| `project`             | No            | –          | –           | The project it is in.                                                                                                     |
+| `issue_type`          | No            | –          | –           | Its issue type.                                                                                                           |
+| `code`                | No            | –          | –           | The code of its readable ID now; the short name of its project comes before it.                                           |
+| `title`               | Yes           | `content`  | `contract`  | What it is about. Free text that could name a person.                                                                     |
+| `description`         | Yes           | `content`  | `contract`  | The long text, in Markdown. Free text that could name a person.                                                           |
+| `status`              | No            | –          | –           | The key of its status in the workflow that counts for it.                                                                 |
+| `priority`            | No            | –          | –           | How important it is.                                                                                                      |
+| `start_date`          | No            | –          | –           | *Start date*: the first day of work, a calendar date with no time of day (ADR-0043); none until somebody gives one.       |
+| `due_date`            | No            | –          | –           | *Due date*: the day it should be done, a calendar date with no time of day (ADR-0043); none until somebody gives one.     |
+| `estimated_time`      | No            | –          | –           | *Estimated time*: how long it was expected to take, in whole minutes; none until somebody gives one.                      |
+| `time_left`           | No            | –          | –           | *Time left* as somebody typed it, in whole minutes; none while nobody did, when it is worked out ([`crate::time::left`]). |
+| `planned_for_release` | No            | –          | –           | *Planned for release*: the one release that should hold the fix (ADR-0049, decision 3); none until somebody chooses one.  |
+| `reported_by`         | Yes           | `activity` | `contract`  | Who made it.                                                                                                              |
+| `created_at`          | No            | –          | –           | When it was made.                                                                                                         |
+| `updated_at`          | No            | –          | –           | When it was last changed.                                                                                                 |
+| `closed_at`           | No            | –          | –           | When it entered the status group *Done*, while it is in it.                                                               |
+| `deleted_at`          | No            | –          | –           | When it was deleted into the trash, while it is there.                                                                    |
+| `version`             | No            | –          | –           | Counts up with every change, for the check that nobody changed it meanwhile (ADR-0019).                                   |
 
 ### IssueAlias
 
@@ -672,6 +673,18 @@ Defined in `crates/bb-core/src/issue.rs`.
 | --------- | ------------- | -------- | ----------- | -------------------------- |
 | `project` | No            | –        | –           | The project.               |
 | `last`    | No            | –        | –           | The last number given out. |
+
+### IssueFoundIn
+
+One release an issue names in *Found in release*, at its place in the order given.
+
+Defined in `crates/bb-core/src/project_release.rs`.
+
+| Field      | Personal data | Category | Legal basis | What it holds                                              |
+| ---------- | ------------- | -------- | ----------- | ---------------------------------------------------------- |
+| `issue`    | No            | –        | –           | The issue.                                                 |
+| `release`  | No            | –        | –           | The release.                                               |
+| `position` | No            | –        | –           | The place among the releases of the issue, counted from 0. |
 
 ### IssueLabel
 
@@ -1423,6 +1436,29 @@ Defined in `crates/bb-core/src/relation.rs`.
 | `position`    | No            | –         | –                      | The place in the order the kinds are offered in.                                        |
 | `retired_at`  | No            | –         | –                      | When it was retired: no new relations of this kind, while the old ones keep it.         |
 | `version`     | No            | –         | –                      | Counts up with every change, for the check that nobody changed it meanwhile (ADR-0019). |
+
+### Release
+
+A release of a project (ADR-0049, decision 2).
+
+Defined in `crates/bb-core/src/project_release.rs`.
+
+A person in its rows: `made_by` is the author; `changed_by` is the actor.
+
+| Field          | Personal data | Category   | Legal basis            | What it holds                                                                                                      |
+| -------------- | ------------- | ---------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `id`           | No            | –          | –                      | The ID of the release.                                                                                             |
+| `project`      | No            | –          | –                      | The project it was made in: offered there and in its sub-projects.                                                 |
+| `name`         | Yes           | `content`  | `legitimate_interests` | What it is called (*2.4*), unique within its project by the one rule of names. Free text that could name a person. |
+| `release_date` | No            | –          | –                      | *Release date*: the planned day, a calendar date with no time of day; none until somebody gives one.               |
+| `state`        | No            | –          | –                      | Its state.                                                                                                         |
+| `released_on`  | No            | –          | –                      | *Released on*: the day it was marked *Released*, kept while it is released or retired.                             |
+| `made_by`      | Yes           | `activity` | `contract`             | Who made it.                                                                                                       |
+| `made_at`      | No            | –          | –                      | When it was made.                                                                                                  |
+| `changed_by`   | Yes           | `activity` | `contract`             | Who changed it last.                                                                                               |
+| `changed_at`   | No            | –          | –                      | When it was changed last.                                                                                          |
+| `deleted_at`   | No            | –          | –                      | When it was deleted into the trash, while it is there.                                                             |
+| `version`      | No            | –          | –                      | Counts up with every change, for the check that nobody changed it meanwhile (ADR-0019).                            |
 
 ### Review
 

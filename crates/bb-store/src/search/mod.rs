@@ -332,6 +332,8 @@ mod tests_map_property;
 #[cfg(test)]
 mod tests_more;
 #[cfg(test)]
+mod tests_releases;
+#[cfg(test)]
 mod tests_rest;
 #[cfg(test)]
 mod tests_spent;

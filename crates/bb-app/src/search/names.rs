@@ -22,6 +22,7 @@ use bb_core::readable_id::ReadableId;
 use bb_policy::{Permission, Place as Where};
 use bb_searchlang::{CheckedSearch, Expr as Node, Operand, Span, Test};
 
+mod releases;
 mod suggest;
 
 use super::readable::Looked;
@@ -79,6 +80,7 @@ enum What {
     MemberOf,
     Tag,
     Label,
+    Release,
     Project,
     Issue,
 }
@@ -96,6 +98,7 @@ fn what_of(target: FieldTarget) -> Option<What> {
     match target {
         FieldTarget::Tags => Some(What::Tag),
         FieldTarget::Labels => Some(What::Label),
+        FieldTarget::FoundInRelease | FieldTarget::PlannedForRelease => Some(What::Release),
         FieldTarget::Project => Some(What::Project),
         FieldTarget::Parent
         | FieldTarget::Own {
@@ -180,6 +183,7 @@ pub(crate) struct NameCache {
     mine: Option<Vec<GroupId>>,
     tags_known: Option<Vec<(String, bb_core::id::TagId)>>,
     labels_known: Option<Vec<(String, bb_core::id::LabelId)>>,
+    releases_known: Option<Vec<(String, bb_core::id::ReleaseId)>>,
     missing_issues: Vec<String>,
     /// How many names were resolved with a read each for the request, against
     /// [`NAME_RESOLUTIONS_MAX`].
@@ -390,6 +394,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 Ok(known)
             }
             What::Tag | What::Label => self.tag_or_label_named(looked, each, cache).await,
+            What::Release => self.release_named(looked, each, cache).await,
             What::Project => Ok(ProjectLink::named_in(
                 &looked.seen.links(&looked.projects),
                 &each.text,

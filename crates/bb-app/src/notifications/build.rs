@@ -328,6 +328,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | RecordKind::Group
             | RecordKind::Invitation
             | RecordKind::IssueType
+            | RecordKind::Release
             | RecordKind::Label
             | RecordKind::LabelGroup
             | RecordKind::Passkey

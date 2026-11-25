@@ -4,8 +4,8 @@
 use std::future::Future;
 
 use bb_core::id::{
-    ChoiceId, FieldId, GroupId, IssueId, IssueTypeId, LabelId, ProjectId, RelationKindId, TagId,
-    UserId,
+    ChoiceId, FieldId, GroupId, IssueId, IssueTypeId, LabelId, ProjectId, RelationKindId,
+    ReleaseId, TagId, UserId,
 };
 use bb_core::issue::{Issue, Priority, StatusGroup};
 use bb_core::people_kinds::PeopleKind;
@@ -88,6 +88,8 @@ pub struct Names {
     pub statuses: Vec<(String, Vec<String>)>,
     /// The issue types that have a name.
     pub issue_types: Vec<(String, Vec<IssueTypeId>)>,
+    /// The releases that have a name, among those of the projects the person sees.
+    pub releases: Vec<(String, Vec<ReleaseId>)>,
     /// The people the person may see by name (*Who sees people*), by the kind of the field they are
     /// named in and the key of their name: a name allowed for one kind is not allowed for another.
     pub people: Vec<(PeopleKind, String, Vec<UserId>)>,
@@ -216,6 +218,8 @@ pub enum GroupKey {
     Tag(TagId),
     /// A label.
     Label(LabelId),
+    /// A release.
+    Release(ReleaseId),
     /// An issue type.
     IssueType(IssueTypeId),
     /// A choice of an own field.
@@ -287,6 +291,7 @@ impl GroupKey {
             Self::Label(id) => (hex(id.to_bytes()), 0),
             Self::IssueType(id) => (hex(id.to_bytes()), 0),
             Self::Choice(id) => (hex(id.to_bytes()), 0),
+            Self::Release(id) => (hex(id.to_bytes()), 0),
             Self::Priority(each) => (String::new(), place_in(&Priority::LIST_ORDER, each)),
             Self::StatusGroup(each) => (String::new(), place_in(&StatusGroup::LIST_ORDER, each)),
         };

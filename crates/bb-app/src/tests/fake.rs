@@ -177,6 +177,8 @@ pub(crate) struct State {
     pub(crate) label_groups: Vec<bb_core::tags::LabelGroup>,
     pub(crate) labels: Vec<bb_core::tags::Label>,
     pub(crate) issue_labels: Vec<bb_core::tags::IssueLabel>,
+    pub(crate) releases: Vec<bb_core::project_release::Release>,
+    pub(crate) found_in: Vec<bb_core::project_release::IssueFoundIn>,
     pub(crate) jobs: Vec<bb_core::job::Job>,
     pub(crate) many_changes_runs: Vec<bb_core::many_changes::ManyChangeRun>,
     pub(crate) layouts: Vec<bb_core::layout::StoredLayout>,

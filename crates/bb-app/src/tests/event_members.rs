@@ -49,6 +49,7 @@ fn issue(ids: &mut SystemIds) -> Issue {
         due_date: None,
         estimated_time: None,
         time_left: None,
+        planned_for_release: None,
         reported_by: UserId::generate(ids),
         created_at: Timestamp::UNIX_EPOCH,
         updated_at: Timestamp::UNIX_EPOCH,

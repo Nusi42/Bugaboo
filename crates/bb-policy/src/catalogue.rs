@@ -36,6 +36,7 @@ pub const NOT_FOR_KEYS: &[Permission] = &[
     Permission::ManageIssueTypes,
     Permission::ManageFields,
     Permission::ManageLabels,
+    Permission::ManageReleases,
     Permission::ManageWorkflows,
     Permission::SeeWorkingHoursOfOthers,
     Permission::ChangeWorkingHoursOfOthers,
@@ -150,6 +151,9 @@ permissions! {
     ManageFields => ("manage-fields", WorkSettings, Organization, Manage),
     /// Manage labels and tags, also renaming and combining them.
     ManageLabels => ("manage-labels", WorkSettings, Project, Manage),
+    /// Make, rename, date, mark and retire the releases of the project, and delete one that no
+    /// issue names (ISS-08, ADR-0049, decision 5).
+    ManageReleases => ("manage-releases", WorkSettings, Project, Manage),
     /// Decide who has which role, including *No access*.
     DecideRoles => ("decide-roles", People, Project, Manage),
     /// Decide which fields and which people information each role sees.

@@ -325,6 +325,7 @@ export interface MessageArguments {
   "editing.lost-changed": { name: string | number; thing: string | number };
   "editing.lost-taken-over": { name: string | number };
   "error.relation-kind.date-effect-most": { most: string | number };
+  "error.release.too-many": { most: number };
   "error.request.limit-out-of-range": { least: string | number; most: string | number };
   "error.theme.too-many-for-everyone": { most: string | number };
   "error.theme.too-many-personal": { most: string | number };

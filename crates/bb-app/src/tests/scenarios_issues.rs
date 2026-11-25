@@ -44,6 +44,8 @@ pub(crate) fn change_of(who: &str, issue: IssueId, version: i64) -> ChangeIssue 
         time_left: None,
         assigned_to: None,
         fields: std::collections::BTreeMap::new(),
+        found_in_release: None,
+        planned_for_release: None,
     }
 }
 
@@ -87,6 +89,8 @@ pub(crate) async fn an_issue(world: &World, project: ProjectId) -> Result<IssueI
             estimated_time: None,
             fields: std::collections::BTreeMap::new(),
             parent: None,
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await
@@ -115,6 +119,8 @@ pub(crate) async fn create_issue_scenario(world: &World) -> Added {
                 estimated_time: None,
                 fields: std::collections::BTreeMap::new(),
                 parent: None,
+                found_in_release: None,
+                planned_for_release: None,
             },
         ),
     )
@@ -137,6 +143,8 @@ fn titled_and_done(world: &World, issue: &impl ToString) -> ChangeIssue {
         time_left: None,
         assigned_to: None,
         fields: std::collections::BTreeMap::new(),
+        found_in_release: None,
+        planned_for_release: None,
     }
 }
 

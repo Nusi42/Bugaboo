@@ -326,6 +326,11 @@ pub(super) const ALL: &[Definition] = &[
         steps: || Ok(super::m0064_walk_index::steps()),
     },
     Definition {
+        version: 65,
+        name: "releases",
+        steps: super::m0065_releases::steps,
+    },
+    Definition {
         version: 66,
         name: "board_calendar_card",
         steps: || Ok(super::m0066_board_calendar_card::steps()),

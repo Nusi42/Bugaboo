@@ -24,9 +24,7 @@ use super::types::{
     ApplyManyChanges, ManyChangeAction, ManyChangeOutcome, ManyChangeResult, ManyChangeTarget,
 };
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, set_to};
-use crate::issues::{
-    ChangeIssue, DeleteIssue, IssueView, MoveIssue, change_issue, delete_issue, move_issue,
-};
+use crate::issues::{DeleteIssue, IssueView, MoveIssue, change_issue, delete_issue, move_issue};
 use crate::jobs::JobKind;
 use crate::relations::{AddRelation, LineMaker, add_relation};
 use crate::tags::{AddLabel, add_label};
@@ -59,21 +57,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let done = match selection.action {
             ManyChangeAction::Change { change } => change_issue::<_, IssueView>(
                 self,
-                ChangeIssue {
-                    session_token: token,
-                    issue: target.issue.clone(),
-                    version: target.version,
-                    issue_type: None,
-                    title: None,
-                    status: change.status.clone(),
-                    priority: change.priority,
-                    start_date: change.start_date,
-                    due_date: change.due_date,
-                    estimated_time: change.estimated_time,
-                    time_left: change.time_left,
-                    assigned_to: change.assigned_to.clone(),
-                    fields: change.fields.clone(),
-                },
+                change.of_issue(&token, target.issue.clone(), target.version),
             )
             .await
             .map(drop),

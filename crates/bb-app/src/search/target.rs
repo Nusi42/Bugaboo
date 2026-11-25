@@ -43,6 +43,10 @@ pub enum FieldTarget {
     StartDate,
     /// *Due date*: a day.
     DueDate,
+    /// *Found in release*: the releases the issue was found in (ISS-08).
+    FoundInRelease,
+    /// *Planned for release*: the release the issue is planned for (ISS-08).
+    PlannedForRelease,
     /// *Estimated time*, in whole minutes.
     EstimatedTime,
     /// *Time left*: the typed value, or the one worked out (ADR-0035, decision 4).
@@ -107,6 +111,8 @@ impl FieldTarget {
             Self::Tags => Field::Tags,
             Self::StartDate => Field::StartDate,
             Self::DueDate => Field::DueDate,
+            Self::FoundInRelease => Field::FoundInRelease,
+            Self::PlannedForRelease => Field::PlannedForRelease,
             Self::EstimatedTime => Field::EstimatedTime,
             Self::TimeLeft => Field::TimeLeft,
             Self::TimeSpent => Field::TimeSpent,
@@ -170,6 +176,8 @@ impl FieldTarget {
             Self::Closed => message::ISSUE_FIELD_CLOSED,
             Self::StartDate => message::ISSUE_FIELD_START_DATE,
             Self::DueDate => message::ISSUE_FIELD_DUE_DATE,
+            Self::FoundInRelease => message::ISSUE_FIELD_FOUND_IN_RELEASE,
+            Self::PlannedForRelease => message::ISSUE_FIELD_PLANNED_FOR_RELEASE,
             Self::EstimatedTime => message::ISSUE_FIELD_ESTIMATED_TIME,
             Self::TimeLeft => message::ISSUE_FIELD_TIME_LEFT,
             Self::TimeSpent => message::ISSUE_FIELD_TIME_SPENT,

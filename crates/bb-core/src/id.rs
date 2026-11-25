@@ -280,6 +280,11 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a release of a project (ISS-08, ADR-0049).
+    ReleaseId
+}
+
+define_ordered_id! {
     /// The ID of a choice of a *Pick one* or *Pick several* field (CF-04).
     ChoiceId
 }
@@ -526,6 +531,7 @@ into_entity_id!(
     AssignmentId,
     IssueId,
     IssueTypeId,
+    ReleaseId,
     FieldId,
     ChoiceId,
     RelationKindId,

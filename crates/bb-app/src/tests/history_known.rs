@@ -60,6 +60,8 @@ async fn changed(
             time_left: None,
             assigned_to: None,
             fields: BTreeMap::new(),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await?;

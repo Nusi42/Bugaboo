@@ -140,6 +140,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                     labels: true,
                     agent: WithAgent::No,
                     time: true,
+                    releases: crate::issues::WithReleases::No,
                 },
             )
             .await?

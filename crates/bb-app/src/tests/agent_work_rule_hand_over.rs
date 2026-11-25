@@ -295,6 +295,8 @@ async fn retitle(world: &World, given: &RuleWorld, title: &str) -> Result<(), Ap
             time_left: None,
             assigned_to: None,
             fields: std::collections::BTreeMap::default(),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await

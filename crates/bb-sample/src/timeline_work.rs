@@ -175,6 +175,8 @@ impl Maker<'_, '_> {
                     estimated_time,
                     fields: std::collections::BTreeMap::new(),
                     parent,
+                    found_in_release: None,
+                    planned_for_release: None,
                 },
             )
             .await,

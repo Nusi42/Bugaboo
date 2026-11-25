@@ -41,6 +41,8 @@ pub(super) fn change(
         time_left: None,
         assigned_to: None,
         fields: BTreeMap::new(),
+        found_in_release: None,
+        planned_for_release: None,
     })
 }
 
@@ -213,6 +215,8 @@ async fn wf_06_a_new_organization_has_the_three_starter_workflows() -> Outcome {
             estimated_time: None,
             fields: BTreeMap::new(),
             parent: None,
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await?

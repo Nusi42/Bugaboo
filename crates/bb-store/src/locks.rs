@@ -86,6 +86,11 @@ pub(crate) enum LockClass {
     /// Asking for a backup with *Create a backup now* (key 0): two asks at the same moment cannot
     /// both find no backup asked for that is not made yet.
     BackupAsks = 21,
+    /// The releases (key 0): a delete or a retire of a release and a change that names a release
+    /// are judged one after the other, so a release an issue names is never deleted, and two
+    /// releases of one name are never made in a project at the same moment (ADR-0049). Taken after
+    /// `IssueParents`: a new issue under a parent names its releases last.
+    Releases = 22,
     /// A server that runs on the database (key 0), held shared by every server for as long as it
     /// runs and taken alone by a restore (`db/server_hold.rs`, `ServerHold`). It lives with a connection of its
     /// own, never in a transaction, so it is outside the order of the others.
@@ -105,21 +110,22 @@ impl LockClass {
             Self::Workflows => 3,
             Self::IssueCodes => 4,
             Self::IssueParents => 5,
-            Self::IssueRelations => 6,
-            Self::Handles => 7,
-            Self::Uploads => 8,
-            Self::IssueFiles => 9,
-            Self::TextIndex => 10,
-            Self::SavedSearches => 11,
-            Self::WorkDays => 12,
-            Self::Agents => 13,
-            Self::IssueTaking => 14,
-            Self::AgentTaking => 15,
-            Self::Themes => 16,
-            Self::DataExports => 17,
-            Self::BackupAsks => 18,
-            Self::SecurityLog => 19,
-            Self::ServerRunning => 20,
+            Self::Releases => 6,
+            Self::IssueRelations => 7,
+            Self::Handles => 8,
+            Self::Uploads => 9,
+            Self::IssueFiles => 10,
+            Self::TextIndex => 11,
+            Self::SavedSearches => 12,
+            Self::WorkDays => 13,
+            Self::Agents => 14,
+            Self::IssueTaking => 15,
+            Self::AgentTaking => 16,
+            Self::Themes => 17,
+            Self::DataExports => 18,
+            Self::BackupAsks => 19,
+            Self::SecurityLog => 20,
+            Self::ServerRunning => 21,
         }
     }
 }
@@ -194,13 +200,14 @@ pub(crate) fn lock_key(id: [u8; 16]) -> i32 {
 mod tests {
     use super::*;
 
-    const ORDER: [LockClass; 20] = [
+    const ORDER: [LockClass; 21] = [
         LockClass::Migration,
         LockClass::Policy,
         LockClass::TagsAndLabels,
         LockClass::Workflows,
         LockClass::IssueCodes,
         LockClass::IssueParents,
+        LockClass::Releases,
         LockClass::IssueRelations,
         LockClass::Handles,
         LockClass::Uploads,

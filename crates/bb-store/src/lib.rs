@@ -52,6 +52,7 @@ mod policy;
 mod projects;
 mod relation_map;
 mod relations;
+mod releases;
 mod rows;
 mod runs;
 mod saved_searches;
@@ -387,6 +388,7 @@ mod test_support {
             due_date: None,
             estimated_time: None,
             time_left: None,
+            planned_for_release: None,
             reported_by: UserId::generate(source),
             created_at: at(1),
             updated_at: at(1),

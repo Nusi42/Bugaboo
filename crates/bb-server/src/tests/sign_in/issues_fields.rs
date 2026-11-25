@@ -75,13 +75,15 @@ async fn check_reader(
     // `closed_at` is there only while the issue is closed, which this one is not, and the labels
     // and the time spent are not read for the issue page: it has its own routes for them
     // (`labels` and `time_spent` are never there; a list has them when it asks).
+    // `planned_for_release` is there only while the issue is planned for a release, which this
+    // one is not.
     for (member, _) in field_members() {
         if hidden.contains(member) {
             assert!(
                 issue.get(*member).is_none(),
                 "{name}: `{member}` in the issue"
             );
-        } else if !["closed_at", "labels", "time_spent"].contains(member) {
+        } else if !["closed_at", "labels", "time_spent", "planned_for_release"].contains(member) {
             assert!(
                 issue.get(*member).is_some(),
                 "{name}: `{member}` not in the issue"
@@ -113,7 +115,7 @@ async fn check_reader(
     // The members that may be seen are in the list when asked for.
     for (member, _) in field_members()
         .iter()
-        .filter(|(m, _)| !hidden.contains(m) && *m != "closed_at")
+        .filter(|(m, _)| !hidden.contains(m) && !["closed_at", "planned_for_release"].contains(m))
     {
         let list = reader
             .send(

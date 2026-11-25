@@ -482,20 +482,15 @@ pub(super) async fn new_under(
     given: &Handed,
     parent: Option<IssueId>,
 ) -> Result<CreateIssue, AppError> {
+    let issue_type = a_type(world).await.map_err(AppError::Internal)?;
     Ok(CreateIssue {
-        session_token: given.key.clone(),
-        project: given.project.to_string(),
-        issue_type: a_type(world).await.map_err(AppError::Internal)?,
-        title: "A step of the work".to_owned(),
-        description: None,
-        status: None,
-        priority: None,
-        assigned_to: None,
-        start_date: None,
-        due_date: None,
-        estimated_time: None,
-        fields: std::collections::BTreeMap::new(),
         parent: parent.map(|issue| issue.to_string()),
+        ..CreateIssue::of(
+            &given.key,
+            &given.project.to_string(),
+            issue_type,
+            "A step of the work",
+        )
     })
 }
 
@@ -658,19 +653,13 @@ async fn ai_31_a_new_issue_under_a_parent_is_judged_like_the_change_of_a_parent(
     let project = a_project(&world, "DEEP").await?;
     let issue_type = a_type(&world).await.map_err(AppError::Internal)?;
     let make = |parent: Option<IssueId>| CreateIssue {
-        session_token: token(&world),
-        project: project.to_string(),
-        issue_type,
-        title: "A step down".to_owned(),
-        description: None,
-        status: None,
-        priority: None,
-        assigned_to: None,
-        start_date: None,
-        due_date: None,
-        estimated_time: None,
-        fields: std::collections::BTreeMap::new(),
         parent: parent.map(|issue| issue.to_string()),
+        ..CreateIssue::of(
+            &token(&world),
+            &project.to_string(),
+            issue_type,
+            "A step down",
+        )
     };
     let mut deepest = create_issue(&world.ctx(), make(None))
         .await?

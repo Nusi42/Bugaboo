@@ -36,6 +36,8 @@ fn change(key: &str, issue_id: IssueId, version: i64) -> ChangeIssue {
         time_left: None,
         assigned_to: None,
         fields: std::collections::BTreeMap::default(),
+        found_in_release: None,
+        planned_for_release: None,
     }
 }
 
@@ -659,6 +661,8 @@ async fn ai_32_a_rule_that_creates_in_a_project_gives_top_level_issues_with_no_m
         estimated_time: None,
         fields: std::collections::BTreeMap::new(),
         parent: None,
+        found_in_release: None,
+        planned_for_release: None,
     };
     create_issue(&world.ctx(), input(None)).await?;
     // A member would need a hand-over that names it; a rule gives none.

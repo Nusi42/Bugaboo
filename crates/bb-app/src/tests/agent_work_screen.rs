@@ -23,6 +23,7 @@ fn listing(session: &str, project: &impl ToString, agent: bool) -> IssuesQuery {
         project: project.to_string(),
         assigned_to: false,
         labels: false,
+        releases: crate::issues::WithReleases::No,
         agent: agent.into(),
         time: false,
         cursor: None,

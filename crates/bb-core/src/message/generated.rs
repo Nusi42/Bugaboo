@@ -1175,6 +1175,9 @@ pub const AI_TOOL_HAND_OVER_WORK: MessageKey = MessageKey::new("ai-tool.hand-ove
 /// The message `ai-tool.list-projects`.
 pub const AI_TOOL_LIST_PROJECTS: MessageKey = MessageKey::new("ai-tool.list-projects");
 
+/// The message `ai-tool.list-releases`.
+pub const AI_TOOL_LIST_RELEASES: MessageKey = MessageKey::new("ai-tool.list-releases");
+
 /// The message `ai-tool.log-time`.
 pub const AI_TOOL_LOG_TIME: MessageKey = MessageKey::new("ai-tool.log-time");
 
@@ -2548,6 +2551,18 @@ pub const ERROR_RELATION_DEPENDENCY_LOOP: MessageKey =
 
 /// The message `error.relation.exists`.
 pub const ERROR_RELATION_EXISTS: MessageKey = MessageKey::new("error.relation.exists");
+
+/// The message `error.release.in-use`.
+pub const ERROR_RELEASE_IN_USE: MessageKey = MessageKey::new("error.release.in-use");
+
+/// The message `error.release.name-taken`.
+pub const ERROR_RELEASE_NAME_TAKEN: MessageKey = MessageKey::new("error.release.name-taken");
+
+/// The message `error.release.not-offered`.
+pub const ERROR_RELEASE_NOT_OFFERED: MessageKey = MessageKey::new("error.release.not-offered");
+
+/// The message `error.release.reason-needed`.
+pub const ERROR_RELEASE_REASON_NEEDED: MessageKey = MessageKey::new("error.release.reason-needed");
 
 /// The message `error.request.bad-cursor`.
 pub const ERROR_REQUEST_BAD_CURSOR: MessageKey = MessageKey::new("error.request.bad-cursor");
@@ -5697,6 +5712,9 @@ pub const PERMISSION_MANAGE_LABELS: MessageKey = MessageKey::new("permission.man
 /// The message `permission.manage-people`.
 pub const PERMISSION_MANAGE_PEOPLE: MessageKey = MessageKey::new("permission.manage-people");
 
+/// The message `permission.manage-releases`.
+pub const PERMISSION_MANAGE_RELEASES: MessageKey = MessageKey::new("permission.manage-releases");
+
 /// The message `permission.manage-roles`.
 pub const PERMISSION_MANAGE_ROLES: MessageKey = MessageKey::new("permission.manage-roles");
 
@@ -6675,6 +6693,10 @@ pub const PERSONAL_FIELD_ISSUE_ID: MessageKey = MessageKey::new("personal-field.
 pub const PERSONAL_FIELD_ISSUE_ISSUE_TYPE: MessageKey =
     MessageKey::new("personal-field.issue.issue-type");
 
+/// The message `personal-field.issue.planned-for-release`.
+pub const PERSONAL_FIELD_ISSUE_PLANNED_FOR_RELEASE: MessageKey =
+    MessageKey::new("personal-field.issue.planned-for-release");
+
 /// The message `personal-field.issue.priority`.
 pub const PERSONAL_FIELD_ISSUE_PRIORITY: MessageKey =
     MessageKey::new("personal-field.issue.priority");
@@ -7158,6 +7180,52 @@ pub const PERSONAL_FIELD_RELATION_KIND: MessageKey =
 
 /// The message `personal-field.relation.to`.
 pub const PERSONAL_FIELD_RELATION_TO: MessageKey = MessageKey::new("personal-field.relation.to");
+
+/// The message `personal-field.release.changed-at`.
+pub const PERSONAL_FIELD_RELEASE_CHANGED_AT: MessageKey =
+    MessageKey::new("personal-field.release.changed-at");
+
+/// The message `personal-field.release.changed-by`.
+pub const PERSONAL_FIELD_RELEASE_CHANGED_BY: MessageKey =
+    MessageKey::new("personal-field.release.changed-by");
+
+/// The message `personal-field.release.deleted-at`.
+pub const PERSONAL_FIELD_RELEASE_DELETED_AT: MessageKey =
+    MessageKey::new("personal-field.release.deleted-at");
+
+/// The message `personal-field.release.id`.
+pub const PERSONAL_FIELD_RELEASE_ID: MessageKey = MessageKey::new("personal-field.release.id");
+
+/// The message `personal-field.release.made-at`.
+pub const PERSONAL_FIELD_RELEASE_MADE_AT: MessageKey =
+    MessageKey::new("personal-field.release.made-at");
+
+/// The message `personal-field.release.made-by`.
+pub const PERSONAL_FIELD_RELEASE_MADE_BY: MessageKey =
+    MessageKey::new("personal-field.release.made-by");
+
+/// The message `personal-field.release.name`.
+pub const PERSONAL_FIELD_RELEASE_NAME: MessageKey = MessageKey::new("personal-field.release.name");
+
+/// The message `personal-field.release.project`.
+pub const PERSONAL_FIELD_RELEASE_PROJECT: MessageKey =
+    MessageKey::new("personal-field.release.project");
+
+/// The message `personal-field.release.release-date`.
+pub const PERSONAL_FIELD_RELEASE_RELEASE_DATE: MessageKey =
+    MessageKey::new("personal-field.release.release-date");
+
+/// The message `personal-field.release.released-on`.
+pub const PERSONAL_FIELD_RELEASE_RELEASED_ON: MessageKey =
+    MessageKey::new("personal-field.release.released-on");
+
+/// The message `personal-field.release.state`.
+pub const PERSONAL_FIELD_RELEASE_STATE: MessageKey =
+    MessageKey::new("personal-field.release.state");
+
+/// The message `personal-field.release.version`.
+pub const PERSONAL_FIELD_RELEASE_VERSION: MessageKey =
+    MessageKey::new("personal-field.release.version");
 
 /// The message `personal-field.review.answer`.
 pub const PERSONAL_FIELD_REVIEW_ANSWER: MessageKey =
@@ -7833,6 +7901,9 @@ pub const PERSONAL_KIND_QUESTION: MessageKey = MessageKey::new("personal-kind.qu
 /// The message `personal-kind.relation`.
 pub const PERSONAL_KIND_RELATION: MessageKey = MessageKey::new("personal-kind.relation");
 
+/// The message `personal-kind.release`.
+pub const PERSONAL_KIND_RELEASE: MessageKey = MessageKey::new("personal-kind.release");
+
 /// The message `personal-kind.review`.
 pub const PERSONAL_KIND_REVIEW: MessageKey = MessageKey::new("personal-kind.review");
 
@@ -8368,6 +8439,15 @@ pub const RELATION_MAP_HAS_SUB_ISSUE: MessageKey = MessageKey::new("relation-map
 
 /// The message `relation-map.part-of`.
 pub const RELATION_MAP_PART_OF: MessageKey = MessageKey::new("relation-map.part-of");
+
+/// The message `release-state.planned`.
+pub const RELEASE_STATE_PLANNED: MessageKey = MessageKey::new("release-state.planned");
+
+/// The message `release-state.released`.
+pub const RELEASE_STATE_RELEASED: MessageKey = MessageKey::new("release-state.released");
+
+/// The message `release-state.retired`.
+pub const RELEASE_STATE_RETIRED: MessageKey = MessageKey::new("release-state.retired");
 
 /// The message `removal.deleted-now`.
 pub const REMOVAL_DELETED_NOW: MessageKey = MessageKey::new("removal.deleted-now");
@@ -15489,6 +15569,15 @@ pub fn error_relation_kind_date_effect_most(most: impl std::fmt::Display) -> Mes
     Message::with_arguments(
         MessageKey::new("error.relation-kind.date-effect-most"),
         vec![("most", Value::Text(most.to_string()))],
+    )
+}
+
+/// The message `error.release.too-many`.
+#[must_use]
+pub fn error_release_too_many(most: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("error.release.too-many"),
+        vec![("most", Value::Number(most))],
     )
 }
 

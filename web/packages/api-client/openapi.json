@@ -16267,6 +16267,344 @@
         "x-permission": "move-projects"
       }
     },
+    "/api/v1/projects/{project}/releases": {
+      "get": {
+        "tags": ["releases"],
+        "summary": "The releases offered in a project: those made in it and in the projects above it that the\nperson sees, retired ones too, by *Release date* (none last), then by name. Needs only seeing\nthe project.",
+        "operationId": "listReleases",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID or the short name of the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/Fields"
+          },
+          {
+            "$ref": "#/components/parameters/Cursor"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "description": "How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`.",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The releases.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ReleaseItem"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "see-projects"
+      },
+      "post": {
+        "tags": ["releases"],
+        "summary": "Makes a release in the project, in the state *Planned*. Needs *Manage releases* there.",
+        "operationId": "createRelease",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID or the short name of the project.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewReleaseBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The release.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "manage-releases"
+      }
+    },
+    "/api/v1/projects/{project}/releases/{release}": {
+      "delete": {
+        "tags": ["releases"],
+        "summary": "Puts a release that no issue names into the trash (*Undo* takes it back). A release that an\nissue names is refused (`release.in-use`) and is retired instead; the refusal says nothing of\nwhich issues or how many. Needs *Manage releases* in its project.",
+        "operationId": "deleteRelease",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID or the short name of the project it was made in.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "release",
+            "in": "path",
+            "description": "The ID of the release.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The release, in the trash.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "manage-releases"
+      },
+      "patch": {
+        "tags": ["releases"],
+        "summary": "Renames a release, gives it another *Release date*, marks it *Released*, takes it back to\n*Planned* (with a reason) or retires it. Needs *Manage releases* in its project.",
+        "operationId": "changeRelease",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID or the short name of the project it was made in.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "release",
+            "in": "path",
+            "description": "The ID of the release.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeReleaseBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The release as it is now.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "manage-releases"
+      }
+    },
+    "/api/v1/projects/{project}/releases/{release}/restore": {
+      "post": {
+        "tags": ["releases"],
+        "summary": "Takes a release out of the trash (*Undo*). Needs *Manage releases* in its project.",
+        "operationId": "restoreRelease",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "path",
+            "description": "The ID or the short name of the project it was made in.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "release",
+            "in": "path",
+            "description": "The ID of the release.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The release, out of the trash.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseItem"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "manage-releases"
+      }
+    },
     "/api/v1/projects/{project}/settings": {
       "get": {
         "tags": ["settings"],
@@ -23968,9 +24306,20 @@
               "type": "string"
             }
           },
+          "found_in_release": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the releases it was *Found in* from now on: all of them, not the ones to add. A\nrelease it names already stays; a new one has to be offered in its project and not retired."
+          },
           "issue_type": {
             "type": ["string", "null"],
             "description": "A new issue type; a retired type is refused."
+          },
+          "planned_for_release": {
+            "type": ["string", "null"],
+            "description": "The ID of the release it is *Planned for*; `null` takes it away."
           },
           "priority": {
             "oneOf": [
@@ -24203,6 +24552,43 @@
             "description": "The version the person looked at."
           }
         }
+      },
+      "ChangeReleaseBody": {
+        "type": "object",
+        "description": "What to change about a release: what is left out stays as it is.",
+        "required": ["version"],
+        "properties": {
+          "name": {
+            "type": ["string", "null"],
+            "description": "A new name."
+          },
+          "reason": {
+            "type": ["string", "null"],
+            "description": "Why a release goes back from *Released* to *Planned*: needed then, kept in the history."
+          },
+          "release_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "A new *Release date* (`2026-11-14`); `null` takes it away."
+          },
+          "state": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReleaseState",
+                "description": "A new state: *Released* keeps the day as *Released on*, *Retired* stops offering it for new\nchoices."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The version the person looked at."
+          }
+        },
+        "additionalProperties": false
       },
       "ChangeRoleBody": {
         "type": "object",
@@ -25824,6 +26210,11 @@
           "issue.type-not-offered",
           "issue.start-after-due",
           "label.not-offered",
+          "release.name-taken",
+          "release.not-offered",
+          "release.in-use",
+          "release.reason-needed",
+          "release.too-many",
           "workflow.no-such-change",
           "workflow.not-for-you",
           "workflow.not-named",
@@ -27629,6 +28020,13 @@
             "description": "*Estimated time*, in whole minutes; left out while it has none.",
             "minimum": 0
           },
+          "found_in_release": {
+            "type": ["array", "null"],
+            "items": {
+              "$ref": "#/components/schemas/ReleaseRefBody"
+            },
+            "description": "*Found in release*: the releases it was found in, in the order given, those of projects\nthe reader sees."
+          },
           "id": {
             "type": ["string", "null"],
             "description": "The internal ID, which never changes."
@@ -27656,6 +28054,17 @@
               {
                 "$ref": "#/components/schemas/OwnValues",
                 "description": "The values of its own fields, by the key of the field. Only the fields the person may see\non an issue of this type."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "planned_for_release": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReleaseRefBody",
+                "description": "*Planned for release*; left out while it names none the reader may see."
               },
               {
                 "type": "null"
@@ -28907,6 +29316,17 @@
               "type": "string"
             }
           },
+          "found_in_release": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the releases the issues were *Found in* from now on: all of them, not the ones to\nadd. A release that is not offered where an issue is leaves that issue alone."
+          },
+          "planned_for_release": {
+            "type": ["string", "null"],
+            "description": "The ID of the release the issues are *Planned for*; `null` takes it away."
+          },
           "priority": {
             "oneOf": [
               {
@@ -30067,6 +30487,13 @@
               "type": "string"
             }
           },
+          "found_in_release": {
+            "type": ["array", "null"],
+            "items": {
+              "type": "string"
+            },
+            "description": "The IDs of the releases it was *Found in*: each offered in its project and not retired."
+          },
           "issue_type": {
             "type": "string",
             "description": "The ID of its issue type; a retired type takes no new issues."
@@ -30074,6 +30501,10 @@
           "parent": {
             "type": ["string", "null"],
             "description": "The issue it is created under as a sub-issue (its ID as people write it), in the project of\nthat issue. An issue of its own when left out."
+          },
+          "planned_for_release": {
+            "type": ["string", "null"],
+            "description": "The ID of the release it is *Planned for*: offered in its project and not retired."
           },
           "priority": {
             "oneOf": [
@@ -30325,6 +30756,23 @@
             "description": "What the issue it starts from reads (*blocks*)."
           }
         }
+      },
+      "NewReleaseBody": {
+        "type": "object",
+        "description": "A release to make.",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "What it is called, unique within its project."
+          },
+          "release_date": {
+            "type": ["string", "null"],
+            "format": "date",
+            "description": "Its *Release date* (`2026-11-14`). None when left out."
+          }
+        },
+        "additionalProperties": false
       },
       "NewRoleBody": {
         "type": "object",
@@ -31565,6 +32013,24 @@
           }
         }
       },
+      "Page_ReleaseItem": {
+        "type": "object",
+        "description": "One page of a list: its items, and where the next page starts.",
+        "required": ["items", "next_cursor"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReleaseItem"
+            },
+            "description": "The items of this page."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page; `null` on the last page."
+          }
+        }
+      },
       "Page_RoleItem": {
         "type": "object",
         "description": "One page of a list: its items, and where the next page starts.",
@@ -32038,6 +32504,7 @@
           "manage-workflows",
           "manage-fields",
           "manage-labels",
+          "manage-releases",
           "decide-roles",
           "decide-what-roles-see",
           "check-access",
@@ -33542,6 +34009,7 @@
           "person",
           "project",
           "relation",
+          "release",
           "layout",
           "relation-kind",
           "workflow",
@@ -34736,6 +35204,21 @@
               "value": {
                 "type": "string",
                 "description": "A choice of an own field, by its ID."
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A release, by its ID; its name is the name of the group.",
+            "required": ["value", "type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["release"]
+              },
+              "value": {
+                "type": "string",
+                "description": "A release, by its ID; its name is the name of the group."
               }
             }
           },

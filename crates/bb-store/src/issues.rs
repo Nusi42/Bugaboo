@@ -54,34 +54,35 @@ fn read_type(row: &Row) -> Result<IssueType, StoreError> {
     })
 }
 
+/// The columns of an issue, in the order a read and an insert name them.
+const ISSUE_COLUMNS: [IssueRow; 19] = [
+    IssueRow::Id,
+    IssueRow::Project,
+    IssueRow::IssueType,
+    IssueRow::Code,
+    IssueRow::Title,
+    IssueRow::Description,
+    IssueRow::Status,
+    IssueRow::Priority,
+    IssueRow::StartDate,
+    IssueRow::DueDate,
+    IssueRow::EstimatedTime,
+    IssueRow::TimeLeft,
+    IssueRow::PlannedForRelease,
+    IssueRow::ReportedBy,
+    IssueRow::CreatedAt,
+    IssueRow::UpdatedAt,
+    IssueRow::ClosedAt,
+    IssueRow::DeletedAt,
+    IssueRow::Version,
+];
+
 pub(crate) fn issue_select() -> SelectStatement {
     let mut select = Query::select();
     select
         // Named with their table, so a statement that joins another table to the issues (the rows
         // of a board's cells) reads the same columns.
-        .columns(
-            [
-                IssueRow::Id,
-                IssueRow::Project,
-                IssueRow::IssueType,
-                IssueRow::Code,
-                IssueRow::Title,
-                IssueRow::Description,
-                IssueRow::Status,
-                IssueRow::Priority,
-                IssueRow::StartDate,
-                IssueRow::DueDate,
-                IssueRow::EstimatedTime,
-                IssueRow::TimeLeft,
-                IssueRow::ReportedBy,
-                IssueRow::CreatedAt,
-                IssueRow::UpdatedAt,
-                IssueRow::ClosedAt,
-                IssueRow::DeletedAt,
-                IssueRow::Version,
-            ]
-            .map(|column| (IssueRow::Table, column)),
-        )
+        .columns(ISSUE_COLUMNS.map(|column| (IssueRow::Table, column)))
         .from(IssueRow::Table);
     select
 }
@@ -116,6 +117,7 @@ pub(crate) fn read_issue(row: &Row) -> Result<Issue, StoreError> {
         due_date: read_day(row, IssueRow::DueDate)?,
         estimated_time: read_minutes(row, IssueRow::EstimatedTime)?,
         time_left: read_minutes(row, IssueRow::TimeLeft)?,
+        planned_for_release: row.optional_id(IssueRow::PlannedForRelease)?,
         reported_by: row.id::<UserId>(IssueRow::ReportedBy)?,
         created_at: row.time(IssueRow::CreatedAt)?,
         updated_at: row.time(IssueRow::UpdatedAt)?,
@@ -480,26 +482,7 @@ impl IssueStore for AuthStorage {
         let mut insert = Query::insert();
         insert
             .into_table(IssueRow::Table)
-            .columns([
-                IssueRow::Id,
-                IssueRow::Project,
-                IssueRow::IssueType,
-                IssueRow::Code,
-                IssueRow::Title,
-                IssueRow::Description,
-                IssueRow::Status,
-                IssueRow::Priority,
-                IssueRow::StartDate,
-                IssueRow::DueDate,
-                IssueRow::EstimatedTime,
-                IssueRow::TimeLeft,
-                IssueRow::ReportedBy,
-                IssueRow::CreatedAt,
-                IssueRow::UpdatedAt,
-                IssueRow::ClosedAt,
-                IssueRow::DeletedAt,
-                IssueRow::Version,
-            ])
+            .columns(ISSUE_COLUMNS)
             .values([
                 Expr::val(issue.id.stored()),
                 Expr::val(issue.project.stored()),
@@ -513,6 +496,7 @@ impl IssueStore for AuthStorage {
                 Expr::val(stored_day(issue.due_date)),
                 Expr::val(stored_minutes(issue.estimated_time)),
                 Expr::val(stored_minutes(issue.time_left)),
+                Expr::val(issue.planned_for_release.map(StoredId::stored)),
                 Expr::val(issue.reported_by.stored()),
                 Expr::val(to_micros(issue.created_at)),
                 Expr::val(to_micros(issue.updated_at)),
@@ -545,6 +529,10 @@ impl IssueStore for AuthStorage {
                 stored_minutes(issue.estimated_time),
             )
             .value(IssueRow::TimeLeft, stored_minutes(issue.time_left))
+            .value(
+                IssueRow::PlannedForRelease,
+                issue.planned_for_release.map(StoredId::stored),
+            )
             .value(IssueRow::ClosedAt, issue.closed_at.map(to_micros));
         counting_up(&mut update, issue.updated_at)
             .and_where(Expr::col(IssueRow::Id).eq(issue.id.stored()))

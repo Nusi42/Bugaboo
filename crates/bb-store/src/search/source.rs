@@ -23,8 +23,8 @@ use super::time::Clock;
 use crate::db::StoredId as _;
 use crate::fields::kind_text;
 use crate::schema::{
-    AgentRow, AssignedPersonRow, FieldValueRow, IssueLabelRow, IssueParentRow, IssueRow,
-    IssueTagRow, IssueWorkRow,
+    AgentRow, AssignedPersonRow, FieldValueRow, IssueFoundInRow, IssueLabelRow, IssueParentRow,
+    IssueRow, IssueTagRow, IssueWorkRow,
 };
 use crate::sight::sight_condition_as;
 
@@ -170,6 +170,8 @@ pub(super) enum Domain {
     Tag,
     /// A label by name.
     Label,
+    /// A release by name, sorted by its *Release date* (ADR-0049, decision 4).
+    Release,
     /// A whole number or a decimal; the number is the count of parts in one.
     Number(i64),
     /// A length of time, held in seconds.
@@ -300,6 +302,7 @@ pub(super) fn subject_of(
             ),
             Domain::Label,
         ),
+        T::FoundInRelease | T::PlannedForRelease => (release_subject(target), Domain::Release),
         T::Parent => (
             reading_the_other_end(
                 linked(
@@ -341,6 +344,19 @@ pub(super) fn subject_of(
         ),
         T::Agent | T::AgentState => agent_subject(target),
         T::Own { field, kind } => own_subject(field, kind, target.people_kind(), reach, sight),
+    }
+}
+
+/// What *Found in release* (the rows of the issue, any number) or *Planned for release* (a column
+/// of the issue) reads: the IDs of the releases.
+fn release_subject(target: FieldTarget) -> Subject {
+    if target == FieldTarget::FoundInRelease {
+        Subject::Linked(
+            Rows::keyed(IssueFoundInRow::Table, IssueFoundInRow::Issue),
+            Expr::col((IssueFoundInRow::Table, IssueFoundInRow::Release)),
+        )
+    } else {
+        Subject::Column(issue_column(IssueRow::PlannedForRelease))
     }
 }
 

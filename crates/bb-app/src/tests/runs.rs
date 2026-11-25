@@ -39,6 +39,8 @@ pub(super) fn priority_change(
         time_left: None,
         assigned_to: None,
         fields: std::collections::BTreeMap::new(),
+        found_in_release: None,
+        planned_for_release: None,
     }
 }
 

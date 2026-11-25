@@ -352,6 +352,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             },
             Member::Catalogue(Field::Tags) => self.tags_value(reading, value).await?,
             Member::Catalogue(Field::Labels) => self.labels_value(reading, value).await?,
+            Member::Catalogue(Field::FoundInRelease | Field::PlannedForRelease) => {
+                self.releases_value(reading, value).await?
+            }
             // A length of the issue is kept in whole minutes and worded like the length of an own
             // field, which the screens get in seconds.
             Member::Catalogue(Field::EstimatedTime | Field::TimeLeft) => value

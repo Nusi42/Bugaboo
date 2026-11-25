@@ -61,6 +61,8 @@ words! {
         GetIssue => "get_issue",
         /// List the projects the person may see.
         ListProjects => "list_projects",
+        /// List the releases offered in a project the person sees (ISS-08).
+        ListReleases => "list_releases",
         /// The issues assigned to the person.
         GetMyWork => "get_my_work",
         /// The relation map of an issue or of a search, as the person would see it (ISS-16).

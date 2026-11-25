@@ -30,6 +30,8 @@ pub(super) async fn an_assigned_issue(world: &World) -> Result<String, String> {
             estimated_time: Some(Minutes::new(480)),
             fields: std::collections::BTreeMap::new(),
             parent: None,
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await

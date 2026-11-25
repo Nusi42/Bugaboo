@@ -101,6 +101,8 @@ impl Maker<'_, '_> {
                     estimated_time: None,
                     fields: std::collections::BTreeMap::new(),
                     parent: None,
+                    found_in_release: None,
+                    planned_for_release: None,
                 },
             )
             .await,
@@ -217,6 +219,8 @@ impl Maker<'_, '_> {
                     time_left: None,
                     assigned_to: None,
                     fields: std::collections::BTreeMap::new(),
+                    found_in_release: None,
+                    planned_for_release: None,
                 },
             )
             .await,

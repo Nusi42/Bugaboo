@@ -106,6 +106,8 @@ async fn iss_09_a_move_on_an_old_version_is_stopped() -> Outcome {
             time_left: None,
             assigned_to: None,
             fields: BTreeMap::new(),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await?;
@@ -162,6 +164,8 @@ async fn iss_09_an_issue_with_a_value_the_other_project_has_no_field_for_stays()
             time_left: None,
             assigned_to: None,
             fields: BTreeMap::from([(field.id.to_string(), json!("Ada"))]),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await?;

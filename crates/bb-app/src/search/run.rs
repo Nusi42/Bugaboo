@@ -42,6 +42,8 @@ pub struct SearchQuery {
     pub limit: u32,
     /// Whether the labels of each issue are wanted: they are read only then, once for the page.
     pub labels: bool,
+    /// Whether the releases of each issue are wanted: they are read only then, once for the page.
+    pub releases: crate::issues::WithReleases,
     /// Whether the agent that works on each issue is wanted: read only then, once for the page.
     pub agent: WithAgent,
     /// Whether *Time spent* and the worked-out *Time left* of each issue are wanted: the time
@@ -369,6 +371,7 @@ async fn page_of<S: AuthStore + SearchStore>(
                 labels: query.labels,
                 agent: query.agent,
                 time: query.time,
+                releases: query.releases,
             },
         )
         .await?;

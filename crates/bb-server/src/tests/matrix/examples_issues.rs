@@ -90,6 +90,8 @@ pub(super) async fn a_planned_issue(
                 estimated_time: None,
                 fields: std::collections::BTreeMap::new(),
                 parent: None,
+                found_in_release: None,
+                planned_for_release: None,
             },
         )
         .await
@@ -254,7 +256,12 @@ pub(super) async fn issue_request(
                 .map_err(|error| error.to_string())?;
             ("POST", format!("/api/v1/issues/{key}/restore"), None)
         }
-        _ => return Ok(search_request(operation)),
+        _ => {
+            return match search_request(operation) {
+                Some(found) => Ok(Some(found)),
+                None => super::examples_releases::release_request(fixture, operation).await,
+            };
+        }
     }))
 }
 

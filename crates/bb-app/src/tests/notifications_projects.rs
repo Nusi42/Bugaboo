@@ -69,6 +69,8 @@ async fn bob_changes(
             time_left: None,
             assigned_to: None,
             fields: std::collections::BTreeMap::new(),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await

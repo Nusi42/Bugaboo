@@ -222,6 +222,8 @@ async fn sec_03_a_subject_in_use_on_an_issue_the_reader_reads_is_known() -> Outc
             time_left: None,
             assigned_to: None,
             fields: std::collections::BTreeMap::new(),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await?;

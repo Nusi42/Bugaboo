@@ -69,7 +69,7 @@ const TEAM_MEMBER: [Permission; 4] = [
 ];
 
 /// What a Project lead has beyond a Team member.
-const PROJECT_LEAD: [Permission; 10] = [
+const PROJECT_LEAD: [Permission; 11] = [
     Permission::CreateSubProjects,
     Permission::MoveProjects,
     Permission::ChangeProjectSettings,
@@ -79,6 +79,7 @@ const PROJECT_LEAD: [Permission; 10] = [
     Permission::EditAnyway,
     Permission::ManageIssueTypes,
     Permission::ManageLabels,
+    Permission::ManageReleases,
     Permission::ManageWorkflows,
 ];
 

@@ -18,6 +18,7 @@ use bb_policy::{Authorized, Evaluation, Permission, Place};
 
 use super::fields::{Given, clean_title, ensure_dates_in_order, ensure_may_change};
 use super::ids::{code_plan_in, new_code_in};
+use super::releases::IssueReleases;
 use super::types::{CreateIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
@@ -43,12 +44,20 @@ struct NewIssue {
     assigned_people: Vec<UserId>,
     /// The values of own fields it starts with: asked for, or the defaults.
     own: PlannedValues,
+    /// The releases it names (ISS-08).
+    releases: IssueReleases,
 }
 
 impl NewIssue {
     /// What making the issue records: the changes of its event, which its preview answers too.
     fn changes(&self) -> Vec<FieldChange> {
-        crate::event_members::issue_created(&self.issue, &self.assigned_people, self.own.changes())
+        let mut changes = crate::event_members::issue_created(
+            &self.issue,
+            &self.assigned_people,
+            self.own.changes(),
+        );
+        changes.extend(self.releases.created(&self.issue));
+        changes
     }
 
     /// The rows of the people the issue is assigned to.
@@ -215,6 +224,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             due_date: input.due_date,
             estimated_time: input.estimated_time,
             time_left: None,
+            planned_for_release: None,
             reported_by: actor.person.id,
             created_at: now,
             updated_at: now,
@@ -223,6 +233,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             version: FIRST_VERSION,
         };
         ensure_dates_in_order(&issue)?;
+        let mut issue = issue;
+        // Boxed: only an issue made with a release reads them, and the future stays small.
+        let releases =
+            Box::pin(self.releases_of_new(actor, &item.chain, &mut issue, input)).await?;
         // The parent and what an agent may do under it are judged here, so the preview and the
         // real call refuse alike.
         let parent = self.parent_for_create(actor, input, project.id).await?;
@@ -233,6 +247,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 issue,
                 assigned_people,
                 own,
+                releases,
             },
             parent,
         ))
@@ -279,9 +294,14 @@ pub async fn create_issue<S: AuthStore>(
     input: CreateIssue,
 ) -> Result<Authorized<IssueView>, AppError> {
     let actor = ctx.actor(&input.session_token).await?;
-    let (access, new, parent) = ctx.plan_new_issue(&actor, &input).await?;
+    // Boxed: the plan reads much, and the future of every caller stays small.
+    let (access, new, parent) = Box::pin(ctx.plan_new_issue(&actor, &input)).await?;
     let (id, people) = (new.issue.id, new.people());
     let own_writes = new.own.writes();
+    let releases = new
+        .releases
+        .clone()
+        .into_write(id, (None, new.issue.planned_for_release));
     let mut changes = new.changes();
     changes.extend(parent_change(parent));
     let event = ctx.event(by(actor.person.id), entity(RecordKind::Issue, id), changes)?;
@@ -292,6 +312,7 @@ pub async fn create_issue<S: AuthStore>(
         let (stopped, mut source) = (why.clone(), ctx.owned_ids());
         let (issue, people) = (new.issue.clone(), people.clone());
         let own_writes = own_writes.clone();
+        let releases = releases.clone();
         let result = ctx
             .store()
             .record_change(&event, move |transaction| {
@@ -320,6 +341,9 @@ pub async fn create_issue<S: AuthStore>(
                     if let Some(parent) = parent {
                         put_under::<S>(transaction, &issue, parent, &stopped).await?;
                     }
+                    releases
+                        .write_in::<S>(transaction, issue.id, &stopped)
+                        .await?;
                     for (field, cells) in &own_writes {
                         S::put_field_value(
                             transaction,

@@ -197,7 +197,7 @@ const ORGANIZATION_ONLY: [Permission; 10] = [
 /// access keys and M3-Q6): inviting people, deciding who has which role, changing organization
 /// settings, taking over somebody's editing, the work settings, other people's working hours and
 /// work times, and other people's data stay in the app.
-const NOT_FOR_KEYS: [Permission; 17] = [
+const NOT_FOR_KEYS: [Permission; 18] = [
     Permission::ManageInvitations,
     Permission::ManagePeople,
     Permission::ManageGroups,
@@ -209,6 +209,7 @@ const NOT_FOR_KEYS: [Permission; 17] = [
     Permission::ManageIssueTypes,
     Permission::ManageFields,
     Permission::ManageLabels,
+    Permission::ManageReleases,
     Permission::ManageWorkflows,
     Permission::SeeWorkingHoursOfOthers,
     Permission::ChangeWorkingHoursOfOthers,
@@ -277,8 +278,8 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
         CheckAccess, Comment, CreateAgents, CreateIssues, CreateProjects, CreateSubProjects,
         DecideRoles, DecideWhatRolesSee, DeleteIssues, DownloadSomeonesData, EditAnyway,
         EnterWorkTimesForOthers, ManageFields, ManageGroups, ManageInvitations, ManageIssueTypes,
-        ManageLabels, ManagePeople, ManageRoles, ManageWorkflows, MoveIssues, MoveProjects,
-        RemovePeople, SeeIssues, SeeProjects, SeeStatus, ShareSearches,
+        ManageLabels, ManagePeople, ManageReleases, ManageRoles, ManageWorkflows, MoveIssues,
+        MoveProjects, RemovePeople, SeeIssues, SeeProjects, SeeStatus, ShareSearches,
     };
     match role {
         StartingRole::Administrator => BTreeSet::from([
@@ -301,6 +302,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             ManageIssueTypes,
             ManageFields,
             ManageLabels,
+            ManageReleases,
             ManageWorkflows,
             DecideRoles,
             DecideWhatRolesSee,
@@ -333,6 +335,7 @@ fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
             EditAnyway,
             ManageIssueTypes,
             ManageLabels,
+            ManageReleases,
             ManageWorkflows,
             DecideRoles,
             DecideWhatRolesSee,

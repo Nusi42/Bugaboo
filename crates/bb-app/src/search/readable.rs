@@ -405,9 +405,13 @@ const fn catalogue_target(field: Field) -> Option<(FieldTarget, FieldKind)> {
         Field::EstimatedTime => Some((FieldTarget::EstimatedTime, FieldKind::Duration)),
         Field::TimeLeft => Some((FieldTarget::TimeLeft, FieldKind::Duration)),
         Field::TimeSpent => Some((FieldTarget::TimeSpent, FieldKind::Duration)),
+        // A release by its name as the person sees it, resolved like a status (ADR-0049, decision
+        // 4).
+        Field::FoundInRelease => Some((FieldTarget::FoundInRelease, FieldKind::Choice)),
+        Field::PlannedForRelease => Some((FieldTarget::PlannedForRelease, FieldKind::Choice)),
         // The time factor is never searched, sorted or grouped by (ADR-0030, amendment M8): its word
         // is reserved and stands for nothing a search can ask.
-        Field::PlannedForRelease | Field::FoundInRelease | Field::TimeFactor => None,
+        Field::TimeFactor => None,
     }
 }
 
@@ -475,7 +479,11 @@ fn catalogue_field(field: Field, kind: FieldKind, sources: &Sources) -> SearchFi
     let word = field.search_word();
     let found = match field {
         // A status, tags and labels: any number of values with no order among them.
-        Field::Status | Field::Labels | Field::Tags => SearchField::unordered(&word),
+        Field::Status
+        | Field::Labels
+        | Field::Tags
+        | Field::FoundInRelease
+        | Field::PlannedForRelease => SearchField::unordered(&word),
         _ => SearchField::new(&word, kind),
     };
     let choices = match field {

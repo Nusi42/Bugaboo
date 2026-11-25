@@ -86,6 +86,8 @@ pub(crate) enum SearchGroupKeyBody {
     IssueType(String),
     /// A choice of an own field, by its ID.
     Choice(String),
+    /// A release, by its ID; its name is the name of the group (ISS-08).
+    Release(String),
     /// A priority.
     Priority(Priority),
     /// A status group.
@@ -217,6 +219,7 @@ pub(super) fn group_key(key: ShownKey) -> SearchGroupKeyBody {
             GroupKey::Project(id) => SearchGroupKeyBody::Project(id.to_string()),
             GroupKey::IssueType(id) => SearchGroupKeyBody::IssueType(id.to_string()),
             GroupKey::Choice(id) => SearchGroupKeyBody::Choice(id.to_string()),
+            GroupKey::Release(id) => SearchGroupKeyBody::Release(id.to_string()),
             GroupKey::Priority(each) => SearchGroupKeyBody::Priority(each),
             GroupKey::StatusGroup(each) => SearchGroupKeyBody::StatusGroup(each),
             GroupKey::Length(range) => SearchGroupKeyBody::Length(SearchLengthRangeBody {
@@ -336,6 +339,7 @@ async fn search_issues(
                 cursor,
                 limit: params.limit(),
                 labels: params.asks_for(&ISSUE_FIELDS, "labels"),
+                releases: super::issue_item::asks_for_releases(&params).into(),
                 agent: params.asks_for(&ISSUE_FIELDS, "agent_work").into(),
                 time: super::issues::asks_for_time(&params),
             },

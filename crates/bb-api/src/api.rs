@@ -95,6 +95,7 @@ mod projects;
 mod projects_move;
 mod relation_map;
 mod relations;
+mod releases;
 mod roles;
 mod runs;
 mod saved_searches;
@@ -219,6 +220,7 @@ where
         .merge(timeline_factor::routes())
         .merge(relations::routes())
         .merge(relation_map::routes(limits))
+        .merge(releases::routes())
         .merge(tags::routes())
         .merge(many_changes::routes())
         .merge(runs::routes())

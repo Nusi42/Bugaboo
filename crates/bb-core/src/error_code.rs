@@ -16,6 +16,7 @@ use serde::Serialize;
 
 use crate::message::{Message, MessageKey, Value};
 use crate::paging::{PAGE_SIZE_LEAST, PAGE_SIZE_MAX};
+use crate::project_release::FOUND_IN_RELEASES_MAX;
 use crate::relation::DATE_EFFECT_KINDS_MOST;
 use crate::theme::{PERSONAL_THEMES_MOST, THEMES_FOR_EVERYONE_MOST};
 use crate::time::{MINUTES_PER_HOUR, TIME_ENTRY_MINUTES_MAX, TIME_ENTRY_MINUTES_MIN};
@@ -145,6 +146,19 @@ error_codes! {
     IssueStartAfterDue => ("issue.start-after-due", 400),
     /// The project does not offer the group that label is in (TAG-02).
     LabelNotOffered => ("label.not-offered", 409),
+    /// Another release of the same project has that name (ISS-08, ADR-0049, decision 1).
+    ReleaseNameTaken => ("release.name-taken", 409),
+    /// The release is not offered where the issue is, or is retired (ISS-08, ADR-0049, decision
+    /// 1).
+    ReleaseNotOffered => ("release.not-offered", 409),
+    /// Issues name the release, so it is retired instead of deleted. Says nothing of which issues
+    /// or how many (ADR-0049, decision 6).
+    ReleaseInUse => ("release.in-use", 409),
+    /// A release that goes back from *Released* to *Planned* needs a reason (ADR-0049, decision
+    /// 2).
+    ReleaseReasonNeeded => ("release.reason-needed", 400),
+    /// An issue names more releases in *Found in release* than it may (ADR-0049, decision 3).
+    ReleasesTooMany => ("release.too-many", 400),
     /// The workflow of the issue has no status change from the status the issue is in to that one
     /// (WF-01).
     WorkflowNoSuchChange => ("workflow.no-such-change", 409),
@@ -412,6 +426,7 @@ impl ErrorCode {
             Self::RelationKindDateEffectMost => vec![("most", most(DATE_EFFECT_KINDS_MOST))],
             Self::ThemesForEveryoneMost => vec![("most", most(THEMES_FOR_EVERYONE_MOST))],
             Self::PersonalThemesMost => vec![("most", most(PERSONAL_THEMES_MOST))],
+            Self::ReleasesTooMany => vec![("most", most(FOUND_IN_RELEASES_MAX))],
             Self::LimitOutOfRange => vec![
                 ("least", Value::Number(i64::from(PAGE_SIZE_LEAST))),
                 ("most", Value::Number(i64::from(PAGE_SIZE_MAX))),

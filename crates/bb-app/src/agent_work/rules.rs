@@ -603,11 +603,40 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map(|_| ())
             }
-            // *Found in release* is not stored on an issue yet, and *Duplicate of* is a relation of
-            // a kind the organization names: neither is applied before they are (M7-F72).
-            RuleField::DuplicateOf | RuleField::FoundInRelease => {
-                Err(ErrorCode::InvalidRequest.into())
+            // *Found in release* through the change of the issue like any field (ADR-0049): the
+            // release is added to the ones the issue names.
+            RuleField::FoundInRelease => {
+                let actor = self.actor(token).await?;
+                let (current, _) = self
+                    .visible_issue(&actor, &proposal.issue.to_string())
+                    .await?;
+                let release: bb_core::id::ReleaseId = proposal
+                    .after
+                    .as_str()
+                    .and_then(|text| text.parse().ok())
+                    .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
+                let mut found: Vec<bb_core::id::ReleaseId> = self
+                    .store()
+                    .found_in_of_issues(vec![current.id])
+                    .await
+                    .map_err(|error| internal::<S>(&error))?
+                    .into_iter()
+                    .map(|row| row.release)
+                    .collect();
+                found.push(release);
+                change_issue::<_, IssueView>(
+                    self,
+                    ChangeIssue {
+                        found_in_release: Some(found),
+                        ..ChangeIssue::of(token, proposal.issue.to_string(), current.version)
+                    },
+                )
+                .await
+                .map(|_| ())
             }
+            // *Duplicate of* is a relation of a kind the organization names: it is not applied
+            // before it is (M7-F72).
+            RuleField::DuplicateOf => Err(ErrorCode::InvalidRequest.into()),
         }
     }
 }

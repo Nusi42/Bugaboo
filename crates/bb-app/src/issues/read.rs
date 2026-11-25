@@ -205,6 +205,7 @@ pub async fn issues<S: AuthStore>(
         cursor: input.cursor,
         limit: input.limit,
         labels: input.labels,
+        releases: input.releases,
         agent: input.agent,
         time: input.time,
     };

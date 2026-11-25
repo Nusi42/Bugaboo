@@ -176,6 +176,17 @@ impl Compiler<'_> {
                         .flat_map(|(_, ids)| ids.iter().map(|id| id.stored())),
                 ),
             ),
+            Domain::Release => Self::among(
+                subject,
+                values(
+                    self.request
+                        .names
+                        .releases
+                        .iter()
+                        .filter(|(name, _)| *name == key)
+                        .flat_map(|(_, ids)| ids.iter().map(|id| id.stored())),
+                ),
+            ),
             Domain::Label => Self::among(
                 subject,
                 values(
@@ -221,7 +232,8 @@ impl Compiler<'_> {
             | Domain::Person(_)
             | Domain::Group
             | Domain::Tag
-            | Domain::Label => self.equals_named(domain, subject, operand),
+            | Domain::Label
+            | Domain::Release => self.equals_named(domain, subject, operand),
             Domain::YesNo => match key.as_str() {
                 bb_searchlang::YES => Cond::all().add(subject.eq(1_i64)),
                 bb_searchlang::NO => Cond::all().add(subject.eq(0_i64)),

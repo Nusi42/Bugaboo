@@ -19,7 +19,7 @@ use super::types::{ManyChange, ManyChangeAction, ManyChangeNote};
 use crate::access::Actor;
 use crate::auth::AppError;
 use crate::auth::{AuthStore, Ctx};
-use crate::issues::{ChangeIssue, member};
+use crate::issues::member;
 use crate::relations::{AddRelation, IssueLine, LineMaker};
 
 /// What one issue of the selection is asked.
@@ -122,7 +122,12 @@ const WORDED: [(ErrorCode, SkipReason); 14] = [
 /// Every other refusal says the single change would not take this issue as it is and has no word of
 /// its own. The codes are listed, so a new one is a decision made here: a test fails until it is in
 /// [`WORDED`] or in this list.
-const UNWORDED: [ErrorCode; 113] = [
+const UNWORDED: [ErrorCode; 118] = [
+    ErrorCode::ReleaseNameTaken,
+    ErrorCode::ReleaseNotOffered,
+    ErrorCode::ReleaseInUse,
+    ErrorCode::ReleaseReasonNeeded,
+    ErrorCode::ReleasesTooMany,
     ErrorCode::AgentWorkOpen,
     ErrorCode::AgentWorkNotReady,
     ErrorCode::AgentWorkBudget,
@@ -349,21 +354,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !self.has_chosen_change(change, issue).await? {
             return Ok(Judged::Skip(SkipReason::Workflow));
         }
-        let asked = ChangeIssue {
-            session_token: selection.token.to_owned(),
-            issue: issue.id.to_string(),
-            version: issue.version,
-            issue_type: None,
-            title: None,
-            status: change.status.clone(),
-            priority: change.priority,
-            start_date: change.start_date,
-            due_date: change.due_date,
-            estimated_time: change.estimated_time,
-            time_left: change.time_left,
-            assigned_to: change.assigned_to.clone(),
-            fields: change.fields.clone(),
-        };
+        let asked = change.of_issue(selection.token, issue.id.to_string(), issue.version);
         let (held, plan) = self.plan_issue_change(selection.actor, &asked).await?;
         let changes = plan.field_changes();
         Ok(if changes.is_empty() {

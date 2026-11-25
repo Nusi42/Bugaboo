@@ -9,7 +9,7 @@
 use std::collections::BTreeMap;
 
 use bb_core::given::SetTo;
-use bb_core::id::{LabelId, RelationKindId, RunId, UserId};
+use bb_core::id::{LabelId, RelationKindId, ReleaseId, RunId, UserId};
 use bb_core::issue::Priority;
 use bb_core::many_changes::{ManyChangeStatus, SkipReason};
 use bb_core::relation::Direction;
@@ -67,8 +67,43 @@ pub struct ManyChange {
     pub time_left: Option<SetTo<Minutes>>,
     /// The people the issues are assigned to from now on (all of them, not the ones to add).
     pub assigned_to: Option<Vec<UserId>>,
+    /// The releases the issues were *Found in* from now on (all of them, not the ones to add).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub found_in_release: Option<Vec<ReleaseId>>,
+    /// A new *Planned for release*; `SetTo::Nothing` takes it away.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "bb_core::given::deserialize"
+    )]
+    pub planned_for_release: Option<SetTo<ReleaseId>>,
     /// The values of own fields to set, by the key of the field; `null` takes a value away.
     pub fields: BTreeMap<String, Value>,
+}
+
+impl ManyChange {
+    /// The change of one issue of the selection that this asks for, on the version that was read:
+    /// the one place that turns a change of many issues into the change of one.
+    pub(crate) fn of_issue(
+        &self,
+        session_token: &str,
+        issue: String,
+        version: i64,
+    ) -> crate::issues::ChangeIssue {
+        crate::issues::ChangeIssue {
+            status: self.status.clone(),
+            priority: self.priority,
+            start_date: self.start_date,
+            due_date: self.due_date,
+            estimated_time: self.estimated_time,
+            time_left: self.time_left,
+            assigned_to: self.assigned_to.clone(),
+            found_in_release: self.found_in_release.clone(),
+            planned_for_release: self.planned_for_release,
+            fields: self.fields.clone(),
+            ..crate::issues::ChangeIssue::of(session_token, issue, version)
+        }
+    }
 }
 
 /// What is done to every issue of the selection.

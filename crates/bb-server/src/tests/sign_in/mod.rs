@@ -124,6 +124,7 @@ mod projects_review;
 mod relation_map_http;
 mod relations_http;
 mod relations_priority;
+mod releases_http;
 pub(crate) mod rig;
 mod roles_http;
 mod runs_http;

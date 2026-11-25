@@ -666,6 +666,7 @@ pub async fn timeline<S: AuthStore + SearchStore>(
                 labels: false,
                 agent: crate::issues::WithAgent::No,
                 time: true,
+                releases: crate::issues::WithReleases::No,
             },
         )
         .await?;

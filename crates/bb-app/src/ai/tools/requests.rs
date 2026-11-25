@@ -6,7 +6,7 @@
 use std::collections::BTreeMap;
 
 use bb_core::given::SetTo;
-use bb_core::id::{IssueTypeId, UserId};
+use bb_core::id::{IssueTypeId, ReleaseId, UserId};
 use bb_core::issue::Priority;
 use bb_core::time::Minutes;
 use bb_core::workflow::StatusKey;
@@ -37,6 +37,29 @@ fn people(ids: Option<&[String]>) -> Result<Option<Vec<UserId>>, AppError> {
         ids.iter()
             .map(|id| invalid("assigned_to", id.parse::<UserId>()))
             .collect::<Result<Vec<_>, _>>()
+    })
+    .transpose()
+}
+
+/// The releases of *Found in release* as a tool gives them, by their IDs.
+fn releases(ids: Option<&[String]>) -> Result<Option<Vec<ReleaseId>>, AppError> {
+    ids.map(|ids| {
+        ids.iter()
+            .map(|id| invalid("found_in_release", id.parse::<ReleaseId>()))
+            .collect::<Result<Vec<_>, _>>()
+    })
+    .transpose()
+}
+
+/// The release of *Planned for release* a tool sets: none leaves it as it is, an empty text takes
+/// it away.
+fn release_to_set(text: Option<&str>) -> Result<Option<SetTo<ReleaseId>>, AppError> {
+    text.map(|text| {
+        if text.is_empty() {
+            Ok(SetTo::Nothing)
+        } else {
+            invalid("planned_for_release", text.parse::<ReleaseId>()).map(SetTo::Value)
+        }
     })
     .transpose()
 }
@@ -81,6 +104,8 @@ pub(super) fn create_issue(run: &Run<'_>) -> Result<CreateIssue, AppError> {
             .map(|text| day("due_date", text))
             .transpose()?,
         estimated_time: None,
+        found_in_release: None,
+        planned_for_release: None,
         fields: BTreeMap::new(),
         parent: input.parent,
     })
@@ -102,6 +127,8 @@ pub(super) fn update_issue(run: &Run<'_>) -> Result<ChangeIssue, AppError> {
         estimated_time: None,
         time_left: None,
         assigned_to: people(input.assigned_to.as_deref())?,
+        found_in_release: releases(input.found_in_release.as_deref())?,
+        planned_for_release: release_to_set(input.planned_for_release.as_deref())?,
         fields: BTreeMap::new(),
     })
 }
@@ -122,6 +149,8 @@ pub(super) fn change_status(run: &Run<'_>) -> Result<ChangeIssue, AppError> {
         estimated_time: None,
         time_left: None,
         assigned_to: None,
+        found_in_release: None,
+        planned_for_release: None,
         fields: BTreeMap::new(),
     })
 }

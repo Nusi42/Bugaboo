@@ -11,7 +11,7 @@ use jiff::civil::Date;
 /// that sets one is read into. The one name for it outside this crate (`bb-api` has no `jiff`).
 pub type CalendarDay = Date;
 
-use crate::id::{IssueId, IssueTypeId, ProjectId, UserId};
+use crate::id::{IssueId, IssueTypeId, ProjectId, ReleaseId, UserId};
 use crate::message::{self, MessageKey};
 use crate::personal::Entity;
 use crate::readable_id::IssueCode;
@@ -255,6 +255,10 @@ pub struct Issue {
     /// worked out ([`crate::time::left`]).
     #[not_personal]
     pub time_left: Option<Minutes>,
+    /// *Planned for release*: the one release that should hold the fix (ADR-0049, decision 3);
+    /// none until somebody chooses one.
+    #[not_personal]
+    pub planned_for_release: Option<ReleaseId>,
     /// Who made it.
     #[personal(category = "activity", basis = "contract")]
     #[person(author)]

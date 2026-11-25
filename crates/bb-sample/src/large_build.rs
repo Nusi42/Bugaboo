@@ -354,6 +354,7 @@ impl Maker<'_> {
             due_date: dates.map(|(_, due, _)| due),
             estimated_time: dates.map(|(_, _, estimate)| estimate),
             time_left: None,
+            planned_for_release: None,
             reported_by: facts.reporter,
             created_at: facts.created_at,
             updated_at: facts.created_at,

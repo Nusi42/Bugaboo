@@ -63,6 +63,7 @@ routes = [
   "POST /api/v1/projects",
   "POST /api/v1/projects/{project}/assignments",
   "POST /api/v1/projects/{project}/issues",
+  "POST /api/v1/projects/{project}/releases",
   "POST /api/v1/projects/{project}/sub-projects",
   "POST /api/v1/roles",
   "POST /api/v1/roles/{role}/copy",
@@ -88,13 +89,15 @@ routes = [
   "DELETE /api/v1/relations/{relation}",
   "DELETE /api/v1/comments/{comment}",
   "POST /api/v1/comments/{comment}/restore",
+  "DELETE /api/v1/projects/{project}/releases/{release}",
+  "POST /api/v1/projects/{project}/releases/{release}/restore",
   "PUT /api/v1/issues/{issue}/follow",
   "DELETE /api/v1/issues/{issue}/follow",
   "DELETE /api/v1/roles/{role}",
   "PUT /api/v1/groups/{group}/members/{person}",
   "DELETE /api/v1/groups/{group}/members/{person}",
 ]
-reason = "Taking one row away (or putting one in) is the same however often it is asked and holds no text to lose: a second removal answers resource.not-found, and a row that is there already is there. An issue or a comment goes to the trash and comes back whole with its text, so the trash and its undo hold nothing to overwrite. A relation is one fact between two issues, and following an issue is a mark of one person: neither has text to lose."
+reason = "Taking one row away (or putting one in) is the same however often it is asked and holds no text to lose: a second removal answers resource.not-found, and a row that is there already is there. An issue, a comment or a release goes to the trash and comes back whole with its text, so the trash and its undo hold nothing to overwrite. A relation is one fact between two issues, and following an issue is a mark of one person: neither has text to lose."
 
 [[exempt]]
 routes = ["POST /api/v1/projects/{project}/move"]

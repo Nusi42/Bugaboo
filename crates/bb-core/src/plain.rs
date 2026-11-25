@@ -34,8 +34,24 @@ macro_rules! plain {
 }
 
 plain!(
-    bool, u8, u16, u32, u64, usize, i8, i16, i32, i64, isize, f32, f64, char, String, str,
+    bool,
+    u8,
+    u16,
+    u32,
+    u64,
+    usize,
+    i8,
+    i16,
+    i32,
+    i64,
+    isize,
+    f32,
+    f64,
+    char,
+    String,
+    str,
     Timestamp,
+    jiff::civil::Date,
 );
 
 impl<T: Plain> sealed::Sealed for Option<T> {}

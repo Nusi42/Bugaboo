@@ -181,13 +181,11 @@ async fn qry_05_a_person_reads_the_fields_their_role_shows_and_the_ones_every_is
         "closed",
         "start date",
         "due date",
+        "planned for release",
+        "found in release",
         "story points",
     ] {
         assert!(has(&words, word), "{word} is readable: {words:?}");
-    }
-    // A field whose values the issues do not hold yet is not offered.
-    for word in ["planned for release", "found in release"] {
-        assert!(!has(&words, word), "{word} is not offered: {words:?}");
     }
     Ok(())
 }

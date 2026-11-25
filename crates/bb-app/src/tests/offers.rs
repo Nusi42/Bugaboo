@@ -107,6 +107,8 @@ pub(super) fn new_issue(who: &str, project: &str, issue_type: IssueTypeId) -> Cr
         estimated_time: None,
         fields: BTreeMap::new(),
         parent: None,
+        found_in_release: None,
+        planned_for_release: None,
     }
 }
 
@@ -174,6 +176,8 @@ async fn iss_02_an_issue_of_a_type_the_project_does_not_offer_is_refused() -> Ou
             time_left: None,
             assigned_to: None,
             fields: BTreeMap::new(),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await;

@@ -167,6 +167,8 @@ pub(super) async fn retitle(world: &World, id: IssueId, title: &str) -> Result<(
             time_left: None,
             assigned_to: None,
             fields: std::collections::BTreeMap::default(),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await?;
@@ -624,6 +626,8 @@ async fn ai_36_the_answer_to_an_old_version_is_judged_for_the_agent_not_its_pers
             time_left: None,
             assigned_to: None,
             fields: std::collections::BTreeMap::default(),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await?;

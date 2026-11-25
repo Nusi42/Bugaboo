@@ -383,6 +383,7 @@ pub trait AuthStore:
     + ProjectStore
     + IssueStore
     + RelationStore
+    + crate::releases::ReleaseStore
     + TagStore
     + ManyChangeStore
     + crate::runs::RunRecordStore

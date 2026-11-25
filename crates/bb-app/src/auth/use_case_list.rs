@@ -192,6 +192,16 @@ macro_rules! each_use_case {
             create_issue_type(CreateIssueType) -> Authorized<IssueTypeView>;
             /// Changes the name, icon or retired state of an issue type.
             change_issue_type(ChangeIssueType) -> Authorized<IssueTypeView>;
+            /// Lists the releases offered in a project.
+            releases(ReleasesQuery) -> Authorized<ReleasePage>;
+            /// Makes a release in a project.
+            create_release(CreateRelease) -> Authorized<ReleaseView>;
+            /// Renames, dates, marks or retires a release.
+            change_release(ChangeRelease) -> Authorized<ReleaseView>;
+            /// Puts a release that no issue names into the trash.
+            delete_release(DeleteRelease) -> Authorized<ReleaseView>;
+            /// Takes a release out of the trash.
+            restore_release(DeleteRelease) -> Authorized<ReleaseView>;
             /// Shows where an issue type or a group of labels is offered.
             offers(OffersQuery) -> Authorized<OfferRowPage>;
             /// Changes where an issue type or a group of labels is offered.

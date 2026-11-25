@@ -206,6 +206,7 @@ pub async fn calendar<S: AuthStore + SearchStore>(
                 labels: false,
                 agent: WithAgent::No,
                 time: false,
+                releases: crate::issues::WithReleases::No,
             },
         )
         .await?;

@@ -262,3 +262,13 @@ at = [
 ]
 phrases = ["time factor"]
 reason = "Time factor is the glossary's own term for the estimate of the person on the bar (glossary, Time factor). It is not a second step of signing in."
+
+[[allow]]
+term = "state"
+at = [
+  "api:property ChangeReleaseBody.state",
+  "api:property ReleaseItem.state",
+  "api:property ReleaseRefBody.state",
+  "api:schema ReleaseState",
+]
+reason = "The state of a release (Planned, Released, Retired) is the word of ADR-0049 and of the glossary's own entry for the three states of a release; it is not the status of an issue, which the glossary means."

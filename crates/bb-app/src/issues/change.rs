@@ -17,6 +17,7 @@ use serde::Serialize;
 use serde_json::json;
 
 use super::fields::{Given, clean_title, ensure_dates_in_order, ensure_may_change, member};
+use super::releases::{IssueReleases, ReleaseWrite};
 use super::types::{ChangeIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
@@ -48,6 +49,8 @@ pub(crate) struct Plan {
     /// back to ×1 then, and the event tells the factor before. Read before the change is written,
     /// so it belongs to the version the change is made on.
     factor: Option<IssueTimeFactor>,
+    /// The releases the issue names before and after, in either field (ISS-08).
+    releases: IssueReleases,
 }
 
 impl Plan {
@@ -111,6 +114,7 @@ impl Plan {
                     .collect::<Vec<_>>()
             ),
         ));
+        changes.extend(self.releases.changes(before, after));
         changes.extend(self.own.changes());
         changes.extend(reset_with_first(
             self.factor.as_ref(),
@@ -331,6 +335,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             next.issue_type = self.writable_type(actor, issue_type, &current).await?;
         }
         let chain = self.chain_of(current.project).await?;
+        // Boxed: only a change that names a release reads them, and the future stays small.
+        let releases =
+            Box::pin(self.releases_after(actor, &chain, (&current, &mut next), input)).await?;
         // The status of the request is judged in the workflow that counts afterwards, from the
         // status the issue is in. An issue whose status that workflow lacks starts again in its
         // starting status when the request names none (ADR-0031 amendment 3).
@@ -376,6 +383,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             own,
             entering,
             factor,
+            releases,
         };
         if plan.current.version != input.version {
             return Err(AppError::stale(
@@ -422,6 +430,8 @@ pub(crate) struct IssueWrite {
     resets_factor: bool,
     /// The values of own fields that change.
     own_writes: Vec<(bb_core::id::FieldId, Vec<bb_core::own_fields_value::Cell>)>,
+    /// What the change writes of the releases the issue names; boxed, as most changes name none.
+    releases: Box<ReleaseWrite>,
     /// The people assigned by the change: they start following it.
     newly_assigned: Vec<UserId>,
     /// When it is made.
@@ -439,6 +449,7 @@ impl Plan {
             assigned_next,
             own,
             entering,
+            releases,
             ..
         } = self;
         next.updated_at = now;
@@ -451,6 +462,10 @@ impl Plan {
             .copied()
             .collect();
         IssueWrite {
+            releases: Box::new(releases.into_write(
+                current.id,
+                (current.planned_for_release, next.planned_for_release),
+            )),
             version: current.version,
             people: assigned_rows(current.id, &assigned_next, now),
             written: next,
@@ -482,6 +497,9 @@ impl IssueWrite {
             return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
         }
         ensure_type_and_status_in::<S>(transaction, &stored, &self.written, stopped).await?;
+        self.releases
+            .write_in::<S>(transaction, id, stopped)
+            .await?;
         if !S::update_issue(transaction, &self.written, Version::new(self.version)).await? {
             return Err(stopped.stop::<S>(ErrorCode::VersionChanged));
         }

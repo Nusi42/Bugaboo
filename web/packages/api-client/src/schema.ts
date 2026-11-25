@@ -4563,6 +4563,70 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/projects/{project}/releases": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The releases offered in a project: those made in it and in the projects above it that the
+     *     person sees, retired ones too, by *Release date* (none last), then by name. Needs only seeing
+     *     the project.
+     */
+    get: operations["listReleases"];
+    put?: never;
+    /** Makes a release in the project, in the state *Planned*. Needs *Manage releases* there. */
+    post: operations["createRelease"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/projects/{project}/releases/{release}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Puts a release that no issue names into the trash (*Undo* takes it back). A release that an
+     *     issue names is refused (`release.in-use`) and is retired instead; the refusal says nothing of
+     *     which issues or how many. Needs *Manage releases* in its project.
+     */
+    delete: operations["deleteRelease"];
+    options?: never;
+    head?: never;
+    /**
+     * Renames a release, gives it another *Release date*, marks it *Released*, takes it back to
+     *     *Planned* (with a reason) or retires it. Needs *Manage releases* in its project.
+     */
+    patch: operations["changeRelease"];
+    trace?: never;
+  };
+  "/api/v1/projects/{project}/releases/{release}/restore": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Takes a release out of the trash (*Undo*). Needs *Manage releases* in its project. */
+    post: operations["restoreRelease"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/projects/{project}/settings": {
     parameters: {
       query?: never;
@@ -7194,8 +7258,15 @@ export interface components {
       fields?: {
         [key: string]: unknown;
       };
+      /**
+       * @description The IDs of the releases it was *Found in* from now on: all of them, not the ones to add. A
+       *     release it names already stays; a new one has to be offered in its project and not retired.
+       */
+      found_in_release?: string[] | null;
       /** @description A new issue type; a retired type is refused. */
       issue_type?: string | null;
+      /** @description The ID of the release it is *Planned for*; `null` takes it away. */
+      planned_for_release?: string | null;
       priority?: components["schemas"]["Priority"] | null;
       /**
        * Format: date
@@ -7308,6 +7379,24 @@ export interface components {
       forward?: string | null;
       /** @description `true` retires the kind (no new relations of it), `false` offers it again. */
       retired?: boolean | null;
+      /**
+       * Format: int64
+       * @description The version the person looked at.
+       */
+      version: number;
+    };
+    /** @description What to change about a release: what is left out stays as it is. */
+    ChangeReleaseBody: {
+      /** @description A new name. */
+      name?: string | null;
+      /** @description Why a release goes back from *Released* to *Planned*: needed then, kept in the history. */
+      reason?: string | null;
+      /**
+       * Format: date
+       * @description A new *Release date* (`2026-11-14`); `null` takes it away.
+       */
+      release_date?: string | null;
+      state?: components["schemas"]["ReleaseState"] | null;
       /**
        * Format: int64
        * @description The version the person looked at.
@@ -8193,6 +8282,11 @@ export interface components {
       | "issue.type-not-offered"
       | "issue.start-after-due"
       | "label.not-offered"
+      | "release.name-taken"
+      | "release.not-offered"
+      | "release.in-use"
+      | "release.reason-needed"
+      | "release.too-many"
       | "workflow.no-such-change"
       | "workflow.not-for-you"
       | "workflow.not-named"
@@ -9122,6 +9216,11 @@ export interface components {
        * @description *Estimated time*, in whole minutes; left out while it has none.
        */
       estimated_time?: number | null;
+      /**
+       * @description *Found in release*: the releases it was found in, in the order given, those of projects
+       *     the reader sees.
+       */
+      found_in_release?: components["schemas"]["ReleaseRefBody"][] | null;
       /** @description The internal ID, which never changes. */
       id?: string | null;
       issue_type?: components["schemas"]["IssueTypeRef"] | null;
@@ -9131,6 +9230,7 @@ export interface components {
        */
       labels?: components["schemas"]["LabelRefBody"][] | null;
       own_fields?: components["schemas"]["OwnValues"] | null;
+      planned_for_release?: components["schemas"]["ReleaseRefBody"] | null;
       priority?: components["schemas"]["Priority"] | null;
       project?: components["schemas"]["ProjectRef"] | null;
       /** @description The readable ID now (`WEB-142`, `WEB-K7Q2X`). */
@@ -9764,6 +9864,13 @@ export interface components {
       fields?: {
         [key: string]: unknown;
       };
+      /**
+       * @description The IDs of the releases the issues were *Found in* from now on: all of them, not the ones to
+       *     add. A release that is not offered where an issue is leaves that issue alone.
+       */
+      found_in_release?: string[] | null;
+      /** @description The ID of the release the issues are *Planned for*; `null` takes it away. */
+      planned_for_release?: string | null;
       priority?: components["schemas"]["Priority"] | null;
       /**
        * Format: date
@@ -10317,6 +10424,8 @@ export interface components {
       fields?: {
         [key: string]: unknown;
       };
+      /** @description The IDs of the releases it was *Found in*: each offered in its project and not retired. */
+      found_in_release?: string[] | null;
       /** @description The ID of its issue type; a retired type takes no new issues. */
       issue_type: string;
       /**
@@ -10324,6 +10433,8 @@ export interface components {
        *     that issue. An issue of its own when left out.
        */
       parent?: string | null;
+      /** @description The ID of the release it is *Planned for*: offered in its project and not retired. */
+      planned_for_release?: string | null;
       priority?: components["schemas"]["Priority"] | null;
       /**
        * Format: date
@@ -10457,6 +10568,16 @@ export interface components {
       backward: string;
       /** @description What the issue it starts from reads (*blocks*). */
       forward: string;
+    };
+    /** @description A release to make. */
+    NewReleaseBody: {
+      /** @description What it is called, unique within its project. */
+      name: string;
+      /**
+       * Format: date
+       * @description Its *Release date* (`2026-11-14`). None when left out.
+       */
+      release_date?: string | null;
     };
     /** @description A role to make. */
     NewRoleBody: {
@@ -11001,6 +11122,13 @@ export interface components {
       next_cursor: string | null;
     };
     /** @description One page of a list: its items, and where the next page starts. */
+    Page_ReleaseItem: {
+      /** @description The items of this page. */
+      items: components["schemas"]["ReleaseItem"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
     Page_RoleItem: {
       /** @description The items of this page. */
       items: components["schemas"]["RoleItem"][];
@@ -11236,6 +11364,7 @@ export interface components {
       | "manage-workflows"
       | "manage-fields"
       | "manage-labels"
+      | "manage-releases"
       | "decide-roles"
       | "decide-what-roles-see"
       | "check-access"
@@ -12029,6 +12158,7 @@ export interface components {
       | "person"
       | "project"
       | "relation"
+      | "release"
       | "layout"
       | "relation-kind"
       | "workflow"
@@ -12677,6 +12807,12 @@ export interface components {
           /** @enum {string} */
           type: "choice";
           /** @description A choice of an own field, by its ID. */
+          value: string;
+        }
+      | {
+          /** @enum {string} */
+          type: "release";
+          /** @description A release, by its ID; its name is the name of the group. */
           value: string;
         }
       | {
@@ -23852,6 +23988,182 @@ export interface operations {
       404: components["responses"]["NotFound"];
       409: components["responses"]["Conflict"];
       413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listReleases: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        /** @description The ID or the short name of the project. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The releases. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_ReleaseItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  createRelease: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID or the short name of the project. */
+        project: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewReleaseBody"];
+      };
+    };
+    responses: {
+      /** @description The release. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  deleteRelease: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID or the short name of the project it was made in. */
+        project: string;
+        /** @description The ID of the release. */
+        release: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The release, in the trash. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseItem"];
+        };
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeRelease: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID or the short name of the project it was made in. */
+        project: string;
+        /** @description The ID of the release. */
+        release: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeReleaseBody"];
+      };
+    };
+    responses: {
+      /** @description The release as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseItem"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  restoreRelease: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID or the short name of the project it was made in. */
+        project: string;
+        /** @description The ID of the release. */
+        release: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The release, out of the trash. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReleaseItem"];
+        };
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

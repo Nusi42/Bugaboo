@@ -411,6 +411,8 @@ impl Maker<'_, '_> {
                     estimated_time: None,
                     fields,
                     parent: None,
+                    found_in_release: None,
+                    planned_for_release: None,
                 },
             )
             .await,
@@ -523,6 +525,8 @@ impl Maker<'_, '_> {
                         // makes it does.
                         assigned_to: carried.clone(),
                         fields: BTreeMap::new(),
+                        found_in_release: None,
+                        planned_for_release: None,
                     },
                 )
                 .await,

@@ -180,6 +180,8 @@ async fn iss_09_an_issue_changed_after_the_preview_is_left_alone_and_named() -> 
             time_left: None,
             assigned_to: None,
             fields: BTreeMap::new(),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await?;
@@ -243,6 +245,8 @@ async fn iss_02_a_move_keeps_a_retired_type_and_names_it_in_memory() -> Outcome 
                     estimated_time: None,
                     fields: BTreeMap::new(),
                     parent: None,
+                    found_in_release: None,
+                    planned_for_release: None,
                 },
             )
             .await?
@@ -411,6 +415,8 @@ async fn more_than_a_thousand_issues(
                     estimated_time: None,
                     fields: BTreeMap::new(),
                     parent: None,
+                    found_in_release: None,
+                    planned_for_release: None,
                 },
             )
             .await?
@@ -558,6 +564,8 @@ async fn iss_09_a_run_is_read_only_by_the_person_who_asked_for_it() -> Outcome {
                 estimated_time: None,
                 fields: BTreeMap::new(),
                 parent: None,
+                found_in_release: None,
+                planned_for_release: None,
             },
         )
         .await?

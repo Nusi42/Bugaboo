@@ -35,6 +35,7 @@ use super::auth::{
 use super::bodies::OptionalVersionParams;
 use super::body_id;
 use super::check_access::{PERSON_FIELDS, PeopleSearch};
+use super::releases::{releases_in, set_release};
 use super::timeline_factor::TimeFactorBody;
 use super::workflows::status_in;
 use crate::errors::{ApiError, ApiJson, ApiPath, ApiQuery};
@@ -182,6 +183,10 @@ pub(crate) struct NewIssueBody {
     /// Its *Estimated time*, in whole minutes. None when left out; *Time left* starts equal to it.
     #[schema(value_type = Option<u32>)]
     estimated_time: Option<Minutes>,
+    /// The IDs of the releases it was *Found in*: each offered in its project and not retired.
+    found_in_release: Option<Vec<String>>,
+    /// The ID of the release it is *Planned for*: offered in its project and not retired.
+    planned_for_release: Option<String>,
     /// The values of its own fields, by the key (ID) of the field. The defaults fill in the rest.
     #[serde(default)]
     fields: BTreeMap<String, serde_json::Value>,
@@ -227,6 +232,13 @@ pub(crate) struct ChangeIssueBody {
     time_left: Option<SetTo<Minutes>>,
     /// The IDs of the people it is assigned to from now on: all of them, not the ones to add.
     assigned_to: Option<Vec<String>>,
+    /// The IDs of the releases it was *Found in* from now on: all of them, not the ones to add. A
+    /// release it names already stays; a new one has to be offered in its project and not retired.
+    found_in_release: Option<Vec<String>>,
+    /// The ID of the release it is *Planned for*; `null` takes it away.
+    #[serde(default, deserialize_with = "bb_core::given::deserialize")]
+    #[schema(value_type = Option<String>, nullable)]
+    planned_for_release: Option<SetTo<String>>,
     /// The values of own fields to set, by the key (ID) of the field; `null` takes a value away.
     /// A long text is saved on its own route, under its edit lock.
     #[serde(default)]
@@ -271,6 +283,7 @@ async fn list_issues(
                 project,
                 assigned_to: params.asks_for(&ISSUE_FIELDS, "assigned_to"),
                 labels: params.asks_for(&ISSUE_FIELDS, "labels"),
+                releases: super::issue_item::asks_for_releases(&params).into(),
                 agent: params.asks_for(&ISSUE_FIELDS, "agent_work").into(),
                 time: asks_for_time(&params),
                 cursor,
@@ -399,6 +412,12 @@ async fn create_issue(
                 estimated_time: body.estimated_time,
                 fields: body.fields,
                 parent: body.parent,
+                found_in_release: releases_in(body.found_in_release.as_deref())?,
+                planned_for_release: body
+                    .planned_for_release
+                    .as_deref()
+                    .map(body_id)
+                    .transpose()?,
             },
         )
         .await?;
@@ -481,6 +500,8 @@ async fn change_issue(
                 time_left: body.time_left,
                 assigned_to,
                 fields: body.fields,
+                found_in_release: releases_in(body.found_in_release.as_deref())?,
+                planned_for_release: set_release(body.planned_for_release)?,
             },
         )
         .await?;

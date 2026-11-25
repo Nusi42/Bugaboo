@@ -422,6 +422,8 @@ async fn an_issue_of(
             estimated_time: None,
             fields: BTreeMap::new(),
             parent: None,
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await?
@@ -467,6 +469,8 @@ async fn ai_04_a_reader_who_sees_the_person_only_as_a_role_is_not_told_the_agent
             time_left: None,
             assigned_to: None,
             fields: BTreeMap::default(),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await?;

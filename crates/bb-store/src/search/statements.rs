@@ -3,7 +3,9 @@
 //! the count line and the groups always agree with the page.
 
 use bb_app::search::{GroupKey, SearchHit, SearchRequest};
-use bb_core::id::{ChoiceId, GroupId, IssueId, IssueTypeId, LabelId, ProjectId, TagId, UserId};
+use bb_core::id::{
+    ChoiceId, GroupId, IssueId, IssueTypeId, LabelId, ProjectId, ReleaseId, TagId, UserId,
+};
 use bb_core::issue::{Priority, StatusGroup};
 use bb_core::tags::IssueSight;
 use bb_core::text_index::TextSource;
@@ -433,6 +435,7 @@ pub(super) fn key_value(key: &GroupKey) -> Option<sea_query::Value> {
         GroupKey::Label(id) => id.stored().into(),
         GroupKey::IssueType(id) => id.stored().into(),
         GroupKey::Choice(id) => id.stored().into(),
+        GroupKey::Release(id) => id.stored().into(),
     })
 }
 
@@ -499,6 +502,7 @@ pub(super) fn read_key_at(
                 IdOf::Project => GroupKey::Project(ProjectId::read(bytes)?),
                 IdOf::IssueType => GroupKey::IssueType(IssueTypeId::read(bytes)?),
                 IdOf::Choice => GroupKey::Choice(ChoiceId::read(bytes)?),
+                IdOf::Release => GroupKey::Release(ReleaseId::read(bytes)?),
             },
         },
     }))

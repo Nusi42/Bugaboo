@@ -39,6 +39,7 @@ pub mod privacy;
 pub mod projects;
 pub mod rate_window;
 pub mod relations;
+pub mod releases;
 pub mod roles;
 pub mod runs;
 pub mod saved_searches;

@@ -1050,6 +1050,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Hand issues of your own work over to another agent of your person, by its name, if your person allows it. You cannot give more than you may do yourself.",
     ),
     ("ai-tool.list-projects", "List the projects you may see."),
+    (
+        "ai-tool.list-releases",
+        "List the releases offered in a project you may see: those created in it and in the projects above it, each Planned, Released or Retired, with its release date. Use their IDs for found_in_release and planned_for_release of update_issue; a retired release cannot be chosen anew.",
+    ),
     ("ai-tool.log-time", "Book your own time on an issue."),
     (
         "ai-tool.propose",
@@ -2434,6 +2438,26 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "error.relation.exists",
         "Those two issues are related in that way already.",
+    ),
+    (
+        "error.release.in-use",
+        "Issues name this release. Retire it instead.",
+    ),
+    (
+        "error.release.name-taken",
+        "This project has a release of that name already. Choose another name.",
+    ),
+    (
+        "error.release.not-offered",
+        "That release is not offered here. Choose a release of this project or a project above it that is not retired.",
+    ),
+    (
+        "error.release.reason-needed",
+        "Say why the release goes back to Planned.",
+    ),
+    (
+        "error.release.too-many",
+        "An issue can name at most {most, number} releases in Found in release.",
     ),
     (
         "error.request.bad-cursor",
@@ -5194,6 +5218,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "permission.manage-people",
         "See everybody's e-mail address, correct their names and e-mail addresses and stop a change to many issues that somebody else started",
     ),
+    (
+        "permission.manage-releases",
+        "Create, rename, date, mark and retire the releases of the project, and delete one that no issue names",
+    ),
     ("permission.manage-roles", "Create, change and delete roles"),
     (
         "permission.manage-workflows",
@@ -5637,6 +5665,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-field.issue.estimated-time", "Estimated time"),
     ("personal-field.issue.id", "Reference"),
     ("personal-field.issue.issue-type", "Type of issue"),
+    (
+        "personal-field.issue.planned-for-release",
+        "Planned for release",
+    ),
     ("personal-field.issue.priority", "Priority"),
     ("personal-field.issue.project", "Project"),
     ("personal-field.issue.reported-by", "Created by"),
@@ -5807,6 +5839,21 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-field.relation.id", "Reference"),
     ("personal-field.relation.kind", "What it means"),
     ("personal-field.relation.to", "Issue it points to"),
+    ("personal-field.release.changed-at", "Last changed on"),
+    ("personal-field.release.changed-by", "Last changed by"),
+    ("personal-field.release.deleted-at", "Moved to the trash on"),
+    ("personal-field.release.id", "Reference"),
+    ("personal-field.release.made-at", "Created on"),
+    ("personal-field.release.made-by", "Created by"),
+    ("personal-field.release.name", "Name"),
+    ("personal-field.release.project", "Project"),
+    ("personal-field.release.release-date", "Release date"),
+    ("personal-field.release.released-on", "Released on"),
+    (
+        "personal-field.release.state",
+        "Planned, released or retired",
+    ),
+    ("personal-field.release.version", "Number of changes"),
     ("personal-field.review.answer", "Answer"),
     ("personal-field.review.at", "Reviewed on"),
     ("personal-field.review.by", "Reviewed by"),
@@ -6126,6 +6173,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-kind.proposal", "Proposed changes"),
     ("personal-kind.question", "Questions of agents"),
     ("personal-kind.relation", "Relations"),
+    ("personal-kind.release", "Releases"),
     ("personal-kind.review", "Reviews of agent work"),
     ("personal-kind.row-naming-person", "Changes naming a person"),
     ("personal-kind.saved-search", "Saved searches"),
@@ -6544,6 +6592,9 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("relation-kinds.search", "Search kinds of relation"),
     ("relation-map.has-sub-issue", "has sub-issue"),
     ("relation-map.part-of", "is part of"),
+    ("release-state.planned", "Planned"),
+    ("release-state.released", "Released"),
+    ("release-state.retired", "Retired"),
     ("removal.comments", "Comments written by {name}"),
     ("removal.confirm", "Remove {name}"),
     ("removal.deleted-now", "Deleted now"),

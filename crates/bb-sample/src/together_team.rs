@@ -87,6 +87,8 @@ impl Maker<'_, '_> {
                     time_left: None,
                     assigned_to: read.assigned_for(option, self.world.people[person].id),
                     fields: std::collections::BTreeMap::new(),
+                    found_in_release: None,
+                    planned_for_release: None,
                 },
             )
             .await,

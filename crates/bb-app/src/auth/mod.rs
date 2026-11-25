@@ -159,6 +159,10 @@ use crate::relations::{
     change_relation_kind, create_relation_kind, issue_relations, related_issues, relation_kinds,
     remove_relation, set_parent, sub_issues,
 };
+use crate::releases::{
+    ChangeRelease, CreateRelease, DeleteRelease, ReleasePage, ReleaseView, ReleasesQuery,
+    change_release, create_release, delete_release, releases, restore_release,
+};
 use crate::roles::{
     AccessAnswer, AssignRole, AssignmentList, AssignmentView, AssignmentsQuery, ChangeRole,
     CheckAccessQuery, CopyRole, CreateRole, DeleteRole, Levels, LevelsQuery, PermissionCatalogue,

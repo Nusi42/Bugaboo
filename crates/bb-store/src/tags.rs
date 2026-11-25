@@ -164,7 +164,7 @@ fn group_key(group: Option<LabelGroupId>) -> String {
 /// The IDs in order and once each, cut into chunks that one statement can bind
 /// ([`STATEMENT_ITEMS`]); asking about the chunks one after the other, each ordered by issue,
 /// gives the same order as one statement would.
-fn sorted_chunks(ids: &[IssueId]) -> Vec<Vec<Vec<u8>>> {
+pub(crate) fn sorted_chunks<T: StoredId>(ids: &[T]) -> Vec<Vec<Vec<u8>>> {
     let mut stored: Vec<Vec<u8>> = ids.iter().map(|id| id.stored()).collect();
     stored.sort();
     stored.dedup();

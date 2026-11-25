@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 
 use bb_core::fields::FieldKey;
 use bb_core::given::SetTo;
-use bb_core::id::{IssueId, IssueTypeId, LockToken, UserId};
+use bb_core::id::{IssueId, IssueTypeId, LockToken, ReleaseId, UserId};
 use bb_core::issue::{IssueIcon, IssueType, Priority};
 use bb_core::own_fields_value::OwnValues;
 use bb_core::time::{Minutes, TimeLeft};
@@ -25,6 +25,7 @@ use serde_json::Value;
 use crate::access::ProjectLabel;
 use crate::offers::OfferedHere;
 use crate::projects::ProjectRef;
+use crate::releases::ReleaseRef;
 use crate::tags::LabelRef;
 use crate::workflows::{StatusChangeView, StatusView};
 
@@ -54,6 +55,10 @@ pub struct CreateIssue {
     /// Its *Estimated time*; none when left out. *Time left* starts equal to it: nobody typed
     /// one, so it is worked out from the estimate and the time spent.
     pub estimated_time: Option<Minutes>,
+    /// The releases it was *Found in*; none when left out.
+    pub found_in_release: Option<Vec<ReleaseId>>,
+    /// The release it is *Planned for*; none when left out.
+    pub planned_for_release: Option<ReleaseId>,
     /// The values of its own fields, by the key of the field; the defaults fill in the rest.
     pub fields: BTreeMap<String, Value>,
     /// The issue it is created under as a sub-issue, in the project of that issue; none for an
@@ -79,6 +84,8 @@ impl CreateIssue {
             start_date: None,
             due_date: None,
             estimated_time: None,
+            found_in_release: None,
+            planned_for_release: None,
             fields: BTreeMap::new(),
             parent: None,
         }
@@ -112,6 +119,10 @@ pub struct ChangeIssue {
     pub time_left: Option<SetTo<Minutes>>,
     /// The people it is assigned to from now on (all of them, not the ones to add).
     pub assigned_to: Option<Vec<UserId>>,
+    /// The releases it was *Found in* from now on (all of them, not the ones to add).
+    pub found_in_release: Option<Vec<ReleaseId>>,
+    /// A new *Planned for release*; `SetTo::Nothing` takes it away.
+    pub planned_for_release: Option<SetTo<ReleaseId>>,
     /// The values of own fields to set, by the key of the field; `null` takes a value away. A
     /// long text is saved on its own route, under its edit lock.
     pub fields: BTreeMap<String, Value>,
@@ -134,6 +145,8 @@ impl ChangeIssue {
             estimated_time: None,
             time_left: None,
             assigned_to: None,
+            found_in_release: None,
+            planned_for_release: None,
             fields: BTreeMap::default(),
         }
     }
@@ -225,6 +238,8 @@ pub struct IssuesQuery {
     pub assigned_to: bool,
     /// Whether the labels of each issue are wanted: they are read only then, once for the page.
     pub labels: bool,
+    /// Whether the releases of each issue are wanted: they are read only then, once for the page.
+    pub releases: WithReleases,
     /// Whether the agent that works on each issue is wanted: read only then, once for the page.
     pub agent: WithAgent,
     /// Whether *Time spent* and the worked-out *Time left* of each issue are wanted: the time
@@ -247,6 +262,22 @@ pub enum WithAgent {
 }
 
 impl From<bool> for WithAgent {
+    fn from(asked: bool) -> Self {
+        if asked { Self::Yes } else { Self::No }
+    }
+}
+
+/// Whether a page of issues reads the releases each issue names (ISS-08).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum WithReleases {
+    /// Left out.
+    #[default]
+    No,
+    /// Read once for the page.
+    Yes,
+}
+
+impl From<bool> for WithReleases {
     fn from(asked: bool) -> Self {
         if asked { Self::Yes } else { Self::No }
     }
@@ -366,6 +397,14 @@ pub struct IssueView {
     /// whose level for *Labels* is *Hidden* is not shown them.
     #[masked(field = "labels")]
     pub labels: Option<Vec<LabelRef>>,
+    /// *Found in release*: the releases it was found in, in the order given, those of projects the
+    /// viewer sees; `None` when they were not read (a list or a search that did not ask).
+    #[masked(field = "found-in-release")]
+    pub found_in_release: Option<Vec<ReleaseRef>>,
+    /// *Planned for release*, when it names one of a project the viewer sees and it was read (a
+    /// list or a search reads it only when it asks).
+    #[masked(field = "planned-for-release", nested)]
+    pub planned_for_release: Option<ReleaseRef>,
     /// The agent that works on it now and where its work is; `None` when it was not read (only a
     /// list or a search that asks for it reads it) or when no agent works on it (AI-33).
     #[masked(nested)]

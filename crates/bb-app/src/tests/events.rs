@@ -13,6 +13,7 @@ use std::pin::Pin;
 
 use super::corrections as sco;
 use super::data_exports as sde;
+use super::releases as srl;
 use super::runs as sru;
 use super::scenarios::{self as s, Added};
 use super::scenarios_ai as sai;
@@ -236,6 +237,10 @@ table! {
     "stop_sharing_search" => ss::stop_sharing_search_scenario,
     "delete_search" => ss::delete_search_scenario,
     "restore_search" => ss::restore_search_scenario,
+    "create_release" => srl::create_release_scenario,
+    "change_release" => srl::change_release_scenario,
+    "delete_release" => srl::delete_release_scenario,
+    "restore_release" => srl::restore_release_scenario,
     "save_copy" => ss::save_copy_scenario,
     "set_project_list" => ss::set_project_list_scenario,
     "create_starter_time_fields" => sti::create_starter_time_fields_scenario,

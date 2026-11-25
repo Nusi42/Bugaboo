@@ -464,6 +464,8 @@ async fn ai_30_an_agent_has_no_role_and_cannot_be_assigned() -> Outcome {
             time_left: None,
             assigned_to: Some(vec![as_person]),
             fields: BTreeMap::default(),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await;
@@ -505,6 +507,8 @@ async fn ai_04_an_event_of_an_agent_names_the_agent_and_its_person() -> Outcome 
             time_left: None,
             assigned_to: None,
             fields: BTreeMap::default(),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await?;

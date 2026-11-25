@@ -644,6 +644,7 @@ mod mail;
 mod oauth;
 mod people_state;
 mod relations;
+mod releases;
 mod saved_searches;
 mod search_routes;
 #[cfg(test)]

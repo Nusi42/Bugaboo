@@ -125,6 +125,8 @@ crate::entities! {
     crate::sign_in::StoredPasskey,
     crate::sign_in::TwoStep,
     crate::tags::IssueLabel,
+    crate::project_release::Release,
+    crate::project_release::IssueFoundIn,
     crate::tags::IssueTag,
     crate::tags::Label,
     crate::tags::LabelGroup,

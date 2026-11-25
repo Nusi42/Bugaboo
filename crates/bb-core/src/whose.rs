@@ -95,6 +95,7 @@ pub const fn whose(kind: RecordKind) -> Whose {
         | K::OAuthClient
         | K::Project
         | K::Relation
+        | K::Release
         | K::Layout
         | K::RelationKind
         | K::Workflow

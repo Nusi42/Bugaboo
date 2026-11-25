@@ -11,13 +11,14 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 use super::projects::ProjectRef;
+use super::releases::ReleaseRefBody;
 use super::tags::LabelRefBody;
 use super::workflows::{StatusChangeRef, StatusRef};
 use crate::lean::{FieldSpec, ListParams, Listed};
 
 /// The fields of an issue in a list that can be asked for, and which of them a list holds when the
 /// request names none: what a row of a list needs.
-pub(crate) const ISSUE_FIELDS: [FieldSpec; 24] = [
+pub(crate) const ISSUE_FIELDS: [FieldSpec; 26] = [
     FieldSpec::by_default("id"),
     FieldSpec::by_default("readable_id"),
     FieldSpec::on_request("project"),
@@ -40,6 +41,8 @@ pub(crate) const ISSUE_FIELDS: [FieldSpec; 24] = [
     FieldSpec::on_request("closed_at"),
     FieldSpec::on_request("own_fields"),
     FieldSpec::on_request("labels"),
+    FieldSpec::on_request("found_in_release"),
+    FieldSpec::on_request("planned_for_release"),
     FieldSpec::on_request("agent_work"),
     FieldSpec::on_request("version"),
 ];
@@ -194,6 +197,15 @@ pub(crate) struct IssueItem {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[masked(field = "labels")]
     labels: Option<Vec<LabelRefBody>>,
+    /// *Found in release*: the releases it was found in, in the order given, those of projects
+    /// the reader sees (ISS-08).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(field = "found-in-release", nested)]
+    found_in_release: Option<Vec<ReleaseRefBody>>,
+    /// *Planned for release*; left out while it names none the reader may see (ISS-08).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[masked(field = "planned-for-release", nested)]
+    planned_for_release: Option<ReleaseRefBody>,
     /// The agent that works on it now and where its work is; left out while no agent works on it.
     /// Only a list that asks for it reads it.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -244,10 +256,23 @@ impl From<&IssueView> for IssueItem {
                 .labels
                 .as_ref()
                 .map(|labels| labels.iter().map(LabelRefBody::from).collect()),
+            found_in_release: issue
+                .found_in_release
+                .as_ref()
+                .map(|releases| releases.iter().map(ReleaseRefBody::from).collect()),
+            planned_for_release: issue.planned_for_release.as_ref().map(ReleaseRefBody::from),
             agent_work: issue.agent_work.as_ref().map(AgentMarkRefBody::from),
             version: Some(issue.version),
         }
     }
+}
+
+/// Whether a list asks for either release field of its issues: they are read only then, once for
+/// the page.
+pub(crate) fn asks_for_releases(params: &ListParams) -> bool {
+    ["found_in_release", "planned_for_release"]
+        .iter()
+        .any(|member| params.asks_for(&ISSUE_FIELDS, member))
 }
 
 /// The members of an item that need the minutes spent on each issue of the page.
@@ -320,6 +345,8 @@ mod tests {
             closed_at: Some(String::new()),
             own_fields: Some(OwnValues::default()),
             labels: Some(Vec::new()),
+            found_in_release: Some(Vec::new()),
+            planned_for_release: Some(ReleaseRefBody::blank()),
             agent_work: Some(AgentMarkRefBody {
                 name: String::new(),
                 state: AgentWorkState::AgentWorking,

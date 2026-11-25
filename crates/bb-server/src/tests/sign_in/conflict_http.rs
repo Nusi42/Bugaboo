@@ -25,7 +25,7 @@ use super::layouts_http::{AN_EDITOR, LAYOUTS, LOCKS, customize};
 const AHEAD: i64 = 50;
 
 /// The routes of the API description that take a `version`, by operation ID: the rows of the table.
-const VERSIONED: [&str; 60] = [
+const VERSIONED: [&str; 61] = [
     "deleteIssue",
     "acceptWarning",
     "setTimeFactor",
@@ -76,6 +76,7 @@ const VERSIONED: [&str; 60] = [
     "setProjectNeverSentToAi",
     "changeProject",
     "changeRelationKind",
+    "changeRelease",
     "changeRole",
     "resetRole",
     "changeTag",
@@ -168,7 +169,7 @@ async fn prepare(id: &str, site: &Site<'_>, ada: &mut Browser) -> Result<Save, F
         "saveLayout" | "deleteLayout" => prepare_layout(id, ada).await,
         "saveTheme" | "deleteTheme" => themes::prepare(id, ada).await,
         "publishWorkflow" | "deleteWorkflow" => prepare_workflow(id, ada).await,
-        "changeProject" | "changeRelationKind" | "changeRole" | "resetRole" => {
+        "changeProject" | "changeRelationKind" | "changeRelease" | "changeRole" | "resetRole" => {
             prepare_records(id, ada).await
         }
         "changeAgent" | "handAgent" => agents::prepare(id, ada).await,
@@ -301,6 +302,19 @@ async fn prepare_records(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
                 &one["version"],
             )
         }
+        "changeRelease" => {
+            // A project there is, and a release of a name no other change of the test uses.
+            let projects = read(ada, PROJECTS).await?;
+            let project = projects["items"][0].clone();
+            let releases = format!("{PROJECTS}/{}/releases", text_in(&project, "id")?);
+            let release = made(ada, &releases, json!({"name": "Stale save 2.4"})).await?;
+            Save::new(
+                "PATCH",
+                format!("{releases}/{}", text_in(&release, "id")?),
+                json!({"name": "2.4.1"}),
+                &release["version"],
+            )
+        }
         "changeRole" | "resetRole" => {
             let roles = read(ada, "/api/v1/roles").await?;
             let role = roles["items"]
@@ -381,7 +395,7 @@ async fn prepare_layout(id: &str, ada: &mut Browser) -> Result<Save, Failure> {
             let project = made(
                 ada,
                 PROJECTS,
-                json!({"short_name": "DELTA", "name": "Delta"}),
+                json!({"short_name": "RELS", "name": "Releases"}),
             )
             .await?;
             let editor = customize(ada, &text_in(&project, "id")?).await?;

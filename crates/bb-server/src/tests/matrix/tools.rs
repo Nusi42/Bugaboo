@@ -58,6 +58,7 @@ fn example(tool: Tool, ground: &Ground<'_>) -> Value {
         }
         Tool::ListProjects | Tool::GetMyWork | Tool::ChangesSince => json!({}),
         Tool::WaitForWork => json!({"seconds": 1}),
+        Tool::ListReleases => json!({"project": "ACME"}),
         Tool::HandOver => json!({"agent": HELPER, "issues": [issue]}),
         Tool::CreateIssue => {
             json!({"project": "ACME", "issue_type": ground.kind, "title": "From the matrix"})

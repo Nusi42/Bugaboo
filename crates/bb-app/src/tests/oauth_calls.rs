@@ -240,6 +240,8 @@ async fn ai_23_a_change_through_mcp_says_person_via_app_in_the_history() -> Outc
             time_left: None,
             assigned_to: None,
             fields: std::collections::BTreeMap::new(),
+            found_in_release: None,
+            planned_for_release: None,
         },
     )
     .await?;

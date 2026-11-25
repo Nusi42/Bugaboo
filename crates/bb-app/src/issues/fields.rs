@@ -86,11 +86,10 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// The fields of the catalogue that a request to make or change an issue names: the others
-/// (releases) come with the packages that store them, *Time spent* is the total of the time
-/// entries and never typed, and tags and labels are put on and taken off on their own routes
-/// (`tags`).
-pub(crate) const CHANGEABLE: [Field; 9] = [
+/// The fields of the catalogue that a request to make or change an issue names: *Time spent* is
+/// the total of the time entries and never typed, the time factor has its own route (`plan`), and
+/// tags and labels are put on and taken off on their own routes (`tags`).
+pub(crate) const CHANGEABLE: [Field; 11] = [
     Field::Title,
     Field::Description,
     Field::Status,
@@ -100,6 +99,8 @@ pub(crate) const CHANGEABLE: [Field; 9] = [
     Field::TimeLeft,
     Field::StartDate,
     Field::DueDate,
+    Field::FoundInRelease,
+    Field::PlannedForRelease,
 ];
 
 /// Which fields of the catalogue a request names: given, whether the value differs from the one
@@ -135,7 +136,7 @@ impl Given {
 impl From<&ChangeIssue> for Given {
     fn from(input: &ChangeIssue) -> Self {
         // Title, description (saved under its lock, never here), status, priority, assigned to,
-        // estimated time, time left, start date, due date.
+        // estimated time, time left, start date, due date, found in release, planned for release.
         Self([
             input.title.is_some(),
             false,
@@ -146,6 +147,8 @@ impl From<&ChangeIssue> for Given {
             input.time_left.is_some(),
             input.start_date.is_some(),
             input.due_date.is_some(),
+            input.found_in_release.is_some(),
+            input.planned_for_release.is_some(),
         ])
     }
 }
@@ -163,6 +166,8 @@ impl From<&crate::many_changes::ManyChange> for Given {
             change.time_left.is_some(),
             change.start_date.is_some(),
             change.due_date.is_some(),
+            change.found_in_release.is_some(),
+            change.planned_for_release.is_some(),
         ])
     }
 }
@@ -181,6 +186,8 @@ impl From<&CreateIssue> for Given {
             false,
             input.start_date.is_some(),
             input.due_date.is_some(),
+            input.found_in_release.is_some(),
+            input.planned_for_release.is_some(),
         ])
     }
 }
@@ -217,6 +224,8 @@ pub(crate) mod member {
     pub(crate) const TIME_LEFT: &str = Field::TimeLeft.code();
     pub(crate) const START_DATE: &str = Field::StartDate.code();
     pub(crate) const DUE_DATE: &str = Field::DueDate.code();
+    pub(crate) const FOUND_IN_RELEASE: &str = Field::FoundInRelease.code();
+    pub(crate) const PLANNED_FOR_RELEASE: &str = Field::PlannedForRelease.code();
     /// The time factor, in percent of the estimate; `null` for ×1.
     pub(crate) const TIME_FACTOR: &str = Field::TimeFactor.code();
     /// The person on the bar a change of the time factor is for: the one who hears of it.

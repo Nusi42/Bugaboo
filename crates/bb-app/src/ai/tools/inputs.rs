@@ -160,6 +160,21 @@ pub struct UpdateIssueInput {
     /// The IDs of the people it is assigned to. Set it only when the person asked for exactly these
     /// people; never choose a person.
     pub assigned_to: Option<Vec<String>>,
+    /// The IDs of the releases it was found in, all of them, from `list_releases`.
+    pub found_in_release: Option<Vec<String>>,
+    /// The ID of the release it is planned for, from `list_releases`; an empty text takes it away.
+    pub planned_for_release: Option<String>,
+}
+
+/// List the releases offered in a project.
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ListReleasesInput {
+    /// The project, by its ID or short name.
+    pub project: String,
+    /// The most releases to answer with.
+    #[schema(schema_with = limit_schema)]
+    pub limit: Option<Number>,
 }
 
 /// Move an issue to another status.

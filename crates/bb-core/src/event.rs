@@ -194,6 +194,8 @@ words! {
         Project => "project",
         /// One relation between two issues.
         Relation => "relation",
+        /// A release of a project (ISS-08).
+        Release => "release",
         /// A layout of the issue page or the new-issue form (CFG-01).
         Layout => "layout",
         /// A kind of relation.

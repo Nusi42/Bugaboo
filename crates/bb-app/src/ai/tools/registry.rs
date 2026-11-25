@@ -22,9 +22,9 @@ use utoipa::PartialSchema;
 use super::inputs::{
     AddCommentInput, AskForAgentsInput, AskInput, AttachInput, ChangeStatusInput,
     ChangesSinceInput, CollectAgentKeysInput, CreateIssueInput, GetIssueInput, GetMyWorkInput,
-    GiveUpInput, HandOverInput, ListProjectsInput, LogTimeInput, ProposeInput, RelationMapInput,
-    ReportInput, SearchIssuesInput, SearchTotalsInput, StartTimerInput, StopTimerInput,
-    SubmitInput, TakeInput, UndoMyRunInput, UpdateIssueInput, WaitForWorkInput,
+    GiveUpInput, HandOverInput, ListProjectsInput, ListReleasesInput, LogTimeInput, ProposeInput,
+    RelationMapInput, ReportInput, SearchIssuesInput, SearchTotalsInput, StartTimerInput,
+    StopTimerInput, SubmitInput, TakeInput, UndoMyRunInput, UpdateIssueInput, WaitForWorkInput,
 };
 use super::{agents, apply, handing, map, preview, programs, read};
 use crate::access::Actor;
@@ -237,7 +237,7 @@ fn tools_of_programs<S: AuthStore>() -> [ToolSpec<S>; 2] {
 }
 
 /// The tools every caller may be offered.
-fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 13] {
+fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 14] {
     [
         reads(
             Tool::SearchIssues,
@@ -265,6 +265,13 @@ fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 13] {
             "projects",
             schema_of::<ListProjectsInput>,
             read::list_projects::<S>,
+            Need::SeesAProject,
+        ),
+        reads(
+            Tool::ListReleases,
+            "releases",
+            schema_of::<ListReleasesInput>,
+            read::list_releases::<S>,
             Need::SeesAProject,
         ),
         reads(

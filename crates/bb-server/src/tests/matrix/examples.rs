@@ -20,8 +20,10 @@ use super::routes::Fixture;
 use crate::sign_in_tests::http::Browser;
 use crate::sign_in_tests::rig::{OTHER_PASSWORD, PASSWORD, Rig};
 
+mod dispatch;
 mod quirks;
 mod requests;
+pub(super) use dispatch::request;
 pub(super) use quirks::Quirk;
 pub(super) use requests::NOBODYS_RANDOM_ID;
 use requests::*;
@@ -373,6 +375,11 @@ pub(super) const EXAMPLES: &[Example] = &[
         "downloadDataExport",
         &[Quirk::SessionOnly, Quirk::NamesAMissingThing],
     ),
+    Example::with("listReleases", &[Quirk::HidesUnseen]),
+    Example::with("createRelease", &[Quirk::HidesUnseen]),
+    Example::with("changeRelease", &[Quirk::HidesUnseen]),
+    Example::with("deleteRelease", &[Quirk::HidesUnseen]),
+    Example::with("restoreRelease", &[Quirk::HidesUnseen]),
     Example::route("listThemes"),
     Example::with("createTheme", &[Quirk::SessionOnly]),
     Example::route("getTheme"),
@@ -695,102 +702,6 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("getBoard", &[Quirk::KeysActAsThePerson]),
     Example::with("getCalendar", &[Quirk::KeysActAsThePerson]),
 ];
-
-/// The request of an example: the method, the address with its parts filled in, and a body that
-/// is valid for the route. Changes that need a thing to change make it first (a new invitation to
-/// take back, the session of the actor to end).
-///
-/// # Errors
-/// A failure of the set-up, or an operation that has a row but no request here.
-pub(super) async fn request(
-    fixture: &Fixture<'_>,
-    example: &Example,
-    actor: Actor,
-    browser: &mut Browser,
-) -> Result<Request, Failure> {
-    let operation = example.operation;
-    if let Some(found) = open_request(operation)? {
-        return Ok(found);
-    }
-    if let Some(found) = own_request(operation, actor, browser).await? {
-        return Ok(found);
-    }
-    if let Some(found) = agent_request(operation) {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_agent_work::agent_work_request(operation) {
-        return Ok(found);
-    }
-    if let Some(found) = organization_request(fixture, operation).await? {
-        return Ok(found);
-    }
-    if let Some(found) = project_request(fixture, operation)? {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_people::people_request(fixture, operation).await? {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_editing::editing_request(fixture, operation) {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_ai::ai_request(fixture, operation).await? {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_fields::field_request(fixture, operation).await? {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_issues::issue_request(fixture, operation).await? {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_layouts::layout_request(fixture, operation).await? {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_themes::theme_request(fixture, operation).await? {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_data_exports::data_export_request(fixture, operation)? {
-        return Ok(found);
-    }
-    if let Some(found) =
-        super::examples_people_state::people_state_request(fixture, operation).await?
-    {
-        return Ok(found);
-    }
-    if let Some(found) =
-        super::examples_relations::relation_request(fixture, operation, browser).await?
-    {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_files::file_request(fixture, operation, browser).await? {
-        return Ok(found);
-    }
-    if let Some(found) =
-        super::examples_searches::search_request(fixture, operation, browser).await?
-    {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_tags::tag_request(fixture, operation).await? {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_workflows::workflow_request(fixture, operation).await? {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_time::time_request(fixture, operation, browser).await? {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_working_hours::working_hours_request(fixture, operation)? {
-        return Ok(found);
-    }
-    if let Some(found) =
-        super::examples_work_times::work_times_request(fixture, operation, browser).await?
-    {
-        return Ok(found);
-    }
-    if let Some(found) = super::examples_timeline::timeline_request(fixture, operation).await? {
-        return Ok(found);
-    }
-    Err(format!("{operation} has a row in the table but no request").into())
-}
 
 #[cfg(test)]
 mod tests;
