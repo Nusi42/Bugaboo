@@ -1,0 +1,15 @@
+# M10 follow-ups
+
+Points found while building M10 that were accepted for later. Each names where it will be done. The IDs (`M10-F01` …) are what the review refers to. WP-01 uses F01 and up, WP-02 F10 and up, WP-03 F20 and up, WP-04 F30 and up, WP-05 F40 and up, WP-06 F50 and up, WP-07 F60 and up, WP-08 F70 and up, WP-09 F80 and up, WP-10 F90 and up, WP-11 F100 and up, WP-12 F110 and up, WP-13 F120 and up, WP-14 F130 and up, WP-15 F140 and up; rows found by the lead outside a package take F200 and up.
+
+| ID | What | Why later | Planned in |
+|----|------|-----------|------------|
+| M10-F10 | A search that names a release field binds the releases the person may know as one list of values (`crates/bb-store/src/search/source.rs`), once for each release key in the filter and the order, with no upper bound. SQLite allows 32766 values in one statement and PostgreSQL 65535. Proposed fix: a subquery on the releases of the projects in sight instead of the list | Found in the review of the releases; an organization needs thousands of releases in sight before it matters | WP-15 (with the sample of releases and its speed scenario) |
+| M10-F11 | Naming in a change a release the person may not know answers differently when the issue already holds it (accepted silently) than when it does not (`release.not-offered`), in `crates/bb-app/src/releases/choose.rs`. It needs the random ID of the release, so it tells little; both cases should answer the same | Was there before the review round that found it | WP-15 |
+| M10-F12 | The preview of *Undo my run* counts a change that puts back a release deleted since as one that goes back; only the undo itself, which judges each change, skips it as not undoable. Any refusal found only when a change is applied has the same gap | The preview would have to judge every change as the undo does | WP-15 |
+| M10-F13 | *Create agents*, given to the starting roles by the code, may never have been given to an organization made before it on upgrade; check the starting permissions due on upgrade cover it | Found while giving *Manage releases* on upgrade | WP-15 |
+| M10-F200 | The order by an issue field (`crates/bb-store/src/search/order.rs`, `Domain::Issue`) sorts by the issue ID as text, so `WEB-10` comes before `WEB-9` | The order of IDs as text is the order before M10 too | WP-15 |
+| M10-F201 | The relation map says when it was cut (`truncated`); the screen of the map must show it | The screen is WP-12's | WP-12 |
+| M10-F202 | The lists of the relation map are named in `tools/checks/lean-exemptions.toml` under the reason of M1-F44 (a hard cap and `truncated`); give the map a reason of its own | Wording only; the rule holds | WP-12 |
+| M10-F203 | *Kinds shown* of the relation map chosen on screen are not kept with a saved search | Keeping them is part of the screen of the map | WP-12 |
+| M10-F204 | The speed scenarios of M10 (the board of the biggest project, the totals and the relation map) are measured by the lead on a quiet computer | No measurement while other folders build | WP-15 (milestone exit) |
