@@ -552,9 +552,11 @@ async fn iss_08_the_ai_totals_by_release_name_no_release_kept_from_it() -> Outco
     assert_eq!(grouped.as_deref(), Some("planned for release"));
     // Two groups: the release by its name with its issue, and none with the other two.
     assert_eq!(said.matches("        issues: ").count(), 2, "{said}");
+    // The fields of a group may come in any order, so the group of none is the one whose
+    // key is empty.
     let none = said
-        .split("planned for release is empty")
-        .nth(1)
+        .split("      group:")
+        .find(|group| group.contains("type: empty"))
         .ok_or("no group of none")?;
     assert!(none.contains("issues: 2"), "{said}");
     Ok(())
