@@ -43,17 +43,20 @@ Select a bar to see its card at the side. Besides the dates, it shows:
 
 **Warnings** in the tools shows how many warnings the plan has and opens their list at the side (on a phone, from the bottom). A warning sign also stands at the end of the bar it is about. Point at a warning to mark its bar; press its sentence to select the bar.
 
-There are four kinds:
+There are these kinds:
 
 - **Away**: "Lea is away 26 Oct 2026 to 30 Oct 2026, while WEB-280 is planned with their work times."
 - **Not enough days**: "WEB-280 needs 6 work days; there are 3 work days before its due date."
-- **Delay**: "WEB-280 now ends 2 days after WEB-284 starts, and WEB-284 waits for it." Nothing moves by itself.
+- **Delay**: "WEB-280 now ends 2 days after WEB-284 starts, and WEB-284 waits for it." Nothing moves by itself. A goal is late when a sub-issue ends after its *Due date*, and an issue when it ends after the *Release date* of the release it is planned for: "WEB-280 now ends 2 days after release 2.5."
+- **Loop**: "WEB-160 and WEB-161 wait for each other; neither can start." Bugaboo refuses such a dependency today, but one saved before stays until somebody takes it away.
+- **Cannot fit**: "WEB-284 is due on 14 Nov 2026, but what it waits for ends on 18 Nov 2026."
 - **Too much at once**: "Lea has 9h planned on 27 Oct 2026 in Mobile app; the share there is 3h 36m."
 
 Each warning offers the ways out that fit it:
 
 - **Move it after** shows every issue that would move, with its days before and after the move, before anything is saved. **Move it** (or **Move all 3**) saves them in one step, with **Undo**.
-- **Make it longer** shows the due date the issue needs; it changes only when you confirm it, with **Undo**.
+- **Make it longer** shows the due date the issue needs; it changes only when you confirm it, with **Undo**. For a release that an issue ends after, it shows the *Release date* the release needs, and only to people who may manage releases.
+- **Open the relation** opens the issue at its relations, where you can take away the one that closes a loop.
 - **Give it to someone else…** opens the usual person picker. Bugaboo never suggests whom: the people of the project are listed by name, and **Give it** next to a name makes that person the person on the bar. The others assigned after the first stay.
 - **Keep and accept** keeps the plan as it is. The warning stays at the end of the list, faded, with who accepted it, until the dates of its issue change.
 

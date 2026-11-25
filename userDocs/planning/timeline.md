@@ -6,9 +6,10 @@ The timeline shows the issues of a search as bars over the days they run, so you
 
 Open a search, a saved search or the list of a project. Above the list, set **Show as** to **Timeline**. The tools above the chart set how it looks:
 
-- **Group by** puts the rows into groups you can fold: by goal (the start), project, person, status, priority, or an own field with choices. Press the head of a group to fold it or open it again. Issues without a value are in a group of their own: **No goal**, **No person**, or **No** and the name of the field. The head of a goal shows its Issue ID and its title.
+- **Group by** puts the rows into groups you can fold: by goal (the start), project, person, status, priority, release (*Planned for release*), or an own field with choices. Press the head of a group to fold it or open it again. Issues without a value are in a group of their own, the last one: **No goal**, **No release**, **No person**, or **No** and the name of the field. The head of a goal shows its Issue ID and its title; the head of a release shows its name and the diamond of its *Release date*.
 - **Dates from** chooses the two date fields the bars use, the one they start at and the one they end at: *Start date* to *Due date*, or two own date fields of your organization.
 - **Plan by effort** lets the timeline work out the other end of a bar from its estimate when an issue has only one date. The days that are worked out are shown, never saved.
+- **Deadline drivers** outlines the issues that set an end date (see below).
 - **Zoom** sets how many days one column holds: **Days**, **Weeks**, **Months** or **Quarters**.
 - **Earlier** and **Later** step through time; **Today** goes back to today.
 
@@ -23,9 +24,20 @@ Everything you set is part of the view. **Save search** keeps it with the search
 - An issue with one date is a bar of one day, unless *Plan by effort* works out the other date.
 - An **arrow** goes from an issue that must finish first to the one that waits for it. These are the relations of the kind your organization gave the date effect *Must finish first* (at the start, *blocks*).
 - A **goal** shows a bracket over the days of its sub-issues, in the head of its group, and a **diamond** on its *Due date*.
+- A **release** with a *Release date* is a diamond with its name on that date, like the due date of a goal. You see the releases of the projects you see.
 - The Legend under the tools explains the bracket, the diamond and the Today line; the Legend beside the toolbar explains the tints and the marks of priority.
 
 Issues you may not see are not on the timeline at all: no bar, no arrow, and they are not counted.
+
+## Deadline drivers
+
+Switch **Deadline drivers** on to see what sets an end date. Each goal with a *Due date*, each release with a *Release date* and the last day of the view has an end: the day its last issue ends. The deadline drivers of an end are the chain of issues that wait for each other with no free day in between and end on it: when one of them takes a day longer, the end moves a day later. When any other issue takes a day longer, the end stays.
+
+The bars of the drivers are outlined in the accent color, and the arrows between them are drawn stronger. Nothing moves: the switch only shows the chain. The card of a driver says which end it sets, for example "Sets the end of Mobile app 2.0". The outline also has a pattern for the forced colors of your system, and a program that reads the page aloud says "Sets the end of …" with the bar.
+
+Bugaboo works the drivers out on the server, with *Plan by effort* when it is on, and only over the issues you may see: a chain that goes through an issue you may not see is not outlined, and nothing tells that it goes on. Two people may see different drivers, as they may see different bars.
+
+The switch is part of the view: **Save search** keeps it.
 
 ## Change dates by dragging
 
