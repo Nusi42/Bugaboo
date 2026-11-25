@@ -250,7 +250,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
             Err(failure) => {
                 store
-                    .give_back_search_mail(mail.id, due, mail.last_due)
+                    .give_back_search_mail(mail.id, due)
                     .await
                     .map_err(failed)?;
                 // A refusal for good ends the job; another try may work for the rest.

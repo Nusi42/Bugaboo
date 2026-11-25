@@ -200,10 +200,10 @@ async fn qry_07_each_due_time_is_claimed_once_and_a_claim_can_be_given_back() ->
         assert!(!storage.claim_search_mail(made.id, at(100)).await?);
         // An earlier due time is never sent after a later one.
         assert!(!storage.claim_search_mail(made.id, at(50)).await?);
-        // The e-mail did not go: the claim goes back, and the next try gets it.
-        storage
-            .give_back_search_mail(made.id, at(100), None)
-            .await?;
+        // The e-mail did not go: the claim goes back to just before it, so the next try gets it
+        // and a job of an earlier due time still does not.
+        storage.give_back_search_mail(made.id, at(100)).await?;
+        assert!(!storage.claim_search_mail(made.id, at(50)).await?);
         assert!(storage.claim_search_mail(made.id, at(100)).await?);
         // The next day is claimed once too.
         assert!(storage.claim_search_mail(made.id, at(200)).await?);

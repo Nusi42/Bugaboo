@@ -125,7 +125,6 @@ impl SearchMailStore for FakeStore {
         &self,
         id: SearchMailId,
         due: Timestamp,
-        before: Option<Timestamp>,
     ) -> Result<(), FakeError> {
         let mut shared = self.lock();
         if let Some(mail) = shared
@@ -134,7 +133,7 @@ impl SearchMailStore for FakeStore {
             .iter_mut()
             .find(|mail| mail.id == id && mail.last_due == Some(due))
         {
-            mail.last_due = before;
+            mail.last_due = due.checked_sub(jiff::SignedDuration::from_micros(1)).ok();
         }
         Ok(())
     }

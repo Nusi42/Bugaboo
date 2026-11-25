@@ -8,6 +8,7 @@
 
 use bb_app::access::Permission;
 use bb_app::context::Clock as _;
+use bb_app::jobs::{JobKind, JobStore as _};
 use bb_app::mailer::MailMessage;
 use bb_app::search_mail::SearchMailStore as _;
 use bb_core::access::FieldLevel;
@@ -542,8 +543,13 @@ async fn priv_04_removal_deletes_the_persons_schedules() -> TestResult {
             .await?)?;
         ok(&set(&mut bob, &shared, EVERY_DAY, false).await?)?;
         assert_eq!(rig.storage.count_search_mails_of(bob_id).await?, 2);
+        // The round of 8:00 queues the e-mails of 9:00: their jobs name Bob and go with him.
+        start(&rig).await?;
+        let sending = JobKind::SearchMailSend;
+        assert!(rig.storage.newest_job(sending).await?.is_some());
         switch_off(&mut ada, bob_id).await?;
         remove(&mut ada, bob_id, json!({"comments": "keep"})).await?;
+        assert_eq!(rig.storage.newest_job(sending).await?, None);
         rig.run_jobs().await?;
         assert_eq!(rig.storage.count_search_mails_of(bob_id).await?, 0);
         assert!(

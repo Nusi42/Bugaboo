@@ -48,8 +48,9 @@ pub trait SearchMailStore: ChangeStore + 'static {
         /// decides, so each due time goes at most once.
         fn claim_search_mail(id: SearchMailId, due: Timestamp) -> bool;
         /// Gives a claim back after its e-mail could not go, so another try of the job may send
-        /// it: the claim of `due` becomes `before` again, unless a later one was made meanwhile.
-        fn give_back_search_mail(id: SearchMailId, due: Timestamp, before: Option<Timestamp>) -> ();
+        /// it: the claim of `due` becomes the moment just before `due`, unless a later one was made
+        /// meanwhile, so no job of an earlier due time can claim after it.
+        fn give_back_search_mail(id: SearchMailId, due: Timestamp) -> ();
         /// Writes down when the last e-mail went.
         fn search_mail_sent(id: SearchMailId, at: Timestamp) -> ();
         /// Makes the e-mailed search wait for its person, for `pause`.

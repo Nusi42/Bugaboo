@@ -214,12 +214,11 @@ impl SearchMailStore for AuthStorage {
         &self,
         id: SearchMailId,
         due: Timestamp,
-        before: Option<Timestamp>,
     ) -> Result<(), StoreError> {
         let mut update = Query::update();
         update
             .table(SearchMailRow::Table)
-            .value(SearchMailRow::LastDue, Expr::val(before.map(to_micros)))
+            .value(SearchMailRow::LastDue, to_micros(due) - 1)
             .and_where(Expr::col(SearchMailRow::Id).eq(id.stored()))
             .and_where(Expr::col(SearchMailRow::LastDue).eq(to_micros(due)));
         self.database().execute(&update).await?;
