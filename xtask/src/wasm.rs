@@ -66,6 +66,11 @@ const PANIC_AT_ONCE: &str = "-Cpanic=immediate-abort -Zunstable-options";
 /// serde that quote a value with it lose only the quote. It takes about 2.6 KB after Brotli out of
 /// `bb_wasm` (ADR-0005, amendment M8; PERF-04).
 const NO_DEBUG_TEXT: &str = "-Zfmt-debug=none";
+/// A panic of the module carries no place in the sources: it stops at once and nobody reads it
+/// (`PANIC_AT_ONCE`), so the paths of the source files, which name the folders of the computer that
+/// built it, and their lines stay out. It takes about 1 KB after Brotli out of
+/// `bb_wasm` (PERF-04).
+const NO_PANIC_PLACE: &str = "-Zlocation-detail=none";
 
 /// What `wasm-opt` is asked to do: optimize for size until nothing gets smaller, leave out the
 /// notes of the toolchain that nothing reads, with the features the compiler uses.
@@ -292,13 +297,13 @@ fn cargo_build(root: &Path, module: Module) -> anyhow::Result<PathBuf> {
             PROFILE,
         ])
         .args(SMALL_STANDARD_LIBRARY)
-        // The small standard library, a panic that stops at once and no `Debug` text are unstable
-        // features of the compiler; this build asks for them, and no other build of the program
+        // The small standard library, a panic that stops at once, no `Debug` text and no place of a
+        // panic are unstable features of the compiler; this build asks for them, and no other build of the program
         // does.
         .env("RUSTC_BOOTSTRAP", "1")
         .env(
             "RUSTFLAGS",
-            format!("{existing} {PANIC_AT_ONCE} {NO_DEBUG_TEXT}").trim(),
+            format!("{existing} {PANIC_AT_ONCE} {NO_DEBUG_TEXT} {NO_PANIC_PLACE}").trim(),
         )
         .current_dir(root)
         .stderr(Stdio::inherit())
