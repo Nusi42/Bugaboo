@@ -5,7 +5,7 @@ use bb_core::ErrorCode;
 use bb_core::id::SavedSearchId;
 use bb_core::paging::{Cut, SkipCursor, page_len, read_len, window};
 use bb_core::saved_search::{SearchSet, ShareKind};
-use bb_policy::{Authorized, Permission, Place};
+use bb_policy::{Authorized, Place};
 
 use super::judge::Judge;
 use super::reach::{Reaching, Stored, may_share_with_group};
@@ -214,9 +214,10 @@ pub async fn saved_search<S: AuthStore>(
     Ok(organization.authorize(view))
 }
 
-/// The groups or the projects the person may share a saved search with, by name, a page at a
-/// time (ADR-0034, decision 2): *Share searches* in the project; for a group, being in it with
-/// *Share searches* for the whole organization, or *Manage groups*.
+/// The groups or the projects the person may share a saved search or a dashboard with, by name, a
+/// page at a time (ADR-0034, decision 2; ADR-0050, decision 2): the permission that shares it in
+/// the project; for a group, being in it with that permission for the whole organization, or
+/// *Manage groups*.
 ///
 /// # Errors
 /// `request.invalid` for a cursor that is not one.
@@ -241,7 +242,9 @@ pub async fn share_choices<S: AuthStore>(
                 .await
                 .map_err(|error| internal::<S>(&error))?
                 .into_iter()
-                .filter(|group| may_share_with_group(&organization, mine.contains(&group.id)))
+                .filter(|group| {
+                    may_share_with_group(&organization, mine.contains(&group.id), input.of)
+                })
                 .map(|group| ShareChoice {
                     id: group.id.to_string(),
                     name: group.name,
@@ -252,7 +255,7 @@ pub async fn share_choices<S: AuthStore>(
         ShareKind::Project => {
             let shown = ctx.shown_to(&actor).await?;
             shown
-                .holding(Permission::ShareSearches)
+                .holding(input.of.permission())
                 .into_iter()
                 .filter_map(|project| shown.get(project))
                 .map(|project| ShareChoice {

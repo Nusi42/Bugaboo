@@ -193,6 +193,8 @@ pub(crate) struct State {
     pub(crate) agent_work: Vec<(bb_core::id::AgentId, super::fake_agents::AgentWork)>,
     pub(crate) work: super::fake_agent_work::FakeAgentWork,
     pub(crate) saved_searches: Vec<bb_core::saved_search::SavedSearch>,
+    /// The dashboards, their boxes and their shares (CFG-03).
+    pub(crate) dashboards: super::fake_dashboards::Dashboards,
     pub(crate) own_themes: Vec<bb_core::theme::OwnTheme>,
     /// The records of backups (OPS-07).
     pub(crate) backup_runs: Vec<bb_core::backup::run::BackupRun>,

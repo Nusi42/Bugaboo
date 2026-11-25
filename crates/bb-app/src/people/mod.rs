@@ -330,9 +330,14 @@ pub async fn delete_group<S: AuthStore>(
         vec![changed("group")],
     )?;
     let by_person = actor.person.id;
-    // The saved searches that stop being shared with the group have an event each.
+    // The saved searches and the dashboards that stop being shared with the group have an event
+    // each.
     let mut events = vec![event];
     events.extend(ctx.events_of_a_deleted_group(by_person, id).await?);
+    events.extend(
+        ctx.dashboard_events_of_a_deleted_group(by_person, id)
+            .await?,
+    );
     ctx.store()
         .record_changes(&events, move |transaction| {
             Box::pin(async move {
@@ -343,8 +348,9 @@ pub async fn delete_group<S: AuthStore>(
                 if !S::delete_group(transaction, id).await? {
                     return Err(S::aborted());
                 }
-                // A saved search is no longer shared with a group that is gone.
+                // A saved search or a dashboard is no longer shared with a group that is gone.
                 S::delete_shares_with_group(transaction, id).await?;
+                S::delete_dashboard_shares_with_group(transaction, id).await?;
                 let after = S::organization_state_in(transaction).await?;
                 ensure_a_manager_remains(&before, &after).map_err(S::refused)
             })

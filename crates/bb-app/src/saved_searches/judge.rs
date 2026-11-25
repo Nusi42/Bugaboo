@@ -62,6 +62,11 @@ impl Judge<'_> {
     pub(crate) const fn lift_budget(&mut self) {
         self.names.lift();
     }
+
+    /// The fields the person may search by, as the judge read them.
+    pub(crate) const fn fields(&self) -> &ReadableFields {
+        &self.fields
+    }
 }
 
 impl<S: AuthStore> Ctx<'_, S> {

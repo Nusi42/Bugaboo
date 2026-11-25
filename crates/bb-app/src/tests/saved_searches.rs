@@ -259,6 +259,7 @@ async fn qry_06_sharing_needs_share_searches_at_the_place() -> Outcome {
         &crew.world.ctx(),
         ShareChoicesQuery {
             session_token: ben.clone(),
+            of: crate::saved_searches::Shareable::Searches,
             kind: ShareKind::Project,
             cursor: None,
             limit: 50,
@@ -326,6 +327,7 @@ async fn qry_06_a_group_needs_being_in_it_or_manage_groups() -> Outcome {
                 &world.ctx(),
                 ShareChoicesQuery {
                     session_token: session,
+                    of: crate::saved_searches::Shareable::Searches,
                     kind: ShareKind::Group,
                     cursor: None,
                     limit: 50,

@@ -94,6 +94,26 @@ fn kept(kind: KeepKind, rows: Option<u64>, until: KeptUntil) -> KeptByLaw {
     }
 }
 
+impl<S: AuthStore> Ctx<'_, S> {
+    /// How many rows of a kind that stays when shared the person made and shared: the saved
+    /// searches and the dashboards that the removal keeps, made by *Former user*.
+    async fn shared_rows_of(
+        &self,
+        kind: &bb_core::personal::EntityMarks,
+        person: UserId,
+    ) -> Result<u64, AppError> {
+        let store = self.store();
+        let shared = if kind.name()
+            == <bb_core::dashboard::Dashboard as bb_core::personal::Entity>::MARKS.name()
+        {
+            store.count_shared_dashboards_of(person).await
+        } else {
+            store.count_shared_searches_of(person).await
+        };
+        shared.map_err(|error| internal::<S>(&error))
+    }
+}
+
 /// The plan of the removal of a person, with *Remove people*.
 ///
 /// # Errors
@@ -137,12 +157,8 @@ pub async fn removal_plan<S: AuthStore>(
                     .await
                     .map_err(failed)?;
                 if kept_when_shared(&kind.marks) {
-                    gone = gone.saturating_sub(
-                        ctx.store()
-                            .count_shared_searches_of(input.person)
-                            .await
-                            .map_err(failed)?,
-                    );
+                    gone =
+                        gone.saturating_sub(ctx.shared_rows_of(&kind.marks, input.person).await?);
                 }
                 (gone, kind.rows.saturating_sub(gone))
             }

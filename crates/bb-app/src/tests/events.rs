@@ -17,6 +17,7 @@ use super::releases as srl;
 use super::runs as sru;
 use super::scenarios::{self as s, Added};
 use super::scenarios_ai as sai;
+use super::scenarios_dashboards as sdb;
 use super::scenarios_fields as sf;
 use super::scenarios_files as sfi;
 use super::scenarios_issues as si;
@@ -243,6 +244,13 @@ table! {
     "restore_release" => srl::restore_release_scenario,
     "save_copy" => ss::save_copy_scenario,
     "set_project_list" => ss::set_project_list_scenario,
+    "create_dashboard" => sdb::create_dashboard_scenario,
+    "change_dashboard" => sdb::change_dashboard_scenario,
+    "share_dashboard" => sdb::share_dashboard_scenario,
+    "stop_sharing_dashboard" => sdb::stop_sharing_dashboard_scenario,
+    "delete_dashboard" => sdb::delete_dashboard_scenario,
+    "restore_dashboard" => sdb::restore_dashboard_scenario,
+    "copy_dashboard" => sdb::copy_dashboard_scenario,
     "create_starter_time_fields" => sti::create_starter_time_fields_scenario,
     "start_timer" => sti::start_timer_scenario,
     "stop_timer" => sti::stop_timer_scenario,

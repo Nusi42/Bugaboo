@@ -88,6 +88,8 @@ mod switch_off_http;
 mod themes_http;
 // The permission matrix (SEC-MATRIX, WP-10) lives in `tests/matrix` and uses the server and the
 // browser of these tests.
+mod dashboards_boxes_http;
+mod dashboards_http;
 mod list_labels_http;
 #[path = "../matrix/mod.rs"]
 mod matrix;

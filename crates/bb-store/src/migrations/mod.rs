@@ -100,6 +100,7 @@ mod m0063_timer_by_issue;
 mod m0064_walk_index;
 mod m0065_releases;
 mod m0066_board_calendar_card;
+mod m0067_dashboards;
 mod release_layouts;
 
 pub(crate) use m0057_person_standing::VERSION as REPLAY_WAITING_FROM;

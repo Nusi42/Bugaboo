@@ -233,6 +233,25 @@ pub async fn prepare_removal<S: AuthStore>(
     })
 }
 
+/// Deletes the person's private dashboards and their *Home*, with their names and box titles in
+/// the changes (ADR-0050, decision 11); a shared one stays, made by *Former user*.
+async fn delete_private_dashboards_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    person: UserId,
+) -> Result<(), S::Error> {
+    let dashboards = Scrub {
+        records: S::delete_private_dashboards_of(transaction, person)
+            .await?
+            .into_iter()
+            .map(|dashboard| entity(RecordKind::Dashboard, dashboard))
+            .collect(),
+        ..Scrub::default()
+    };
+    S::scrub_records(transaction, person, &dashboards)
+        .await
+        .map(|_| ())
+}
+
 /// Removes a person inside a change that is open (ADR-0044, decision 6): the one function the use
 /// case and the replay call.
 ///
@@ -293,6 +312,7 @@ pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
         ..Scrub::default()
     };
     S::scrub_records(transaction, person, &searches).await?;
+    delete_private_dashboards_in::<S>(transaction, person).await?;
     S::delete_two_step(transaction, person).await?;
     S::delete_grants_of(transaction, person).await?;
     // The rows that give the person roles go too, under the lock of every change of roles. Only a
@@ -301,7 +321,7 @@ pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
     // The files of the exports go with their records, after the change (the job).
     let exports = S::exports_of_in(transaction, person).await?;
     for (kind, links) in deleted_kinds() {
-        // A shared search stays, with *Former user* as its maker (M5-F62).
+        // A shared search or dashboard stays, with *Former user* as its maker (M5-F62).
         if !kept_when_shared(&kind) {
             S::delete_linked(transaction, person, &kind, links).await?;
         }

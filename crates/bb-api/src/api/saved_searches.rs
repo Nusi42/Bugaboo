@@ -30,6 +30,8 @@ use crate::lean::FieldSpec;
 mod project_list;
 mod searches;
 
+pub(crate) use searches::{scoped_list, share_choices_answer};
+
 const SEARCHES_LIST: &str = "saved-searches";
 const CHOICES_LIST: &str = "share-choices";
 
@@ -488,16 +490,16 @@ pub(crate) struct ChangeSavedSearchBody {
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct CopyBody {
     /// What the copy is called; the name of the original when left out.
-    name: Option<String>,
+    pub(crate) name: Option<String>,
 }
 
 /// The group or the project to share with.
 #[derive(Deserialize, ToSchema)]
 pub(crate) struct ShareBody {
     /// A group or a project.
-    kind: ShareKind,
+    pub(crate) kind: ShareKind,
     /// The ID of the group or the project.
-    id: String,
+    pub(crate) id: String,
 }
 
 /// The saved search a project shows as its list.
@@ -513,7 +515,7 @@ pub(crate) struct ProjectListChoiceBody {
 #[into_params(parameter_in = Query)]
 pub(crate) struct ScopeParams {
     /// The ones the person made (`mine`, the default) or the ones shared with them (`shared`).
-    scope: Option<SearchSet>,
+    pub(crate) scope: Option<SearchSet>,
 }
 
 /// Which places to list.
@@ -521,7 +523,7 @@ pub(crate) struct ScopeParams {
 #[into_params(parameter_in = Query)]
 pub(crate) struct KindParams {
     /// Groups or projects.
-    kind: ShareKind,
+    pub(crate) kind: ShareKind,
 }
 
 /// The routes of saved searches and of the list of a project.

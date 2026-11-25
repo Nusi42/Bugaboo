@@ -29,7 +29,7 @@ use crate::projects::Why;
 
 /// The search text as it is kept: trimmed, in one line, at most [`MAX_TEXT_BYTES`] bytes. An empty
 /// text is a search for everything.
-fn clean_search_text(text: &str) -> Result<String, AppError> {
+pub(crate) fn clean_search_text(text: &str) -> Result<String, AppError> {
     let text = text.trim();
     if text.len() > MAX_TEXT_BYTES || text.chars().any(char::is_control) {
         return Err(ErrorCode::InvalidRequest.into());
@@ -226,7 +226,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         // Whoever does not see it, also because it does not check for them, is told nothing about
         // it, and nobody is told about the trash.
         let sees = if let Some(found) = &found {
-            self.may_open(&mut judge, actor, &reaching, found).await?
+            self.may_open(&mut judge, &reaching, found).await?
         } else {
             false
         };
@@ -422,8 +422,7 @@ pub async fn restore_search<S: AuthStore>(
         true
     } else {
         let mut judge = ctx.judge(&actor, &reaching).await?;
-        ctx.may_open(&mut judge, &actor, &reaching, &restored)
-            .await?
+        ctx.may_open(&mut judge, &reaching, &restored).await?
     };
     let search = if opens {
         Some(ctx.one_view(&actor, &reaching, restored).await?)

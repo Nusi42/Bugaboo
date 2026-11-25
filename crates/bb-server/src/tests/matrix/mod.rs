@@ -20,6 +20,7 @@ mod delivery;
 mod examples;
 mod examples_agent_work;
 mod examples_ai;
+mod examples_dashboards;
 mod examples_data_exports;
 mod examples_editing;
 mod examples_fields;

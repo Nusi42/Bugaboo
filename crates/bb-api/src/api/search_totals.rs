@@ -10,7 +10,7 @@ use axum::Extension;
 use axum::extract::State;
 use axum::response::Response;
 use bb_app::search::{
-    GroupOrder, SearchScope, SearchTotalsQuery, SumShown, TotalShown, totals_list,
+    GroupOrder, SearchScope, SearchTotals, SearchTotalsQuery, SumShown, TotalShown, totals_list,
 };
 use bb_core::id::ProjectId;
 use bb_policy::Masked;
@@ -137,6 +137,28 @@ pub(crate) struct SearchTotalsAnswer {
 
 impl Masked for SearchTotalsAnswer {}
 
+impl SearchTotalsAnswer {
+    /// The answer of the totals of a search, with the cursor of the next page sealed already.
+    pub(crate) fn of(totals: SearchTotals, next_cursor: Option<String>) -> Self {
+        Self {
+            sums: totals.sums,
+            groups: totals
+                .groups
+                .into_iter()
+                .map(|row| SearchTotalRowBody {
+                    key: group_key(row.group.key),
+                    issues: row.group.issues,
+                    filter: row.group.filter,
+                    name: row.group.name,
+                    sums: row.sums.into_iter().map(SearchSumBody::from).collect(),
+                })
+                .collect(),
+            all: totals.all.into(),
+            next_cursor,
+        }
+    }
+}
+
 /// The totals of a search: the count and the sums asked for, of each group of one field and of all
 /// the issues together. A total counts only the issues the person may read and a value only where
 /// they may read its field; people stand in the order of their names, never of their size.
@@ -186,31 +208,17 @@ pub(super) async fn total_searched_issues(
         .transpose()?;
     let found = auth.api()?.search_totals(info, query).await?;
     let mut failed = None;
-    let answer = found.map(|totals| {
+    let answer = found.map(|mut totals| {
         let next_cursor = totals
             .next_cursor
+            .take()
             .map(|position| paging::seal(&list, &position))
             .transpose()
             .unwrap_or_else(|error| {
                 failed = Some(error);
                 None
             });
-        SearchTotalsAnswer {
-            sums: totals.sums,
-            groups: totals
-                .groups
-                .into_iter()
-                .map(|row| SearchTotalRowBody {
-                    key: group_key(row.group.key),
-                    issues: row.group.issues,
-                    filter: row.group.filter,
-                    name: row.group.name,
-                    sums: row.sums.into_iter().map(SearchSumBody::from).collect(),
-                })
-                .collect(),
-            all: totals.all.into(),
-            next_cursor,
-        }
+        SearchTotalsAnswer::of(totals, next_cursor)
     });
     if let Some(error) = failed {
         return Err(error);

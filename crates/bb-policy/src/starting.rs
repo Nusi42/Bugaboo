@@ -49,14 +49,16 @@ const R: PeopleLevel = PeopleLevel::RoleOnly;
 const O: PeopleLevel = PeopleLevel::Hidden;
 
 /// The permissions of a Contributor, which every role above it has too (M3-Q6). *Book time* starts
-/// here (ADR-0035, decision 2).
-const CONTRIBUTOR: [Permission; 7] = [
+/// here (ADR-0035, decision 2). *Share dashboards* starts with the roles of *Share searches*
+/// (ADR-0025, amendment 2026-11-24).
+const CONTRIBUTOR: [Permission; 8] = [
     Permission::SeeProjects,
     Permission::SeeIssues,
     Permission::CreateIssues,
     Permission::ChangeOwnIssues,
     Permission::Comment,
     Permission::ShareSearches,
+    Permission::ShareDashboards,
     Permission::BookTime,
 ];
 
@@ -84,10 +86,11 @@ const PROJECT_LEAD: [Permission; 11] = [
 ];
 
 /// A Viewer only looks, and shares what they found (ADR-0034, decision 2).
-const VIEWER: [Permission; 3] = [
+const VIEWER: [Permission; 4] = [
     Permission::SeeProjects,
     Permission::SeeIssues,
     Permission::ShareSearches,
+    Permission::ShareDashboards,
 ];
 
 /// A Guest sees only the issues they reported (no *See issues*), makes issues, changes their own

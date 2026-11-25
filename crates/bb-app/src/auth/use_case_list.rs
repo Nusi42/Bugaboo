@@ -432,6 +432,32 @@ macro_rules! each_use_case {
             project_list(ProjectListQuery) -> Authorized<ProjectList>;
             /// Chooses the saved search a project shows as its list.
             set_project_list(SetProjectList) -> Authorized<ProjectList>;
+            /// Lists the dashboards a person made, or the ones shared with them.
+            dashboards(DashboardsQuery) -> Authorized<DashboardPage>;
+            /// Opens one dashboard, with the boxes that check for the person.
+            dashboard(DashboardQuery) -> Authorized<DashboardView>;
+            /// Opens the person's *Home*, made at first use.
+            home(HomeQuery) -> Authorized<DashboardView>;
+            /// What one box of a dashboard answers for the person.
+            dashboard_box(BoxQuery) -> BoxAnswer;
+            /// What a box would answer before it is added.
+            box_preview(BoxPreviewQuery) -> BoxAnswer;
+            /// The ready-made boxes *Add box* offers.
+            ready_made_boxes(ReadyMadeQuery) -> Authorized<ReadyMadeList>;
+            /// Creates a dashboard.
+            create_dashboard(CreateDashboard) -> Authorized<DashboardView>;
+            /// Changes the name or the boxes of a dashboard.
+            change_dashboard(ChangeDashboard) -> Authorized<DashboardView>;
+            /// Shares a dashboard with a group or a project.
+            share_dashboard(ShareDashboard) -> Authorized<DashboardView>;
+            /// Stops sharing a dashboard with a group or a project.
+            stop_sharing_dashboard(StopSharingDashboard) -> Authorized<DashboardView>;
+            /// Puts a dashboard into the trash.
+            delete_dashboard(DeleteDashboard) -> Done;
+            /// Takes a dashboard out of the trash.
+            restore_dashboard(RestoreDashboard) -> Authorized<RestoredDashboard>;
+            /// Saves a copy of a dashboard for the person.
+            copy_dashboard(CopyDashboard) -> Authorized<DashboardView>;
             /// Lists the own fields a person sees.
             fields(FieldsQuery) -> Authorized<FieldPage>;
             /// Lists the kinds of information a field can hold.

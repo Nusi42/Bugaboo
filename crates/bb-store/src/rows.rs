@@ -3,12 +3,12 @@
 
 use bb_core::id::{
     AccessKeyId, AgentId, AgentNoteId, AgentRequestId, AgentWorkId, AssignmentId, AttachmentId,
-    AttemptId, AwayTimeId, BackupId, ChoiceId, CommentId, DataExportId, EditorId, EntityId,
-    EventId, FieldId, GrantId, GroupId, HandOverId, IdError, InvitationId, IssueId, IssueTypeId,
-    JobId, LabelGroupId, LabelId, LayoutId, LockToken, NotificationId, OAuthClientId, PasskeyId,
-    ProjectId, RelationId, RelationKindId, ReleaseId, RoleId, RunId, SavedSearchId, SessionId,
-    StandingRuleId, TagId, ThemeId, TimeEntryId, ToolCallId, UploadId, UserId, WorkDayId,
-    WorkflowId,
+    AttemptId, AwayTimeId, BackupId, ChoiceId, CommentId, DashboardBoxId, DashboardId,
+    DataExportId, EditorId, EntityId, EventId, FieldId, GrantId, GroupId, HandOverId, IdError,
+    InvitationId, IssueId, IssueTypeId, JobId, LabelGroupId, LabelId, LayoutId, LockToken,
+    NotificationId, OAuthClientId, PasskeyId, ProjectId, RelationId, RelationKindId, ReleaseId,
+    RoleId, RunId, SavedSearchId, SessionId, StandingRuleId, TagId, ThemeId, TimeEntryId,
+    ToolCallId, UploadId, UserId, WorkDayId, WorkflowId,
 };
 use jiff::Timestamp;
 use sea_query::Iden;
@@ -156,6 +156,8 @@ stored_ids!(
     ReleaseId => "a release ID",
     RoleId => "a role ID",
     SavedSearchId => "a saved search ID",
+    DashboardId => "a dashboard ID",
+    DashboardBoxId => "a box ID",
     ThemeId => "an own theme ID",
     BackupId => "a backup ID",
     DataExportId => "a data export ID",

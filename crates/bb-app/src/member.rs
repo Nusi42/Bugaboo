@@ -251,6 +251,18 @@ pub(crate) mod saved_search {
     pub(crate) const DEFAULT_LIST: &str = "default_list";
 }
 
+/// The members of a dashboard (ADR-0050, decision 9): made, changed, shared, no longer shared,
+/// deleted.
+pub(crate) mod dashboard {
+    pub(crate) const NAME: &str = super::saved_search::NAME;
+    /// The boxes, each with its kind, place, title, source and options, in order.
+    pub(crate) const BOXES: &str = "boxes";
+    /// Whether it is the maker's *Home*.
+    pub(crate) const HOME: &str = "home";
+    pub(crate) const SHARED_WITH: &str = super::saved_search::SHARED_WITH;
+    pub(crate) const DELETED_AT: &str = super::saved_search::DELETED_AT;
+}
+
 /// The members of a time entry (TIME-01, TIME-02). The history of the issue reads the issue from
 /// `ISSUE`.
 pub(crate) mod time_entry {

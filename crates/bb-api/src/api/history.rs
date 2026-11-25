@@ -242,7 +242,7 @@ fn start(item: &HistoryItem, kind: HistoryEntryKind) -> HistoryEntryItem {
 
 /// The items of one row of the history: a comment, a file and a relation are one each, a change one for
 /// each field.
-fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
+pub(crate) fn items_of(row: &HistoryItem) -> Vec<HistoryEntryItem> {
     match &row.what {
         HistoryWhat::Comment { comment } => {
             let shown = CommentItem::from(comment);

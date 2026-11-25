@@ -20,6 +20,7 @@ mod chain;
 mod changes;
 mod comments;
 mod corrections;
+mod dashboards;
 mod data_exports;
 #[cfg(feature = "dataset")]
 mod dataset;

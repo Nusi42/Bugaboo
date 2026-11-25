@@ -206,6 +206,8 @@ words! {
         Role => "role",
         /// A saved search (QRY-06).
         SavedSearch => "saved_search",
+        /// A dashboard (CFG-03).
+        Dashboard => "dashboard",
         /// A sign-in session.
         Session => "session",
         /// A setting.

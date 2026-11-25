@@ -20,6 +20,7 @@ pub mod app_paths;
 pub mod backup;
 pub mod comment;
 pub mod contrast;
+pub mod dashboard;
 pub mod data_export;
 pub mod data_folder;
 pub mod e_mail_change;

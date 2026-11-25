@@ -3,7 +3,7 @@
 //! who see it. Being reached never adds a right: what the search finds is the receiver's own.
 
 use bb_core::ErrorCode;
-use bb_core::id::{GroupId, ProjectId, SavedSearchId};
+use bb_core::id::{GroupId, ProjectId, SavedSearchId, UserId};
 use bb_core::saved_search::{Presentation, SavedSearch, SearchColumn, SearchShare, ShareTarget};
 use bb_policy::{Evaluation, Permission};
 
@@ -36,21 +36,77 @@ impl Reaching {
         self.groups.contains(&group)
     }
 
-    /// Whether one of the shares reaches the person.
-    pub(crate) fn includes(&self, shares: &[SearchShare]) -> bool {
-        shares.iter().any(|share| match share.target {
+    /// Whether one of the places a record is shared with reaches the person.
+    pub(crate) fn includes(&self, targets: impl IntoIterator<Item = ShareTarget>) -> bool {
+        targets.into_iter().any(|target| match target {
             ShareTarget::Group(group) => self.groups.contains(&group),
             ShareTarget::Project(project) => self.projects.contains(&project),
         })
     }
+
+    /// How a record that one person makes and shares reaches this person: not at all when it is in
+    /// the trash or neither theirs nor shared with a place of theirs, as its maker, or by a share.
+    /// The first half of the one rule of who may open a saved search or a dashboard (ADR-0034,
+    /// decision 4; ADR-0050, decision 2); a saved search reached by a share must also check cleanly.
+    pub(crate) fn reached(
+        &self,
+        deleted: bool,
+        maker: UserId,
+        targets: impl IntoIterator<Item = ShareTarget>,
+    ) -> Reached {
+        if deleted {
+            Reached::Not
+        } else if maker == self.shown.person() {
+            Reached::AsMaker
+        } else if self.includes(targets) {
+            Reached::ByShare
+        } else {
+            Reached::Not
+        }
+    }
 }
 
-/// Whether a person may share a saved search with a group (ADR-0034, decision 2): they are in it
-/// and hold *Share searches* for the whole organization, or they hold *Manage groups*.
-/// `organization` is what they hold at the organization.
-pub(crate) fn may_share_with_group(organization: &Evaluation, in_group: bool) -> bool {
+/// How a shared record reaches a person ([`Reaching::reached`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Reached {
+    /// It is not there for them.
+    Not,
+    /// They made it.
+    AsMaker,
+    /// It is shared with a group of theirs or a project they see.
+    ByShare,
+}
+
+/// What a person may share with others: saved searches or dashboards, each by a permission of its
+/// own (ADR-0034, decision 2; ADR-0050, decision 2).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Shareable {
+    /// Saved searches, with *Share searches*.
+    Searches,
+    /// Dashboards, with *Share dashboards*.
+    Dashboards,
+}
+
+impl Shareable {
+    /// The permission that shares it.
+    pub(crate) const fn permission(self) -> Permission {
+        match self {
+            Self::Searches => Permission::ShareSearches,
+            Self::Dashboards => Permission::ShareDashboards,
+        }
+    }
+}
+
+/// Whether a person may share a saved search or a dashboard with a group (ADR-0034, decision 2):
+/// they are in it and hold the permission that shares it for the whole organization, or they hold
+/// *Manage groups*. `organization` is what they hold at the organization.
+pub(crate) fn may_share_with_group(
+    organization: &Evaluation,
+    in_group: bool,
+    what: Shareable,
+) -> bool {
     organization.allows(Permission::ManageGroups)
-        || (in_group && organization.allows(Permission::ShareSearches))
+        || (in_group && organization.allows(what.permission()))
 }
 
 /// A saved search that is there, with its columns and its shares.
@@ -117,9 +173,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let reaching = self.reaching(actor).await?;
         let mut judge = self.judge(actor, &reaching).await?;
         let clean = match stored {
-            Some(found) if self.may_open(&mut judge, actor, &reaching, &found).await? => {
-                Some(found)
-            }
+            Some(found) if self.may_open(&mut judge, &reaching, &found).await? => Some(found),
             _ => None,
         };
         drop(judge);
@@ -133,17 +187,19 @@ impl<S: AuthStore> Ctx<'_, S> {
     pub(crate) async fn may_open(
         &self,
         judge: &mut Judge<'_>,
-        actor: &Actor,
         reaching: &Reaching,
         found: &Stored,
     ) -> Result<bool, AppError> {
-        if found.search.deleted_at.is_some() {
-            return Ok(false);
+        let targets = found.shares.iter().map(|share| share.target);
+        match reaching.reached(
+            found.search.deleted_at.is_some(),
+            found.search.maker,
+            targets,
+        ) {
+            Reached::Not => Ok(false),
+            Reached::AsMaker => Ok(true),
+            Reached::ByShare => self.reads_cleanly(judge, found).await,
         }
-        if found.search.maker == actor.person.id {
-            return Ok(true);
-        }
-        Ok(reaching.includes(&found.shares) && self.reads_cleanly(judge, found).await?)
     }
 
     /// Whether a saved search of somebody else checks cleanly for the person `judge` is for.

@@ -12,6 +12,7 @@ pub mod boards;
 pub mod calendar;
 pub mod comments;
 pub mod context;
+pub mod dashboards;
 pub mod editing;
 pub mod event_members;
 pub mod fields;

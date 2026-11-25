@@ -2154,6 +2154,9 @@ pub const COOKIE_CSRF_PURPOSE: MessageKey = MessageKey::new("cookie.csrf.purpose
 /// The message `cookie.session.purpose`.
 pub const COOKIE_SESSION_PURPOSE: MessageKey = MessageKey::new("cookie.session.purpose");
 
+/// The message `dashboard.home-name`.
+pub const DASHBOARD_HOME_NAME: MessageKey = MessageKey::new("dashboard.home-name");
+
 /// The message `data-exports.col.actions`.
 pub const DATA_EXPORTS_COL_ACTIONS: MessageKey = MessageKey::new("data-exports.col.actions");
 
@@ -5743,6 +5746,9 @@ pub const PERMISSION_SEE_STATUS: MessageKey = MessageKey::new("permission.see-st
 pub const PERMISSION_SEE_WORKING_HOURS_OF_OTHERS: MessageKey =
     MessageKey::new("permission.see-working-hours-of-others");
 
+/// The message `permission.share-dashboards`.
+pub const PERMISSION_SHARE_DASHBOARDS: MessageKey = MessageKey::new("permission.share-dashboards");
+
 /// The message `permission.share-searches`.
 pub const PERMISSION_SHARE_SEARCHES: MessageKey = MessageKey::new("permission.share-searches");
 
@@ -6202,6 +6208,37 @@ pub const PERSONAL_FIELD_COMMENT_TEXT: MessageKey = MessageKey::new("personal-fi
 /// The message `personal-field.comment.version`.
 pub const PERSONAL_FIELD_COMMENT_VERSION: MessageKey =
     MessageKey::new("personal-field.comment.version");
+
+/// The message `personal-field.dashboard.created-at`.
+pub const PERSONAL_FIELD_DASHBOARD_CREATED_AT: MessageKey =
+    MessageKey::new("personal-field.dashboard.created-at");
+
+/// The message `personal-field.dashboard.deleted-at`.
+pub const PERSONAL_FIELD_DASHBOARD_DELETED_AT: MessageKey =
+    MessageKey::new("personal-field.dashboard.deleted-at");
+
+/// The message `personal-field.dashboard.home`.
+pub const PERSONAL_FIELD_DASHBOARD_HOME: MessageKey =
+    MessageKey::new("personal-field.dashboard.home");
+
+/// The message `personal-field.dashboard.id`.
+pub const PERSONAL_FIELD_DASHBOARD_ID: MessageKey = MessageKey::new("personal-field.dashboard.id");
+
+/// The message `personal-field.dashboard.maker`.
+pub const PERSONAL_FIELD_DASHBOARD_MAKER: MessageKey =
+    MessageKey::new("personal-field.dashboard.maker");
+
+/// The message `personal-field.dashboard.name`.
+pub const PERSONAL_FIELD_DASHBOARD_NAME: MessageKey =
+    MessageKey::new("personal-field.dashboard.name");
+
+/// The message `personal-field.dashboard.updated-at`.
+pub const PERSONAL_FIELD_DASHBOARD_UPDATED_AT: MessageKey =
+    MessageKey::new("personal-field.dashboard.updated-at");
+
+/// The message `personal-field.dashboard.version`.
+pub const PERSONAL_FIELD_DASHBOARD_VERSION: MessageKey =
+    MessageKey::new("personal-field.dashboard.version");
 
 /// The message `personal-field.data-export.asked-at`.
 pub const PERSONAL_FIELD_DATA_EXPORT_ASKED_AT: MessageKey =
@@ -7784,6 +7821,9 @@ pub const PERSONAL_KIND_BACKUP_RUN: MessageKey = MessageKey::new("personal-kind.
 /// The message `personal-kind.comment`.
 pub const PERSONAL_KIND_COMMENT: MessageKey = MessageKey::new("personal-kind.comment");
 
+/// The message `personal-kind.dashboard`.
+pub const PERSONAL_KIND_DASHBOARD: MessageKey = MessageKey::new("personal-kind.dashboard");
+
 /// The message `personal-kind.data-export`.
 pub const PERSONAL_KIND_DATA_EXPORT: MessageKey = MessageKey::new("personal-kind.data-export");
 
@@ -8322,6 +8362,44 @@ pub const PROJECTS_TREE_EMPTY: MessageKey = MessageKey::new("projects.tree-empty
 
 /// The message `projects.tree-more`.
 pub const PROJECTS_TREE_MORE: MessageKey = MessageKey::new("projects.tree-more");
+
+/// The message `ready-made-box.due-soon`.
+pub const READY_MADE_BOX_DUE_SOON: MessageKey = MessageKey::new("ready-made-box.due-soon");
+
+/// The message `ready-made-box.issues-by-status-group`.
+pub const READY_MADE_BOX_ISSUES_BY_STATUS_GROUP: MessageKey =
+    MessageKey::new("ready-made-box.issues-by-status-group");
+
+/// The message `ready-made-box.my-open-issues`.
+pub const READY_MADE_BOX_MY_OPEN_ISSUES: MessageKey =
+    MessageKey::new("ready-made-box.my-open-issues");
+
+/// The message `ready-made-box.my-time-this-week`.
+pub const READY_MADE_BOX_MY_TIME_THIS_WEEK: MessageKey =
+    MessageKey::new("ready-made-box.my-time-this-week");
+
+/// The message `ready-made-box.my-timer`.
+pub const READY_MADE_BOX_MY_TIMER: MessageKey = MessageKey::new("ready-made-box.my-timer");
+
+/// The message `ready-made-box.open-bugs-by-priority`.
+pub const READY_MADE_BOX_OPEN_BUGS_BY_PRIORITY: MessageKey =
+    MessageKey::new("ready-made-box.open-bugs-by-priority");
+
+/// The message `ready-made-box.progress-of-a-release`.
+pub const READY_MADE_BOX_PROGRESS_OF_A_RELEASE: MessageKey =
+    MessageKey::new("ready-made-box.progress-of-a-release");
+
+/// The message `ready-made-box.recent-changes-in-this-project`.
+pub const READY_MADE_BOX_RECENT_CHANGES_IN_THIS_PROJECT: MessageKey =
+    MessageKey::new("ready-made-box.recent-changes-in-this-project");
+
+/// The message `ready-made-box.small-timeline-of-a-search`.
+pub const READY_MADE_BOX_SMALL_TIMELINE_OF_A_SEARCH: MessageKey =
+    MessageKey::new("ready-made-box.small-timeline-of-a-search");
+
+/// The message `ready-made-box.time-on-this-search`.
+pub const READY_MADE_BOX_TIME_ON_THIS_SEARCH: MessageKey =
+    MessageKey::new("ready-made-box.time-on-this-search");
 
 /// The message `related-issues.add`.
 pub const RELATED_ISSUES_ADD: MessageKey = MessageKey::new("related-issues.add");

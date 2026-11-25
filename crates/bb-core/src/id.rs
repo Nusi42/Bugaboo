@@ -315,6 +315,16 @@ define_ordered_id! {
 }
 
 define_ordered_id! {
+    /// The ID of a dashboard (CFG-03); the address `/d/<id>` carries it.
+    DashboardId
+}
+
+define_ordered_id! {
+    /// The ID of a box of a dashboard (CFG-03).
+    DashboardBoxId
+}
+
+define_ordered_id! {
     /// The ID of an own theme; the address of its style sheet `/themes/<id>.css` carries it (THM-04).
     ThemeId
 }
@@ -539,6 +549,8 @@ into_entity_id!(
     LayoutId,
     WorkflowId,
     SavedSearchId,
+    DashboardId,
+    DashboardBoxId,
     ThemeId,
     AgentRequestId,
     DataExportId,

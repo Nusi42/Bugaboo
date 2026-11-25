@@ -20,9 +20,9 @@ use bb_core::access::FieldLevel;
 use bb_core::event::{Actor as EventActor, DomainEvent, EntityKind, EntityRef, RecordKind};
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{
-    AgentId, AgentWorkId, AwayTimeId, FieldId, GroupId, IssueId, IssueTypeId, LabelGroupId,
-    LabelId, LayoutId, ProjectId, RelationKindId, RoleId, SavedSearchId, StandingRuleId, TagId,
-    ThemeId, TimeEntryId, UserId, WorkDayId, WorkflowId,
+    AgentId, AgentWorkId, AwayTimeId, DashboardId, FieldId, GroupId, IssueId, IssueTypeId,
+    LabelGroupId, LabelId, LayoutId, ProjectId, RelationKindId, RoleId, SavedSearchId,
+    StandingRuleId, TagId, ThemeId, TimeEntryId, UserId, WorkDayId, WorkflowId,
 };
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
@@ -227,6 +227,22 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The version the record has now, if it is still there and the person may know about it: one
     /// table, by kind of record, for every route that takes a version (the kinds `bb-app` keeps
     /// itself) and the kinds the program adds (`EditableRecords`).
+    /// The version of a dashboard, told only to its maker: it is changed by its maker alone, like
+    /// a saved search (`own_dashboard`), and one in the trash is not there.
+    async fn dashboard_version(
+        &self,
+        stale: &Stale,
+        bytes: [u8; 16],
+    ) -> Result<Option<i64>, AppError> {
+        Ok(found(DashboardId::from_bytes(bytes).ok(), |id| {
+            self.store().dashboard(id)
+        })
+        .await
+        .map_err(|error| internal::<S>(&error))?
+        .filter(|dashboard| dashboard.maker == stale.viewer && dashboard.deleted_at.is_none())
+        .map(|dashboard| dashboard.version))
+    }
+
     async fn version_now(&self, stale: &Stale) -> Result<Option<i64>, AppError> {
         let record = &stale.record;
         let bytes = record.id.to_bytes();
@@ -289,6 +305,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(failed)?
             .filter(|search| search.maker == stale.viewer && search.deleted_at.is_none())
             .map(|search| search.version),
+            RecordKind::Dashboard => self.dashboard_version(stale, bytes).await?,
             // A theme is told to whoever may know it (`known_to`): a personal theme to its maker,
             // a saved theme for everyone to everybody, and one for everyone never saved to its
             // maker and to who holds *Change organization settings*, who may save or delete it.

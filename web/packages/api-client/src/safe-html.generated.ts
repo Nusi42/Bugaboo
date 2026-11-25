@@ -3,12 +3,14 @@
 /** Where the answers of each operation hold HTML the server rendered (mark `x-safe-html`): the keys from the top of the answer down to the string, `*` for every item of a list. The client turns the strings there into `SafeHtml`, and no other. */
 export const safeHtmlPaths: Readonly<Record<string, readonly (readonly string[])[]>> = {
   "GET /api/v1/comments/{comment}/versions": [["items", "*", "html"]],
+  "GET /api/v1/dashboards/{dashboard}/boxes/{box}": [["changes", "*", "entries", "*", "html"]],
   "GET /api/v1/help/ai-guide": [["html"]],
   "GET /api/v1/issues/{issue}": [["description_html"], ["own_fields_html", "*", "html"]],
   "GET /api/v1/issues/{issue}/history": [["items", "*", "html"]],
   "GET /api/v1/notifications": [["items", "*", "html"]],
   "POST /api/v1/assistant/questions": [["html"]],
   "POST /api/v1/comments/{comment}/restore": [["html"]],
+  "POST /api/v1/dashboards/box-preview": [["changes", "*", "entries", "*", "html"]],
   "POST /api/v1/issues/{issue}/comments": [["html"]],
   "PUT /api/v1/comments/{comment}": [["html"]],
 };

@@ -7,9 +7,9 @@ use axum::http::Method;
 
 use super::{
     Declared, ROUTES, Route, about, access_keys, agent_work, agents, ai, backups, comments,
-    corrections, data_exports, files, keep_rules, mail, oauth, people_state, relations, releases,
-    saved_searches, search_routes, themes, time, timeline, views, what_roles_see, work_times,
-    working_hours,
+    corrections, dashboards, data_exports, files, keep_rules, mail, oauth, people_state, relations,
+    releases, saved_searches, search_routes, themes, time, timeline, views, what_roles_see,
+    work_times, working_hours,
 };
 
 /// Every row of the table: the rows above and those of the areas that have a file of their own
@@ -26,6 +26,7 @@ pub fn rows() -> impl Iterator<Item = &'static Route> {
         .chain(files::ROUTES)
         .chain(mail::ROUTES)
         .chain(saved_searches::ROUTES)
+        .chain(dashboards::ROUTES)
         .chain(search_routes::ROUTES)
         .chain(views::ROUTES)
         .chain(access_keys::ROUTES)

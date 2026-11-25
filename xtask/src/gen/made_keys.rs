@@ -153,10 +153,22 @@ fn release_keys() -> Vec<Made> {
         .collect()
 }
 
+/// The titles of the ready-made boxes of a dashboard (ADR-0050, decision 4).
+fn ready_made_keys() -> Vec<Made> {
+    bb_core::dashboard::ReadyMade::ALL
+        .iter()
+        .map(|which| Made {
+            key: which.title(),
+            word: format!("the ready-made box `{}`", which.code()),
+        })
+        .collect()
+}
+
 fn listed_keys() -> Vec<Made> {
     [
         agent_work_keys(),
         release_keys(),
+        ready_made_keys(),
         privacy_keys(),
         holiday_keys(),
         plan_keys(),

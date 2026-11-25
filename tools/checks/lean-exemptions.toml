@@ -528,3 +528,33 @@ reason = "The relations between the issues of one relation map, which holds at m
 route = "GET /api/v1/issues/{issue}/map"
 property = "loops"
 reason = "The loops of dependencies among the issues of one relation map, each issue on one loop at most per pair of its relations; bounded by the map's issues, whose cut `truncated` says (ISS-16, M1-F44)."
+
+[[exempt]]
+route = "GET /api/v1/dashboards/{dashboard}"
+property = "boxes"
+whole_value = true
+reason = "A dashboard holds at most 20 boxes (BOXES_MAX, refused above it when it is written), and the screen draws them all at once on its grid (ADR-0050, decision 3; a hard cap, M1-F44)."
+
+[[exempt]]
+route = "GET /api/v1/dashboards/{dashboard}"
+property = "shared_with"
+whole_value = true
+reason = "A dashboard is shared with at most 100 places (SHARES_MAX, bounded when it is shared), and only its maker is told, as for a saved search; paging it is M5-F60."
+
+[[exempt]]
+route = "GET /api/v1/dashboards/home"
+property = "boxes"
+whole_value = true
+reason = "A dashboard holds at most 20 boxes (BOXES_MAX, refused above it when it is written), and the screen draws them all at once on its grid (ADR-0050, decision 3; a hard cap, M1-F44)."
+
+[[exempt]]
+route = "GET /api/v1/dashboards/home"
+property = "shared_with"
+whole_value = true
+reason = "A dashboard is shared with at most 100 places (SHARES_MAX, bounded when it is shared), and only its maker is told, as for a saved search; paging it is M5-F60."
+
+[[exempt]]
+route = "GET /api/v1/dashboards/ready-made-boxes"
+property = "boxes"
+whole_value = true
+reason = "The ready-made boxes are the rows of one list of the code (READY_MADE_BOXES, ten): bounded by the code, not by data, and Add box shows them all at once (ADR-0050, decision 4; a hard cap, M1-F44)."

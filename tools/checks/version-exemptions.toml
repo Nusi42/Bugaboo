@@ -19,6 +19,18 @@ reason = "A saved search is made, or put into the trash and taken out, by its ma
 
 [[exempt]]
 routes = [
+  "POST /api/v1/dashboards",
+  "DELETE /api/v1/dashboards/{dashboard}",
+  "POST /api/v1/dashboards/{dashboard}/restore",
+  "POST /api/v1/dashboards/{dashboard}/copy",
+  "POST /api/v1/dashboards/{dashboard}/shares",
+  "DELETE /api/v1/dashboards/{dashboard}/shares/{kind}/{id}",
+  "POST /api/v1/dashboards/box-preview",
+]
+reason = "A dashboard is made, or put into the trash and taken out, by its maker alone, like a saved search, and a share is set to a value and can be set again: a version would only protect a change of the name and the boxes, which has one. The preview of a box reads and saves nothing: it is posted because a box does not fit an address (ADR-0050)."
+
+[[exempt]]
+routes = [
   "POST /api/v1/auth/sign-in",
   "POST /api/v1/auth/sign-up",
   "POST /api/v1/auth/setup",

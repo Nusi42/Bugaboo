@@ -67,6 +67,7 @@ const DELETED: &[(EntityMarks, &[Link])] = &[
     deleted::<crate::settings::StoredPersonSetting>(SUBJECT),
     deleted::<crate::settings::PersonSettingCounter>(SUBJECT),
     deleted::<crate::saved_search::SavedSearch>(AUTHOR),
+    deleted::<crate::dashboard::Dashboard>(AUTHOR),
     deleted::<crate::edit::Draft>(AUTHOR),
     deleted::<crate::edit::EditLock>(HOLDER),
     deleted::<crate::edit::EditNotice>(RECIPIENT),
@@ -137,12 +138,18 @@ pub fn is_data_export(kind: &EntityMarks) -> bool {
     kind.name() == marks::<crate::data_export::DataExport>().name()
 }
 
-/// Whether rows of `kind` stay when they are shared with others: a saved search shared with a
-/// group or a project is no longer the person's alone, so the removal keeps it, shown with
-/// *Former user* as its maker (M5-F62); a private one goes with the account.
+/// Whether rows of `kind` stay when they are shared with others: a saved search or a dashboard
+/// shared with a group or a project is no longer the person's alone, so the removal keeps it,
+/// shown with *Former user* as its maker (M5-F62, ADR-0050, decision 11); a private one, and the
+/// person's *Home*, go with the account.
 #[must_use]
 pub fn kept_when_shared(kind: &EntityMarks) -> bool {
-    kind.name() == marks::<crate::saved_search::SavedSearch>().name()
+    [
+        marks::<crate::saved_search::SavedSearch>(),
+        marks::<crate::dashboard::Dashboard>(),
+    ]
+    .iter()
+    .any(|shared| shared.name() == kind.name())
 }
 
 /// The kinds the law keeps for their period: work days, whose periods and breaks belong to them

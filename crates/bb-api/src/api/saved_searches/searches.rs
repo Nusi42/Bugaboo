@@ -47,9 +47,7 @@ async fn list_saved_searches(
     params: Result<ApiQuery<ListParams>, ApiError>,
     which: Result<ApiQuery<ScopeParams>, ApiError>,
 ) -> Result<Response, ApiError> {
-    let read = params.and_then(|params| which.map(|which| (params, which)));
-    let (ApiQuery(params), ApiQuery(which)) =
-        auth.after_who_asks(&info, &session_token, read).await?;
+    let (params, scope) = scoped_list(&auth, &info, &session_token, params, which).await?;
     let (cursor, bad_cursor) = params.start(SEARCHES_LIST);
     let page = auth
         .api()?
@@ -57,7 +55,7 @@ async fn list_saved_searches(
             info,
             SearchesQuery {
                 session_token,
-                scope: which.scope.unwrap_or(SearchSet::Mine),
+                scope,
                 cursor,
                 limit: params.limit(),
             },
@@ -71,6 +69,21 @@ async fn list_saved_searches(
     });
     let fields = params.fields_readable(&SEARCH_FIELDS, &list.hidden_properties())?;
     Ok(answer(Page::of_authorized(SEARCHES_LIST, &list, &fields)?))
+}
+
+/// The query of a list of the person's own records or the ones shared with them (saved searches,
+/// dashboards): the page asked for and the scope, the person's own when none is named.
+pub(crate) async fn scoped_list(
+    auth: &AuthHandle,
+    info: &bb_app::auth::RequestInfo,
+    session_token: &str,
+    params: Result<ApiQuery<ListParams>, ApiError>,
+    which: Result<ApiQuery<ScopeParams>, ApiError>,
+) -> Result<(ListParams, SearchSet), ApiError> {
+    let read = params.and_then(|params| which.map(|which| (params, which)));
+    let (ApiQuery(params), ApiQuery(which)) =
+        auth.after_who_asks(info, session_token, read).await?;
+    Ok((params, which.scope.unwrap_or(SearchSet::Mine)))
 }
 
 /// Saves a search under a name. It is private and the person's own.
@@ -418,6 +431,23 @@ async fn list_share_choices(
     params: Result<ApiQuery<ListParams>, ApiError>,
     which: Result<ApiQuery<KindParams>, ApiError>,
 ) -> Result<Response, ApiError> {
+    share_choices_answer(
+        (&auth, info, session_token),
+        params,
+        which,
+        bb_app::saved_searches::Shareable::Searches,
+    )
+    .await
+}
+
+/// The groups or the projects the person may share a saved search or a dashboard with (`of`), a
+/// page at a time: the one answer of both *Share* windows.
+pub(crate) async fn share_choices_answer(
+    (auth, info, session_token): (&AuthHandle, bb_app::auth::RequestInfo, String),
+    params: Result<ApiQuery<ListParams>, ApiError>,
+    which: Result<ApiQuery<KindParams>, ApiError>,
+    of: bb_app::saved_searches::Shareable,
+) -> Result<Response, ApiError> {
     let read = params.and_then(|params| which.map(|which| (params, which)));
     let (ApiQuery(params), ApiQuery(which)) =
         auth.after_who_asks(&info, &session_token, read).await?;
@@ -428,6 +458,7 @@ async fn list_share_choices(
             info,
             ShareChoicesQuery {
                 session_token,
+                of,
                 kind: which.kind,
                 cursor,
                 limit: params.limit(),

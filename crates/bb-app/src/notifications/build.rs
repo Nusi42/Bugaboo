@@ -338,6 +338,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | RecordKind::Workflow
             | RecordKind::Role
             | RecordKind::SavedSearch
+            | RecordKind::Dashboard
             | RecordKind::Session
             | RecordKind::Setting
             | RecordKind::Share

@@ -42,7 +42,7 @@ pub(crate) mod member {
 impl<S: AuthStore> Ctx<'_, S> {
     /// The day it is now for the person, in the zone of their *Region*: the day a release they
     /// mark *Released* keeps as *Released on*.
-    async fn today_of(&self, actor: &Actor) -> Result<jiff::civil::Date, AppError> {
+    pub(crate) async fn today_of(&self, actor: &Actor) -> Result<jiff::civil::Date, AppError> {
         let layers = self.setting_layers_of(Some(actor.person.id)).await?;
         let region = bb_core::wording::Region::of(&layers);
         Ok(bb_core::time::day::date_of(self.now(), region.zone()))

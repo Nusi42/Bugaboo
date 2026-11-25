@@ -16,9 +16,10 @@ const SAVED_SEARCHES: &str = "crates/bb-server/src/tests/sign_in/saved_searches_
 const TIME_ENTRIES: &str = "crates/bb-server/src/tests/sign_in/time_perf_http.rs";
 const TOTALS: &str = "crates/bb-server/src/tests/sign_in/search_totals_more_http.rs";
 const WORK_TIMES: &str = "crates/bb-server/src/tests/sign_in/work_times_perf.rs";
+const DASHBOARDS: &str = "crates/bb-server/src/tests/sign_in/dashboards_boxes_http.rs";
 
 /// The reads that must not grow with the number of rows.
-pub(super) const REQUIRED: [Required; 18] = [
+pub(super) const REQUIRED: [Required; 20] = [
     // A stretch of work days reads its days, periods, breaks and changed days once each, however long.
     Required::both("perf_05_a_stretch_of_forty_work_days_runs_as_many_statements_as_one_of_five")
         .within("crates/bb-server/src/tests/sign_in/working_hours_perf.rs"),
@@ -81,6 +82,14 @@ pub(super) const REQUIRED: [Required; 18] = [
         "perf_05_a_read_of_one_persons_work_times_runs_as_many_statements_with_twenty_projects_as_with_two",
     )
     .within(WORK_TIMES),
+    // A dashboard judges each box with a fixed number of reads; its list reads makers and shares
+    // once for the page.
+    Required::both("perf_05_a_dashboard_runs_a_fixed_number_of_statements_for_each_box")
+        .within(DASHBOARDS),
+    Required::both(
+        "perf_05_a_page_of_forty_dashboards_runs_as_many_statements_as_a_page_of_five",
+    )
+    .within(DASHBOARDS),
 ];
 
 pub(crate) struct PerfN1;

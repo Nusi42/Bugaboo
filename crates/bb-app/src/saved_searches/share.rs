@@ -9,11 +9,11 @@ use bb_core::ErrorCode;
 use bb_core::event::{DomainEvent, FieldChange, RecordKind};
 use bb_core::id::GroupId;
 use bb_core::saved_search::{SHARES_MAX, SearchShare, ShareTarget};
-use bb_policy::{Authorized, Permission, Place};
+use bb_policy::{Authorized, Place};
 use serde_json::Value;
 
 use super::events::{default_list_change, target_json};
-use super::reach::{Opened, may_share_with_group};
+use super::reach::{Opened, Shareable, may_share_with_group};
 use super::types::{SavedSearchView, ShareSearch, StopSharingSearch};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, Stops, by, change_failed, entity};
@@ -21,18 +21,18 @@ use crate::member::saved_search as member;
 use crate::projects::Why;
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// Whether the actor may share with the group or the project: *Share searches* in the
-    /// project; for a group, being in it with *Share searches* for the whole organization, or
-    /// *Manage groups*.
+    /// Whether the actor may share a saved search or a dashboard with the group or the project:
+    /// the permission that shares it in the project; for a group, being in it with that permission
+    /// for the whole organization, or *Manage groups* (ADR-0034, decision 2; ADR-0050, decision 2).
     ///
     /// # Errors
     /// `resource.not-found` for a project the person does not see, `access.forbidden` for a place
     /// they may not share with, also a group that is not there.
-    async fn require_to_share(
+    pub(crate) async fn require_to_share(
         &self,
         actor: &Actor,
         in_group: impl Fn(GroupId) -> bool,
-        target: ShareTarget,
+        (what, target): (Shareable, ShareTarget),
     ) -> Result<(), AppError> {
         match target {
             ShareTarget::Project(project) => {
@@ -41,13 +41,13 @@ impl<S: AuthStore> Ctx<'_, S> {
                 if !held.sees_project() {
                     return Err(ErrorCode::NotFound.into());
                 }
-                if !held.allows(Permission::ShareSearches) {
+                if !held.allows(what.permission()) {
                     return Err(ErrorCode::Forbidden.into());
                 }
             }
             ShareTarget::Group(group) => {
                 let held = self.evaluation_of(actor, Place::Organization).await?;
-                if !may_share_with_group(&held, in_group(group)) {
+                if !may_share_with_group(&held, in_group(group), what) {
                     return Err(ErrorCode::Forbidden.into());
                 }
                 // Somebody who manages groups is told when the group is not there.
@@ -116,8 +116,12 @@ pub async fn share_search<S: AuthStore>(
         mut stored,
         reaching,
     } = ctx.own_search(&actor, input.search).await?;
-    ctx.require_to_share(&actor, |group| reaching.is_in(group), input.target)
-        .await?;
+    ctx.require_to_share(
+        &actor,
+        |group| reaching.is_in(group),
+        (Shareable::Searches, input.target),
+    )
+    .await?;
     if stored
         .shares
         .iter()

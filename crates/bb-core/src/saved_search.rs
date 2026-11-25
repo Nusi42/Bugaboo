@@ -264,7 +264,7 @@ impl Default for Presentation {
 /// Whether `word` can be the search word of a field: a text as it is kept (trimmed, not empty, at
 /// most [`WORD_MAX`] characters, no control character). Whether a field has the word is the check
 /// of the use case.
-fn is_word(word: &str) -> bool {
+pub(crate) fn is_word(word: &str) -> bool {
     crate::text::clean(word, WORD_MAX) == Some(word)
 }
 

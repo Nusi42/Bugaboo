@@ -401,6 +401,7 @@ pub trait AuthStore:
     + WorkflowStore
     + SettingsStore
     + SavedSearchStore
+    + crate::dashboards::DashboardStore
     + crate::themes::ThemeStore
     + crate::backups::BackupStore
     + SearchStore

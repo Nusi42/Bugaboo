@@ -636,6 +636,7 @@ mod ai;
 mod backups;
 mod comments;
 mod corrections;
+mod dashboards;
 mod data_exports;
 mod files;
 mod keep_rules;

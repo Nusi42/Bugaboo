@@ -63,6 +63,7 @@ mod bodies;
 mod calendar;
 mod check_access;
 mod comments;
+mod dashboards;
 mod data_exports;
 mod date_range;
 mod editing;
@@ -229,6 +230,7 @@ where
         .merge(history::routes())
         .merge(follow::routes())
         .merge(saved_searches::routes())
+        .merge(dashboards::routes(limits))
         .merge(themes::routes())
         .merge(data_exports::routes())
         .merge(working_hours::routes())

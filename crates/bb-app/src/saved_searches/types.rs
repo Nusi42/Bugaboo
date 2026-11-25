@@ -103,10 +103,12 @@ pub struct SavedSearchQuery {
     pub search: SavedSearchId,
 }
 
-/// Which groups or projects the person may share a saved search with.
+/// Which groups or projects the person may share a saved search or a dashboard with.
 pub struct ShareChoicesQuery {
     /// The secret of the session of the request.
     pub session_token: String,
+    /// What is shared: the choices follow its permission.
+    pub of: super::Shareable,
     /// Groups or projects.
     pub kind: ShareKind,
     /// Where the page starts: the `next_cursor` of the page before.

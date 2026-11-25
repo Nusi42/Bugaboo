@@ -537,3 +537,83 @@ reason = "Minutes, not a count of things: the time booked on one issue of a card
 route = "POST /api/v1/calendar"
 property = "time_spent"
 reason = "Minutes, not a count of things: the time booked on one issue of the calendar the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry (ADR-0035, decision 4)."
+
+[[exempt]]
+route = "GET /api/v1/dashboards/{dashboard}/boxes/{box}"
+property = "issues"
+reason = "Counts only issues the viewer may see and read: a box answers the totals of a search through the route of the totals (POST /api/v1/search/totals), run as the viewer, whose statement starts from the viewer's sight (ADR-0004, ADR-0050 decisions 3 and 7, test cfg_03_each_box_runs_as_the_viewer)."
+
+[[exempt]]
+route = "GET /api/v1/dashboards/{dashboard}/boxes/{box}"
+property = "valued"
+reason = "Counts only the issues the viewer may see that gave a value the viewer may read, as the totals of a search do, whose read the box calls as the viewer (QRY-08, PRIV-13, ADR-0050 decisions 3 and 7)."
+
+[[exempt]]
+route = "GET /api/v1/dashboards/{dashboard}/boxes/{box}"
+property = "totals"
+reason = "The totals of a search that the box reads through the route of the totals, as the viewer: only issues and values the viewer may see (QRY-08, ADR-0050 decisions 3 and 7, test cfg_03_each_box_runs_as_the_viewer)."
+
+[[exempt]]
+route = "GET /api/v1/dashboards/{dashboard}/boxes/{box}"
+property = "time_spent"
+reason = "Minutes, not a count of things: the time booked on one issue of the box that the viewer sees, as the list of a search answers it, shown only to a reader of Time spent (ADR-0035, decision 4)."
+
+[[exempt]]
+route = "GET /api/v1/dashboards/{dashboard}/boxes/{box}"
+property = "not_scheduled"
+reason = "Only issues the viewer may see: the small timeline of a box is the page of the timeline route, run as the viewer, whose issues of Not scheduled yet the compiled search finds with the viewer's sight (ADR-0050, decision 4)."
+
+[[exempt]]
+route = "GET /api/v1/dashboards/{dashboard}/boxes/{box}"
+property = "work_days"
+reason = "Days, not a count of things: the length of the bar of an issue the viewer may see on the small timeline, worked out from an estimate the viewer may read, as the timeline route answers it for the viewer (ADR-0050, decision 4)."
+
+[[exempt]]
+route = "GET /api/v1/dashboards/{dashboard}/boxes/{box}"
+property = "late_days"
+reason = "Days, not a count of things: how late an issue the viewer sees ends after one it waits for, as the timeline route answers it for the viewer (ADR-0050, decision 4)."
+
+[[exempt]]
+route = "GET /api/v1/dashboards/{dashboard}/boxes/{box}"
+property = "count"
+reason = "How many changes a row of the history of an issue the viewer sees holds, as the history route answers it for the viewer: changes of fields the viewer may not read are left out (ISS-06, ADR-0050 decision 4)."
+
+[[exempt]]
+route = "POST /api/v1/dashboards/box-preview"
+property = "issues"
+reason = "Counts only issues the viewer may see and read: a box answers the totals of a search through the route of the totals (POST /api/v1/search/totals), run as the viewer, whose statement starts from the viewer's sight (ADR-0004, ADR-0050 decisions 3 and 7, test cfg_03_each_box_runs_as_the_viewer)."
+
+[[exempt]]
+route = "POST /api/v1/dashboards/box-preview"
+property = "valued"
+reason = "Counts only the issues the viewer may see that gave a value the viewer may read, as the totals of a search do, whose read the box calls as the viewer (QRY-08, PRIV-13, ADR-0050 decisions 3 and 7)."
+
+[[exempt]]
+route = "POST /api/v1/dashboards/box-preview"
+property = "totals"
+reason = "The totals of a search that the box reads through the route of the totals, as the viewer: only issues and values the viewer may see (QRY-08, ADR-0050 decisions 3 and 7, test cfg_03_each_box_runs_as_the_viewer)."
+
+[[exempt]]
+route = "POST /api/v1/dashboards/box-preview"
+property = "time_spent"
+reason = "Minutes, not a count of things: the time booked on one issue of the box that the viewer sees, as the list of a search answers it, shown only to a reader of Time spent (ADR-0035, decision 4)."
+
+[[exempt]]
+route = "POST /api/v1/dashboards/box-preview"
+property = "not_scheduled"
+reason = "Only issues the viewer may see: the small timeline of a box is the page of the timeline route, run as the viewer, whose issues of Not scheduled yet the compiled search finds with the viewer's sight (ADR-0050, decision 4)."
+
+[[exempt]]
+route = "POST /api/v1/dashboards/box-preview"
+property = "work_days"
+reason = "Days, not a count of things: the length of the bar of an issue the viewer may see on the small timeline, worked out from an estimate the viewer may read, as the timeline route answers it for the viewer (ADR-0050, decision 4)."
+
+[[exempt]]
+route = "POST /api/v1/dashboards/box-preview"
+property = "late_days"
+reason = "Days, not a count of things: how late an issue the viewer sees ends after one it waits for, as the timeline route answers it for the viewer (ADR-0050, decision 4)."
+
+[[exempt]]
+route = "POST /api/v1/dashboards/box-preview"
+property = "count"
+reason = "How many changes a row of the history of an issue the viewer sees holds, as the history route answers it for the viewer: changes of fields the viewer may not read are left out (ISS-06, ADR-0050 decision 4)."

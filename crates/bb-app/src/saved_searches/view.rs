@@ -16,7 +16,7 @@ use crate::auth::{AppError, AuthStore, Ctx, internal};
 
 impl<S: AuthStore> Ctx<'_, S> {
     /// Looks up the makers in one read, for `person_ref` to find them without a read each.
-    async fn preload_makers(&self, makers: &[UserId]) -> Result<(), AppError> {
+    pub(crate) async fn preload_makers(&self, makers: &[UserId]) -> Result<(), AppError> {
         let mut wanted = makers.to_vec();
         wanted.sort();
         wanted.dedup();
@@ -68,7 +68,13 @@ impl<S: AuthStore> Ctx<'_, S> {
         // roles of all the makers that are shown by their role are read at once.
         let viewers: Vec<Evaluation> = found
             .iter()
-            .map(|stored| viewer_of(&organization, reaching, stored))
+            .map(|stored| {
+                viewer_of(
+                    &organization,
+                    reaching,
+                    stored.shares.iter().map(|share| share.target),
+                )
+            })
             .collect();
         let by_role: Vec<(UserId, Place)> = found
             .iter()
@@ -95,7 +101,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                 )
                 .await?;
             let shared_with = if mine {
-                shares_shown(&stored, reaching, &group_names)
+                shares_shown(
+                    stored.shares.iter().map(|share| share.target),
+                    reaching,
+                    &group_names,
+                )
             } else {
                 Vec::new()
             };
@@ -115,14 +125,17 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
-/// The rights the person is shown people by: where the search reaches them through a project they
-/// see, as they hold it there, else for the organization. Decided in memory from the tree that
-/// was read.
-fn viewer_of(organization: &Evaluation, reaching: &Reaching, stored: &Stored) -> Evaluation {
-    stored
-        .shares
-        .iter()
-        .filter_map(|share| match share.target {
+/// The rights the person is shown people by: where a saved search or a dashboard reaches them
+/// through a project they see, as they hold it there, else for the organization. Decided in memory
+/// from the tree that was read.
+pub(crate) fn viewer_of(
+    organization: &Evaluation,
+    reaching: &Reaching,
+    targets: impl IntoIterator<Item = ShareTarget>,
+) -> Evaluation {
+    targets
+        .into_iter()
+        .filter_map(|target| match target {
             ShareTarget::Project(project) if reaching.shown.sees(project) => Some(project),
             _ => None,
         })
@@ -137,16 +150,15 @@ fn viewer_of(organization: &Evaluation, reaching: &Reaching, stored: &Stored) ->
         .unwrap_or_else(|| organization.clone())
 }
 
-/// Whom the maker shared the search with, each named as the maker may know it.
-fn shares_shown(
-    stored: &Stored,
+/// Whom the maker shared a saved search or a dashboard with, each named as the maker may know it.
+pub(crate) fn shares_shown(
+    targets: impl IntoIterator<Item = ShareTarget>,
     reaching: &Reaching,
     group_names: &HashMap<GroupId, String>,
 ) -> Vec<ShareView> {
-    stored
-        .shares
-        .iter()
-        .filter_map(|share| match share.target {
+    targets
+        .into_iter()
+        .filter_map(|target| match target {
             ShareTarget::Group(id) => group_names.get(&id).map(|name| ShareView::Group {
                 id,
                 name: name.clone(),

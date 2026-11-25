@@ -272,3 +272,14 @@ at = [
   "api:schema ReleaseState",
 ]
 reason = "The state of a release (Planned, Released, Retired) is the word of ADR-0049 and of the glossary's own entry for the three states of a release; it is not the status of an issue, which the glossary means."
+
+[[allow]]
+term = "made"
+at = [
+  "api:path /api/v1/dashboards/ready-made-boxes",
+  "api:operation listReadyMadeBoxes",
+  "api:schema ReadyMade",
+  "api:schema ReadyMadeBody",
+  "api:schema ReadyMadeItem",
+]
+reason = "Ready-made is the glossary's own term (Ready-made box): a box Bugaboo offers ready to use. It does not mean creating something, which the glossary calls Create."

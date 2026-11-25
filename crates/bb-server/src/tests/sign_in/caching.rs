@@ -358,6 +358,24 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
             own_records(&rig, &mut ada, (&readable_id, &person_id)).await?;
         // A work day of the person, for the routes that name a date, and an app.
         let app_query = a_work_day_and_an_app(&rig, &mut ada).await?;
+        // A dashboard with a box, for the routes that name them.
+        let board = ada
+            .send(
+                "POST",
+                "/api/v1/dashboards",
+                Some(
+                    json!({"name": "Checks", "boxes": [{"kind": "my-timer", "title": "Timer",
+                    "column": 0, "row": 0, "width": 3, "height": 2}]}),
+                ),
+            )
+            .await?;
+        let (dashboard_id, box_id) = (
+            board.body["id"].as_str().ok_or("no dashboard")?.to_owned(),
+            board.body["boxes"][0]["id"]
+                .as_str()
+                .ok_or("no box")?
+                .to_owned(),
+        );
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -385,6 +403,8 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
                 .replace("{agent}", &agent_id)
                 .replace("{theme}", &theme_id)
                 .replace("{export}", &export_id)
+                .replace("{dashboard}", &dashboard_id)
+                .replace("{box}", &box_id)
                 .replace("{date}", "2027-01-14")
                 .replace("{kind}", "time-entries")
                 .replace("{project}", project);

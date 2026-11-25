@@ -492,6 +492,26 @@ pub(super) const EXAMPLES: &[Example] = &[
         ],
     ),
     Example::with("stopSharingSavedSearch", &[Quirk::SessionOnly]),
+    Example::with("listDashboards", &[Quirk::SessionOnly]),
+    Example::with("createDashboard", &[Quirk::SessionOnly]),
+    Example::with("getHome", &[Quirk::SessionOnly]),
+    Example::with("getDashboard", &[Quirk::SessionOnly]),
+    Example::with("changeDashboard", &[Quirk::SessionOnly]),
+    Example::with("deleteDashboard", &[Quirk::SessionOnly]),
+    Example::with("restoreDashboard", &[Quirk::SessionOnly]),
+    Example::with("copyDashboard", &[Quirk::SessionOnly]),
+    Example::with(
+        "shareDashboard",
+        &[
+            Quirk::OnTheTargetProject(Permission::ShareDashboards),
+            Quirk::SessionOnly,
+        ],
+    ),
+    Example::with("stopSharingDashboard", &[Quirk::SessionOnly]),
+    Example::with("listDashboardShareChoices", &[Quirk::SessionOnly]),
+    Example::with("getDashboardBox", &[Quirk::SessionOnly]),
+    Example::with("previewDashboardBox", &[Quirk::SessionOnly]),
+    Example::with("listReadyMadeBoxes", &[Quirk::SessionOnly]),
     Example::with(
         "getProjectList",
         &[

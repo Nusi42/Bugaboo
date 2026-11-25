@@ -57,6 +57,10 @@ pub(crate) enum LockClass {
     /// Making saved searches and sharing them (key: four bytes of the maker's ID): two changes of
     /// one person at the same moment cannot both pass the limits of searches and of shares.
     SavedSearches = 12,
+    /// Making dashboards and sharing them (key: four bytes of the maker's ID): two changes of one
+    /// person at the same moment cannot both pass the limits of dashboards and of shares, or both
+    /// make the person's *Home* (ADR-0050). Taken after `SavedSearches`.
+    Dashboards = 23,
     /// The work days of one person (key: four bytes of the person's ID): two changes of one
     /// person's days at the same moment are judged one after the other on what is stored. The
     /// usual work days of the same person (`work_times`) take this lock too: both are the person's
@@ -117,15 +121,16 @@ impl LockClass {
             Self::IssueFiles => 10,
             Self::TextIndex => 11,
             Self::SavedSearches => 12,
-            Self::WorkDays => 13,
-            Self::Agents => 14,
-            Self::IssueTaking => 15,
-            Self::AgentTaking => 16,
-            Self::Themes => 17,
-            Self::DataExports => 18,
-            Self::BackupAsks => 19,
-            Self::SecurityLog => 20,
-            Self::ServerRunning => 21,
+            Self::Dashboards => 13,
+            Self::WorkDays => 14,
+            Self::Agents => 15,
+            Self::IssueTaking => 16,
+            Self::AgentTaking => 17,
+            Self::Themes => 18,
+            Self::DataExports => 19,
+            Self::BackupAsks => 20,
+            Self::SecurityLog => 21,
+            Self::ServerRunning => 22,
         }
     }
 }
@@ -200,7 +205,7 @@ pub(crate) fn lock_key(id: [u8; 16]) -> i32 {
 mod tests {
     use super::*;
 
-    const ORDER: [LockClass; 21] = [
+    const ORDER: [LockClass; 22] = [
         LockClass::Migration,
         LockClass::Policy,
         LockClass::TagsAndLabels,
@@ -214,6 +219,7 @@ mod tests {
         LockClass::IssueFiles,
         LockClass::TextIndex,
         LockClass::SavedSearches,
+        LockClass::Dashboards,
         LockClass::WorkDays,
         LockClass::Agents,
         LockClass::IssueTaking,

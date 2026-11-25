@@ -11,17 +11,18 @@
 //!   address answers exactly like one that does not exist (`reach.rs`, `read.rs`).
 
 mod events;
-mod judge;
+pub(crate) mod judge;
 mod project_list;
-mod reach;
+pub(crate) mod reach;
 mod read;
 mod share;
 mod store;
 mod types;
-mod view;
-mod write;
+pub(crate) mod view;
+pub(crate) mod write;
 
 pub use project_list::{project_list, set_project_list};
+pub use reach::Shareable;
 pub use read::{saved_search, saved_searches, share_choices};
 pub use share::{share_search, stop_sharing_search};
 pub use store::{Reach, SavedSearchStore};

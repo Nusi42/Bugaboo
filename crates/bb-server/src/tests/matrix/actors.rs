@@ -271,8 +271,18 @@ pub(super) const SETS_ISSUE_FIELDS: [Permission; 3] = [
     Permission::ChangeOwnIssues,
 ];
 
-/// The permissions of a starting role, from the table of architecture §7.
+/// The permissions of a starting role, from the table of architecture §7: *Share dashboards*
+/// starts with the roles of *Share searches* (ADR-0025, amendment 2026-11-24).
 fn role_permissions(role: StartingRole) -> BTreeSet<Permission> {
+    let mut held = listed_permissions(role);
+    if held.contains(&Permission::ShareSearches) {
+        held.insert(Permission::ShareDashboards);
+    }
+    held
+}
+
+/// The permissions of a starting role as the table lists them, *Share dashboards* aside.
+fn listed_permissions(role: StartingRole) -> BTreeSet<Permission> {
     use Permission::{
         BookTime, ChangeIssues, ChangeOrganizationSettings, ChangeOwnIssues, ChangeProjectSettings,
         CheckAccess, Comment, CreateAgents, CreateIssues, CreateProjects, CreateSubProjects,

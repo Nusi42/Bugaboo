@@ -335,4 +335,9 @@ pub(super) const ALL: &[Definition] = &[
         name: "board_calendar_card",
         steps: || Ok(super::m0066_board_calendar_card::steps()),
     },
+    Definition {
+        version: 67,
+        name: "dashboards",
+        steps: super::m0067_dashboards::steps,
+    },
 ];

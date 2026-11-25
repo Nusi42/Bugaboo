@@ -1541,6 +1541,221 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/dashboards": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The dashboards the person made (not *Home*), or the ones shared with them, a page at a time,
+     *     oldest first.
+     */
+    get: operations["listDashboards"];
+    put?: never;
+    /** Creates a dashboard. It is private and the person's own; every box must check for them. */
+    post: operations["createDashboard"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/dashboards/box-preview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** What a box would answer before it is added (*Add box*): the same reads as the box itself. */
+    post: operations["previewDashboardBox"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/dashboards/home": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The person's *Home*: their own dashboard, made at first use from the blocks *Home* showed
+     *     before ("My timer", "My open issues", "Due soon"). Nobody else reaches it.
+     */
+    get: operations["getHome"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/dashboards/ready-made-boxes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The ready-made boxes *Add box* offers, in order, each with the box it adds. */
+    get: operations["listReadyMadeBoxes"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/dashboards/share-choices": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The groups or the projects the person may share a dashboard with, by name, a page at a time:
+     *     what the *Share* window of a dashboard lists.
+     */
+    get: operations["listDashboardShareChoices"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/dashboards/{dashboard}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Opens a dashboard: the person's own, or one shared with them, with the boxes that check for
+     *     them, packed upwards. For anybody else, and for one that does not exist or is in the trash, the
+     *     answer is `not found`.
+     */
+    get: operations["getDashboard"];
+    put?: never;
+    post?: never;
+    /**
+     * Puts a dashboard into the trash: its maker, or a person with *Change organization settings*.
+     *     *Home* is not deleted.
+     */
+    delete: operations["deleteDashboard"];
+    options?: never;
+    head?: never;
+    /**
+     * Changes the name or the boxes of a dashboard (*Change*, on *Home* *Customize*). Only its maker
+     *     does; a change made on an older version is refused with the newer one.
+     */
+    patch: operations["changeDashboard"];
+    trace?: never;
+  };
+  "/api/v1/dashboards/{dashboard}/boxes/{box}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * What one box of a dashboard answers for the person who looks at it, through the read of its
+     *     kind, run as them. A box that does not check for them is not found, as one that does not exist.
+     */
+    get: operations["getDashboardBox"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/dashboards/{dashboard}/copy": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** *Save a copy*: a private dashboard of the person with the boxes they see of one they may open. */
+    post: operations["copyDashboard"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/dashboards/{dashboard}/restore": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Takes a dashboard out of the trash (*Undo*). */
+    post: operations["restoreDashboard"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/dashboards/{dashboard}/shares": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Shares a dashboard with a group or a project: *Share dashboards* in the project; for a group,
+     *     being in it with *Share dashboards* for the organization, or *Manage groups*.
+     */
+    post: operations["shareDashboard"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/dashboards/{dashboard}/shares/{kind}/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Stops sharing a dashboard with a group or a project. Only its maker does. */
+    delete: operations["stopSharingDashboard"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/data-exports/download/{file}": {
     parameters: {
       query?: never;
@@ -7005,6 +7220,135 @@ export interface components {
        */
       most: number;
     };
+    /** @description What a box answers, by the read of its kind. */
+    BoxAnswerBody:
+      | {
+          /** @enum {string} */
+          answer: "issues";
+          /** @description The issues, in the order of the search. */
+          issues: components["schemas"]["IssueItem"][];
+        }
+      | {
+          /** @enum {string} */
+          answer: "totals";
+          /** @description The totals. */
+          totals: components["schemas"]["SearchTotalsAnswer"];
+        }
+      | {
+          /** @enum {string} */
+          answer: "week";
+          /** @description The entries. */
+          entries: components["schemas"]["TimeEntryItem"][];
+        }
+      | {
+          /** @enum {string} */
+          answer: "timeline";
+          /** @description The page. */
+          timeline: components["schemas"]["TimelinePageBody"];
+        }
+      | {
+          /** @enum {string} */
+          answer: "timer";
+          /** @description The timer. */
+          timer: components["schemas"]["TimerItem"];
+        }
+      | {
+          /** @enum {string} */
+          answer: "changes";
+          /** @description The changes. */
+          changes: components["schemas"]["RecentChangeBody"][];
+        };
+    /**
+     * @description A box as it is asked for: its kind, its place on the grid of 12 columns, its title, what it
+     *     reads and the options of its kind. There is no option that sorts by size or ranks people.
+     */
+    BoxBody: {
+      /** @description For *Numbers and chart* as bars: the word of the field the totals are grouped by. */
+      by?: string | null;
+      /**
+       * Format: int32
+       * @description The first column, from 0.
+       */
+      column: number;
+      /**
+       * Format: int32
+       * @description The height in rows: at least 2.
+       */
+      height: number;
+      /** @description The box it was, when a change keeps it; left out for a new box. */
+      id?: string | null;
+      /** @description The kind. */
+      kind: components["schemas"]["BoxKind"];
+      /**
+       * Format: int32
+       * @description The first row, from 0; the places are packed upwards.
+       */
+      row: number;
+      /** @description The ID of the saved search it reads; not with `search_text`. */
+      saved_search?: string | null;
+      /** @description The search text it reads; not with `saved_search`. */
+      search_text?: string | null;
+      shape?: components["schemas"]["ChartShape"] | null;
+      span?: components["schemas"]["TimeSpan"] | null;
+      /** @description The title. */
+      title: string;
+      /**
+       * Format: int32
+       * @description The width in columns: at least 3.
+       */
+      width: number;
+    };
+    /** @description A box as the person sees it: its place packed for them. */
+    BoxItem: {
+      /** @description The word of the field the totals are grouped by; null for none. */
+      by: string | null;
+      /**
+       * Format: int32
+       * @description The first column, from 0.
+       */
+      column: number;
+      /**
+       * Format: int32
+       * @description The height in rows.
+       */
+      height: number;
+      /** @description The ID of the box. */
+      id: string;
+      /** @description The kind. */
+      kind: components["schemas"]["BoxKind"];
+      /**
+       * Format: int32
+       * @description The first row, from 0.
+       */
+      row: number;
+      /** @description The ID of the saved search it reads; null otherwise. */
+      saved_search: string | null;
+      /**
+       * @description The search text it reads, in the spelling the person's language reads it; null for a box
+       *     that reads a saved search or no search.
+       */
+      search_text: string | null;
+      shape: components["schemas"]["ChartShape"] | null;
+      span: components["schemas"]["TimeSpan"] | null;
+      /** @description The title. */
+      title: string;
+      /**
+       * Format: int32
+       * @description The width in columns.
+       */
+      width: number;
+    };
+    /**
+     * @description The kind of a box of a dashboard: search results, numbers and chart, time totals, a small timeline, my timer or recent changes.
+     * @enum {string}
+     */
+    BoxKind:
+      | "search-results"
+      | "numbers-and-chart"
+      | "time-totals"
+      | "small-timeline"
+      | "my-timer"
+      | "recent-changes";
     /**
      * @description A part of a brief taken from the issue.
      * @enum {string}
@@ -7188,6 +7532,21 @@ export interface components {
       /**
        * Format: int64
        * @description The version of the field the person looked at.
+       */
+      version: number;
+    };
+    /** @description Change a dashboard: what is left out stays as it is. */
+    ChangeDashboardBody: {
+      /**
+       * @description All the boxes, in order: a box that is not named any more goes; a box named by its `id`
+       *     keeps it.
+       */
+      boxes?: components["schemas"]["BoxBody"][] | null;
+      /** @description A new name. */
+      name?: string | null;
+      /**
+       * Format: int64
+       * @description The version the person looked at.
        */
       version: number;
     };
@@ -7569,6 +7928,11 @@ export interface components {
       own_only: boolean;
     };
     /**
+     * @description How a box of numbers shows its totals: bars for each group, or one number.
+     * @enum {string}
+     */
+    ChartShape: "bars" | "number";
+    /**
      * @description Who said a turn of the conversation: the person, or the assistant.
      * @enum {string}
      */
@@ -7928,6 +8292,54 @@ export interface components {
        *     in front. The secret is not stored and cannot be shown again.
        */
       link_path: string;
+    };
+    /** @description A dashboard as the person sees it, with the boxes that check for them. */
+    DashboardBody: {
+      /** @description The boxes the person sees, in order, packed upwards: no gap tells of a box left out. */
+      boxes: components["schemas"]["BoxItem"][];
+      /** @description Whether it is the person's *Home*. */
+      home: boolean;
+      /** @description The ID, in the address `/d/<id>`. */
+      id: string;
+      /** @description Who made it, as the person sees people who write. */
+      maker: components["schemas"]["PersonRef"];
+      /** @description Whether the person made it. */
+      mine: boolean;
+      /** @description What it is called. */
+      name: string;
+      /** @description Whom it is shared with; only its maker is told. */
+      shared_with: components["schemas"]["ShareRef"][];
+      /**
+       * Format: date-time
+       * @description When it was last changed.
+       */
+      updated_at: string;
+      /**
+       * Format: int64
+       * @description Counts up with every change; a change is made on the version that was looked at.
+       */
+      version: number;
+    };
+    /** @description A dashboard in a list. */
+    DashboardSummary: {
+      /** @description The ID. */
+      id: string;
+      /** @description Who made it, as the person sees people who write. */
+      maker: components["schemas"]["PersonRef"];
+      /** @description Whether the person made it. */
+      mine: boolean;
+      /** @description What it is called. */
+      name: string;
+      /**
+       * Format: date-time
+       * @description When it was last changed.
+       */
+      updated_at: string;
+      /**
+       * Format: int64
+       * @description Counts up with every change.
+       */
+      version: number;
     };
     /** @description The signed address that downloads a file of an export. */
     DataExportAddressBody: {
@@ -10365,6 +10777,13 @@ export interface components {
       /** @description The text, in Markdown. */
       text: string;
     };
+    /** @description Create a dashboard. */
+    NewDashboardBody: {
+      /** @description Its boxes, in order: at most 20. */
+      boxes?: components["schemas"]["BoxBody"][];
+      /** @description What it is called. */
+      name: string;
+    };
     /** @description An own field to make. */
     NewFieldBody: {
       /** @description What it is added to. */
@@ -10828,6 +11247,10 @@ export interface components {
      * @enum {string}
      */
     OnlyIfTest: "filled" | "empty";
+    /** @description What taking a dashboard out of the trash answers. */
+    OptionalDashboardBody: {
+      dashboard: components["schemas"]["DashboardBody"] | null;
+    };
     /**
      * @description A saved search that may be missing: the list a project shows (`null` for the built-in default
      *     list) and what taking a search out of the trash answers (`null` for somebody who may only take
@@ -10957,6 +11380,13 @@ export interface components {
     Page_ConnectedAppItem: {
       /** @description The items of this page. */
       items: components["schemas"]["ConnectedAppItem"][];
+      /** @description The cursor of the next page; `null` on the last page. */
+      next_cursor: string | null;
+    };
+    /** @description One page of a list: its items, and where the next page starts. */
+    Page_DashboardSummary: {
+      /** @description The items of this page. */
+      items: components["schemas"]["DashboardSummary"][];
       /** @description The cursor of the next page; `null` on the last page. */
       next_cursor: string | null;
     };
@@ -11359,6 +11789,7 @@ export interface components {
       | "delete-issues"
       | "move-issues"
       | "share-searches"
+      | "share-dashboards"
       | "edit-anyway"
       | "manage-issue-types"
       | "manage-workflows"
@@ -12054,6 +12485,33 @@ export interface components {
        */
       ok: number;
     };
+    /**
+     * @description A ready-made box of a dashboard.
+     * @enum {string}
+     */
+    ReadyMade:
+      | "my-open-issues"
+      | "due-soon"
+      | "open-bugs-by-priority"
+      | "issues-by-status-group"
+      | "progress-of-a-release"
+      | "my-time-this-week"
+      | "time-on-this-search"
+      | "small-timeline-of-a-search"
+      | "my-timer"
+      | "recent-changes-in-this-project";
+    /** @description The ready-made boxes, in the order *Add box* offers them. */
+    ReadyMadeBody: {
+      /** @description The boxes, in the order of the one list of the code. */
+      boxes: components["schemas"]["ReadyMadeItem"][];
+    };
+    /** @description A ready-made box: which one, and the box it adds. */
+    ReadyMadeItem: {
+      /** @description The box it adds, at the top left, with its title in the words of the catalog. */
+      box: components["schemas"]["BoxItem"];
+      /** @description Which one; its title is the message `ready-made-box.<which>`. */
+      which: components["schemas"]["ReadyMade"];
+    };
     /** @description Why a permission is given or not. */
     ReasonBody:
       | {
@@ -12128,6 +12586,13 @@ export interface components {
           /** @enum {string} */
           kind: "group";
         };
+    /** @description One of the newest changes of an issue. */
+    RecentChangeBody: {
+      /** @description The entries of the row of its history, as the history of the issue gives them. */
+      entries: components["schemas"]["HistoryEntryItem"][];
+      /** @description The issue, by its readable ID. */
+      issue: string;
+    };
     /**
      * @description The kind of a record, like `issue`.
      * @enum {string}
@@ -12164,6 +12629,7 @@ export interface components {
       | "workflow"
       | "role"
       | "saved-search"
+      | "dashboard"
       | "session"
       | "setting"
       | "setup-code"
@@ -13953,6 +14419,11 @@ export interface components {
       /** @description Whether it is worked out rather than typed. */
       worked_out: boolean;
     };
+    /**
+     * @description Whose time a box of time totals adds up: the issues of its search, or the viewer's own week.
+     * @enum {string}
+     */
+    TimeSpan: "search" | "my-week";
     /** @description The totals of the time of many issues the reader sees, in whole minutes. */
     TimeTotalsBody: {
       /**
@@ -17839,6 +18310,447 @@ export interface operations {
       };
       304: components["responses"]["NotModified"];
       401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listDashboards: {
+    parameters: {
+      query?: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
+        limit?: number;
+        /** @description The ones the person made (`mine`, the default) or the ones shared with them (`shared`). */
+        scope?: components["schemas"]["SearchSet"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The dashboards. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_DashboardSummary"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadListRequest"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  createDashboard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["NewDashboardBody"];
+      };
+    };
+    responses: {
+      /** @description The dashboard. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DashboardBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  previewDashboardBox: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BoxBody"];
+      };
+    };
+    responses: {
+      /** @description What the box would answer. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BoxAnswerBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getHome: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The person's Home. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DashboardBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listReadyMadeBoxes: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The ready-made boxes. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReadyMadeBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listDashboardShareChoices: {
+    parameters: {
+      query: {
+        /** @description The fields each item holds, separated by commas. The answer schema names every field that can be asked for; when this is left out the route's own small default is used. */
+        fields?: components["parameters"]["Fields"];
+        /** @description Where the page starts: the `next_cursor` of the page before. */
+        cursor?: components["parameters"]["Cursor"];
+        /** @description How many items a page holds at most (default 50), from 1 to 100; any other number is refused with `request.limit-out-of-range`. */
+        limit?: number;
+        /** @description Groups or projects. */
+        kind: components["schemas"]["ShareKind"];
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description What may be shared with. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_ShareChoiceItem"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadListRequest"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getDashboard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the dashboard. */
+        dashboard: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The dashboard. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DashboardBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  deleteDashboard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the dashboard. */
+        dashboard: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The dashboard is in the trash. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  changeDashboard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the dashboard. */
+        dashboard: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangeDashboardBody"];
+      };
+    };
+    responses: {
+      /** @description The dashboard as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DashboardBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getDashboardBox: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the dashboard. */
+        dashboard: string;
+        /** @description The ID of the box. */
+        box: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description What the box answers. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BoxAnswerBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  copyDashboard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the dashboard. */
+        dashboard: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CopyBody"];
+      };
+    };
+    responses: {
+      /** @description The copy. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DashboardBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  restoreDashboard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the dashboard. */
+        dashboard: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The dashboard is out of the trash; it is in the answer when it is one the person may open. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["OptionalDashboardBody"];
+        };
+      };
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  shareDashboard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the dashboard. */
+        dashboard: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ShareBody"];
+      };
+    };
+    responses: {
+      /** @description The dashboard as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DashboardBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  stopSharingDashboard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the dashboard. */
+        dashboard: string;
+        /** @description A group or a project. */
+        kind: components["schemas"]["ShareKind"];
+        /** @description The ID of the group or the project. */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The dashboard as it is now. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DashboardBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

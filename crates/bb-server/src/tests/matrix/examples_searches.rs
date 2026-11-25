@@ -106,6 +106,10 @@ pub(super) async fn search_request(
             format!("/api/v1/projects/{target}/list"),
             Some(json!({"search": null})),
         ),
-        _ => return Ok(None),
+        // The dashboards are the actor's own records like saved searches, made the same way.
+        _ => {
+            return super::examples_dashboards::dashboard_request(fixture, operation, browser)
+                .await;
+        }
     }))
 }

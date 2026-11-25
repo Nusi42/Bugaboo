@@ -149,6 +149,14 @@ use crate::relations::{IssueMapQuery, RelationMap, SearchMapQuery, issue_map, se
 
 use crate::boards::{BoardPage, BoardQuery, board};
 use crate::calendar::{CalendarPage, CalendarQuery, calendar};
+use crate::dashboards::{
+    BoxAnswer, BoxPreviewQuery, BoxQuery, ChangeDashboard, CopyDashboard, CreateDashboard,
+    DashboardPage, DashboardQuery, DashboardView, DashboardsQuery, DeleteDashboard, HomeQuery,
+    ReadyMadeList, ReadyMadeQuery, RestoreDashboard, RestoredDashboard, ShareDashboard,
+    StopSharingDashboard, box_preview, change_dashboard, copy_dashboard, create_dashboard,
+    dashboard, dashboard_box, dashboards, delete_dashboard, home, ready_made_boxes,
+    restore_dashboard, share_dashboard, stop_sharing_dashboard,
+};
 use crate::plan::{
     AcceptWarning, AcceptedWarningView, MoveAfterQuery, MovePreviewPage, SetTimeFactor,
     TimeFactorQuery, TimeFactorView, TimelinePage, TimelineQuery, accept_warning,

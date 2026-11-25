@@ -335,7 +335,7 @@ fn list_of(person: bb_core::id::UserId, body: &TimelineBody) -> String {
 }
 
 /// The body of a page, each row's issue with what the reader may see of it.
-fn page_body(page: TimelinePage, list: &str) -> Result<TimelinePageBody, ApiError> {
+pub(crate) fn page_body(page: TimelinePage, list: &str) -> Result<TimelinePageBody, ApiError> {
     let rows = page
         .rows
         .into_iter()
