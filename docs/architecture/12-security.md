@@ -619,7 +619,7 @@ M10 stores what a person uses and shares: their dashboards, their pins and the s
 | Share of a dashboard | the group or project it is shared with | no | – | – |
 | Pin | the person (`holder`), the kind and the target, the place | yes | `activity` | `contract` |
 | E-mailed search | the person (`holder`), the saved search | yes | `identity` | `contract` |
-| E-mailed search | weekdays, hour, *Only when something is new or changed*, paused and why, when the next e-mail is due, the time of the last e-mail | yes | `activity` | `contract` |
+| E-mailed search | weekdays, hour, *Only when something is new or changed*, paused and why, when the next e-mail is due, the due time whose e-mail was last claimed, the time of the last e-mail | yes | `activity` | `contract` |
 
 | Data | Purpose | Legal basis (GDPR Art. 6) | Kept | Where it goes |
 |------|---------|---------------------------|------|--------------|
