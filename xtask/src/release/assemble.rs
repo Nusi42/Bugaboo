@@ -165,6 +165,7 @@ fn build_into(root: &Path, platform: Platform, folder: &Path, release: &str) -> 
         bail!(problem);
     }
     let program = built_program(root, platform)?;
+    super::refuse_build_paths(root, std::slice::from_ref(&program))?;
     let name = folder::program_name(release, platform);
     fs::copy(&program, folder.join(&name))
         .with_context(|| format!("could not copy {} to {name}", program.display()))?;

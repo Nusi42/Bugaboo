@@ -8,6 +8,7 @@
 mod bench;
 mod bench_budgets;
 mod build;
+mod build_paths;
 mod bundle;
 mod catalog;
 mod checks;

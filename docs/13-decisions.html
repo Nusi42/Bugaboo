@@ -3069,6 +3069,7 @@ Worked-out days are shown, never stored: a date is stored only when a person or 
 <li><strong>The release notes are the text of the GitHub release</strong>, not a file of the folder. <code>cargo xtask release</code> writes them beside the folder (<code>target/release-folder/bugaboo-&lt;version&gt;-notes.md</code>) from <code>docs/releases/&lt;version&gt;.md</code>, with the keys, the support period and the kind of build.</li>
 <li><strong><code>cargo xtask release check</code></strong> fails for a missing file, a file that does not belong, an entry of <code>SHA256SUMS</code> that names anything but the four files or gives another checksum, a signature of <code>SHA256SUMS</code> that does not hold or names another file or version, a parts list that does not fit its schema or carries no <code>vulnerabilities</code>, and a statement without its <code>analysis</code>.</li>
 <li><strong>A release of the earlier layout</strong> is made into a folder of six files with <code>cargo xtask release repack --from &lt;folder&gt;</code>: it takes the programs and the notices as they are and puts the statements of the old VEX file into the CycloneDX parts list with the same code as <code>cargo xtask release</code>; <code>release sign</code> and <code>release check</code> follow as for any release.</li>
+<li><strong>No folder of the building computer in a release.</strong> The programs of 0.6.0 named the home of cargo and the toolchain of the computer that built them, with the account in the path, wherever a panic can name its place. Every optimised build and every build of the WebAssembly modules now gives those folders, the repository and the build folder neutral names (coding-standards §2), and <code>cargo xtask release</code> and <code>release sign</code> refuse a file that names one. Enforced by: SEC-BUILD-PATHS.</li>
 <li>Enforced by: DEP-SBOM, review (<code>sec_18_the_release_folder_holds_six_files_and_one_signature</code>, <code>sec_18_sha256sums_names_the_payload_and_nothing_else</code>, <code>sec_18_the_parts_list_of_a_release_carries_its_vex_statements</code>, <code>sec_18_a_release_of_the_earlier_layout_repacks_into_the_six_files</code>, <code>sec_18_the_list_alone_is_signed_and_a_changed_byte_fails</code>, <code>sec_18_a_download_saved_under_another_name_is_found_by_its_checksum</code>).</li>
 </ul>
 <h3>Alternatives considered</h3>
@@ -3079,7 +3080,7 @@ Worked-out days are shown, never stored: a date is stored only when a person or 
 <li><strong>5 years of support for 0.x:</strong> a promise a single maintainer cannot keep for previews, and a preview is not placed on the market commercially. Rejected until 1.0.</li>
 </ul>
 <h3>Enforced by</h3>
-<p>DEP-SBOM, DEP-REGISTER, DEP-LICENSES, SEC-ADVISORIES, SEC-SECRETS, SEC-HEADERS, ARCH-SETTINGS; review (signing, publishing and the runbook are steps of the maintainer).</p>
+<p>DEP-SBOM, DEP-REGISTER, DEP-LICENSES, SEC-ADVISORIES, SEC-SECRETS, SEC-BUILD-PATHS, SEC-HEADERS, ARCH-SETTINGS; review (signing, publishing and the runbook are steps of the maintainer).</p>
 
 <!-- 0048-support-access-with-the-customers-approval.md -->
 <h2 id="adr-0048"><button class="sec" data-sec>§48</button>ADR-0048: Support access with the customer's approval</h2>

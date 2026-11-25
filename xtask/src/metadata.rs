@@ -59,10 +59,12 @@ struct Metadata {
     target_directory: PathBuf,
 }
 
-/// Runs `cargo metadata --no-deps` in `root` and reads what it says.
-fn run(root: &Path) -> anyhow::Result<Metadata> {
+/// Runs `cargo metadata <options> --format-version 1` in `root` and returns what it printed.
+fn cargo_metadata(root: &Path, options: &[&str]) -> anyhow::Result<String> {
     let out = crate::tools::command("cargo")
-        .args(["metadata", "--no-deps", "--format-version", "1"])
+        .arg("metadata")
+        .args(options)
+        .args(["--format-version", "1"])
         .current_dir(root)
         .output()
         .context("could not run cargo; is Rust installed?")?;
@@ -72,7 +74,12 @@ fn run(root: &Path) -> anyhow::Result<Metadata> {
             String::from_utf8_lossy(&out.stderr).trim()
         );
     }
-    read(&String::from_utf8_lossy(&out.stdout))
+    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
+}
+
+/// Runs `cargo metadata --no-deps` in `root` and reads what it says.
+fn run(root: &Path) -> anyhow::Result<Metadata> {
+    read(&cargo_metadata(root, &["--no-deps"])?)
 }
 
 /// Runs `cargo metadata --no-deps` in `root` and returns the workspace members.
@@ -129,18 +136,66 @@ pub(crate) type DirectVersions =
 /// Runs `cargo metadata` with the resolved graph and returns the locked version of every
 /// external package a workspace member lists as a dependency.
 pub(crate) fn load_direct_versions(root: &Path) -> anyhow::Result<DirectVersions> {
-    let out = crate::tools::command("cargo")
-        .args(["metadata", "--locked", "--format-version", "1"])
-        .current_dir(root)
-        .output()
-        .context("could not run cargo; is Rust installed?")?;
-    if !out.status.success() {
-        bail!(
-            "cargo metadata failed: {}",
-            String::from_utf8_lossy(&out.stderr).trim()
-        );
+    direct_versions(&cargo_metadata(root, &["--locked"])?)
+}
+
+/// Where a package of the full `cargo metadata` output came from and where its sources are.
+#[derive(Deserialize)]
+struct Located {
+    /// `None` for packages that are folders in this repository.
+    source: Option<String>,
+    manifest_path: PathBuf,
+}
+
+#[derive(Deserialize)]
+struct Placed {
+    packages: Vec<Located>,
+    workspace_root: PathBuf,
+    target_directory: PathBuf,
+}
+
+/// The folders a build of the workspace reads its sources from and writes into, as cargo names
+/// them to the compiler.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct BuildFolders {
+    pub(crate) workspace: PathBuf,
+    pub(crate) target: PathBuf,
+    /// The home of cargo, which holds the sources of the dependencies from a registry; `None`
+    /// when no dependency comes from one.
+    pub(crate) cargo_home: Option<PathBuf>,
+}
+
+/// Runs `cargo metadata` in `root` and returns the folders a build reads from and writes into.
+pub(crate) fn build_folders(root: &Path) -> anyhow::Result<BuildFolders> {
+    build_folders_from(&cargo_metadata(root, &[])?)
+}
+
+fn build_folders_from(json: &str) -> anyhow::Result<BuildFolders> {
+    let placed: Placed = serde_json::from_str(json).context("unreadable cargo metadata")?;
+    let cargo_home = placed
+        .packages
+        .iter()
+        .filter(|package| {
+            package.source.as_deref().is_some_and(|source| {
+                source.starts_with("registry+") || source.starts_with("sparse+")
+            })
+        })
+        .find_map(|package| registry_home(&package.manifest_path));
+    Ok(BuildFolders {
+        workspace: placed.workspace_root,
+        target: placed.target_directory,
+        cargo_home,
+    })
+}
+
+/// The home of cargo from the manifest of a package of a registry, which cargo unpacks into
+/// `<home>/registry/src/<registry>/<package>/Cargo.toml`.
+fn registry_home(manifest: &Path) -> Option<PathBuf> {
+    let registry = manifest.ancestors().nth(4)?;
+    if registry.file_name()? != "registry" {
+        return None;
     }
-    direct_versions(&String::from_utf8_lossy(&out.stdout))
+    registry.parent().map(Path::to_path_buf)
 }
 
 pub(crate) fn direct_versions(json: &str) -> anyhow::Result<DirectVersions> {
@@ -202,6 +257,36 @@ pub(crate) mod fixtures {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_home_of_cargo_is_where_the_registry_unpacks_the_dependencies() {
+        let json = serde_json::json!({
+            "packages": [
+                {"source": null, "manifest_path": "/work/bugaboo/crates/a/Cargo.toml"},
+                {"source": "git+https://example.com/b", "manifest_path": "/cargo-home/git/checkouts/b-1/abc/Cargo.toml"},
+                {"source": "registry+https://github.com/rust-lang/crates.io-index", "manifest_path": "/cargo-home/registry/src/index.crates.io-1/c-1.0.0/Cargo.toml"},
+            ],
+            "workspace_root": "/work/bugaboo",
+            "target_directory": "/work/bugaboo/target",
+        });
+        assert_eq!(
+            build_folders_from(&json.to_string()).unwrap(),
+            BuildFolders {
+                workspace: PathBuf::from("/work/bugaboo"),
+                target: PathBuf::from("/work/bugaboo/target"),
+                cargo_home: Some(PathBuf::from("/cargo-home")),
+            }
+        );
+        let alone = serde_json::json!({
+            "packages": [{"source": null, "manifest_path": "/work/bugaboo/crates/a/Cargo.toml"}],
+            "workspace_root": "/work/bugaboo",
+            "target_directory": "/work/bugaboo/target",
+        });
+        assert_eq!(
+            build_folders_from(&alone.to_string()).unwrap().cargo_home,
+            None
+        );
+    }
 
     #[test]
     fn direct_versions_ignore_transitive_duplicates() {

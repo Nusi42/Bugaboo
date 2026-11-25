@@ -78,6 +78,7 @@ mod perf_n1;
 mod plan_trace;
 mod required_tests;
 mod sec_advisories;
+pub(crate) mod sec_build_paths;
 mod sec_cookies;
 mod sec_headers;
 mod sec_matrix;
@@ -243,6 +244,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(data_migrations::DataMigrations),
         Box::new(sec_secrets::SecSecrets),
         Box::new(sec_private::SecPrivate),
+        Box::new(sec_build_paths::SecBuildPaths),
         Box::new(sec_headers::SecHeaders),
         Box::new(sec_matrix::SecMatrix),
         Box::new(sec_patterns::SecPatterns),

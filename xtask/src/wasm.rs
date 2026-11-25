@@ -284,7 +284,9 @@ fn run_tool(root: &Path, program: &Path, args: &[&str]) -> anyhow::Result<()> {
 /// Runs cargo and returns the module it wrote. Cargo says where: a different `target-dir` in the
 /// settings of the machine needs no guessing.
 fn cargo_build(root: &Path, module: Module) -> anyhow::Result<PathBuf> {
-    let existing = std::env::var("RUSTFLAGS").unwrap_or_default();
+    // No folder of this computer in the module (SEC-BUILD-PATHS).
+    let existing =
+        crate::build_paths::with_rustflags(root, &std::env::var("RUSTFLAGS").unwrap_or_default())?;
     let out = tools::command("cargo")
         .args([
             "build",

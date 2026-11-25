@@ -79,6 +79,7 @@ The release 0.6.0 was published with sixteen files: a signature for each file, t
 - **The release notes are the text of the GitHub release**, not a file of the folder. `cargo xtask release` writes them beside the folder (`target/release-folder/bugaboo-<version>-notes.md`) from `docs/releases/<version>.md`, with the keys, the support period and the kind of build.
 - **`cargo xtask release check`** fails for a missing file, a file that does not belong, an entry of `SHA256SUMS` that names anything but the four files or gives another checksum, a signature of `SHA256SUMS` that does not hold or names another file or version, a parts list that does not fit its schema or carries no `vulnerabilities`, and a statement without its `analysis`.
 - **A release of the earlier layout** is made into a folder of six files with `cargo xtask release repack --from <folder>`: it takes the programs and the notices as they are and puts the statements of the old VEX file into the CycloneDX parts list with the same code as `cargo xtask release`; `release sign` and `release check` follow as for any release.
+- **No folder of the building computer in a release.** The programs of 0.6.0 named the home of cargo and the toolchain of the computer that built them, with the account in the path, wherever a panic can name its place. Every optimised build and every build of the WebAssembly modules now gives those folders, the repository and the build folder neutral names (coding-standards §2), and `cargo xtask release` and `release sign` refuse a file that names one. Enforced by: SEC-BUILD-PATHS.
 - Enforced by: DEP-SBOM, review (`sec_18_the_release_folder_holds_six_files_and_one_signature`, `sec_18_sha256sums_names_the_payload_and_nothing_else`, `sec_18_the_parts_list_of_a_release_carries_its_vex_statements`, `sec_18_a_release_of_the_earlier_layout_repacks_into_the_six_files`, `sec_18_the_list_alone_is_signed_and_a_changed_byte_fails`, `sec_18_a_download_saved_under_another_name_is_found_by_its_checksum`).
 
 ## Alternatives considered
@@ -90,4 +91,4 @@ The release 0.6.0 was published with sixteen files: a signature for each file, t
 
 ## Enforced by
 
-DEP-SBOM, DEP-REGISTER, DEP-LICENSES, SEC-ADVISORIES, SEC-SECRETS, SEC-HEADERS, ARCH-SETTINGS; review (signing, publishing and the runbook are steps of the maintainer).
+DEP-SBOM, DEP-REGISTER, DEP-LICENSES, SEC-ADVISORIES, SEC-SECRETS, SEC-BUILD-PATHS, SEC-HEADERS, ARCH-SETTINGS; review (signing, publishing and the runbook are steps of the maintainer).

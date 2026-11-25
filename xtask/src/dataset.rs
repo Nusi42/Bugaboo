@@ -168,7 +168,8 @@ pub(crate) fn create_for_dev(root: &Path) -> anyhow::Result<Option<PathBuf>> {
 /// It is built with optimisations: the full sample is about seventy thousand use cases one after
 /// the other, which take about twice as long in an unoptimised build.
 pub(crate) fn build_program(root: &Path) -> anyhow::Result<Option<PathBuf>> {
-    let built = steps::run(root, &[steps::sample_build(Profile::Release)])?;
+    let program = crate::build_paths::neutral(steps::sample_build(Profile::Release), root)?;
+    let built = steps::run(root, &[program])?;
     Ok(built.executable.filter(|_| built.passed))
 }
 

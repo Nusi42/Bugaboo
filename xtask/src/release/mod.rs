@@ -17,6 +17,8 @@ use std::path::Path;
 use anyhow::Context as _;
 use bb_api_words::about;
 
+use crate::checks::sec_build_paths;
+
 pub(crate) mod assemble;
 pub(crate) mod folder;
 pub(crate) mod formats;
@@ -80,6 +82,44 @@ fn this_folder(repo: &crate::repo::Repo) -> anyhow::Result<(std::path::PathBuf, 
     Ok((folder::release_root(repo.root())?.join(&name), name))
 }
 
+/// Refuses the files at `paths` when one of them names a folder of a computer (SEC-BUILD-PATHS),
+/// so that such a file never goes into the release folder or gets signed.
+pub(crate) fn refuse_build_paths(root: &Path, paths: &[std::path::PathBuf]) -> anyhow::Result<()> {
+    let marks = sec_build_paths::marks(&crate::build_paths::of_this_computer(root)?);
+    let mut problems = Vec::new();
+    for path in paths {
+        if let Some(problem) = sec_build_paths::problem(path, &marks)? {
+            let name = path.file_name().unwrap_or(path.as_os_str());
+            problems.push(format!("{}: {problem}", name.to_string_lossy()));
+        }
+    }
+    if problems.is_empty() {
+        return Ok(());
+    }
+    anyhow::bail!(
+        "SEC-BUILD-PATHS: these files name folders of a computer, so they are not released or \
+         signed:\n{}",
+        problems.join("\n")
+    )
+}
+
+/// The files in the release `folder`, for [`refuse_build_paths`].
+fn files_in(folder: &Path) -> anyhow::Result<Vec<std::path::PathBuf>> {
+    let mut files = Vec::new();
+    for entry in
+        fs::read_dir(folder).with_context(|| format!("could not read {}", folder.display()))?
+    {
+        let path = entry
+            .with_context(|| format!("could not read {}", folder.display()))?
+            .path();
+        if path.is_file() {
+            files.push(path);
+        }
+    }
+    files.sort();
+    Ok(files)
+}
+
 /// Says what is wrong with a release folder; whether nothing is.
 fn report(problems: &[String]) -> bool {
     for problem in problems {
@@ -97,6 +137,7 @@ pub(crate) fn run_release(repo: &crate::repo::Repo, arguments: Arguments) -> any
         }
         (None, _, _) => {
             let folder = assemble::assemble(repo)?;
+            refuse_build_paths(repo.root(), &files_in(&folder)?)?;
             crate::output::info(&format!(
                 "wrote the release folder {}; sign it with `cargo xtask release sign`",
                 folder.display()
@@ -120,6 +161,7 @@ pub(crate) fn run_release(repo: &crate::repo::Repo, arguments: Arguments) -> any
                      installed programs will refuse these files"
                 ));
             }
+            refuse_build_paths(repo.root(), &files_in(&folder)?)?;
             sign::sign_folder(&folder, &name, &key)?;
             // Leaked once for the run of the command, as a key of the list is for the program.
             let keys = [bb_core::release::ReleaseKey {
@@ -325,4 +367,34 @@ pub(crate) fn run(root: &Path, out: Option<std::path::PathBuf>, embed: bool) -> 
         folder.display()
     ));
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sec_18_a_file_that_names_a_folder_of_a_computer_is_never_released() {
+        let folder = tempfile::tempdir().unwrap();
+        let clean = folder.path().join("bugaboo-0.6.0-linux-x64");
+        fs::write(&clean, b"\0/cargo/registry/src/index/a-1.0.0/src/lib.rs\0").unwrap();
+        let root = repository_root();
+        refuse_build_paths(&root, &files_in(folder.path()).unwrap()).unwrap();
+        let planted = folder.path().join("bugaboo-0.6.0-windows-x64.exe");
+        fs::write(
+            &planted,
+            br"MZ\0C:\Users\someone\.cargo\registry\src\index\a-1.0.0\src\lib.rs\0",
+        )
+        .unwrap();
+        let refusal = refuse_build_paths(&root, &files_in(folder.path()).unwrap())
+            .unwrap_err()
+            .to_string();
+        assert!(refusal.starts_with("SEC-BUILD-PATHS"), "{refusal}");
+        assert!(
+            refusal.contains("bugaboo-0.6.0-windows-x64.exe: names folders"),
+            "{refusal}"
+        );
+        assert!(!refusal.contains("linux-x64"), "{refusal}");
+        assert!(!refusal.contains("someone"), "{refusal}");
+    }
 }

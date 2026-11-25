@@ -132,7 +132,10 @@ pub(crate) fn run(repo: &Repo, databases: &[DatabaseKind]) -> anyhow::Result<boo
     let root = repo.root();
     let layout = load_layout(root)?;
     let budgets = Budgets::parse(&read_text(repo, BUDGETS_PATH)?)?;
-    let mut plan = vec![steps::server_build(Profile::Release)];
+    let mut plan = vec![crate::build_paths::neutral(
+        steps::server_build(Profile::Release),
+        root,
+    )?];
     if !root
         .join(steps::WEB_APP)
         .join("dist")
