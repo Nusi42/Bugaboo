@@ -66,7 +66,6 @@ Exact license strings are confirmed by `cargo deny` and recorded in the third-pa
 | Server data | @tanstack/react-query | 5.104.1 | MIT |
 | Accessible components | react-aria-components | 1.21.1 | Apache-2.0 |
 | Document editor | @tiptap/react (ProseMirror) | 3.31.4 | MIT |
-| Relation map layout | d3-force | 3.0.0 | ISC |
 | Message formatting | intl-messageformat | 12.1.2 | BSD-3-Clause |
 | API types | openapi-typescript | 7.13.0 | MIT |
 | API client | openapi-fetch + openapi-react-query | 0.17.0 + 0.5.4 | MIT |
@@ -109,4 +108,4 @@ Exact license strings are confirmed by `cargo deny` and recorded in the third-pa
 | Biome as main linter | Its type-aware rules use its own inference, not the TypeScript 7 compiler; kept as fallback formatter |
 | Tailwind CSS | Utility classes make the "only tokens" rule harder to check; CSS Modules with token variables are simpler to enforce |
 | Commercial Gantt/scheduler libraries | License cost and terms conflict with both distribution models; ours is built on shared primitives |
-| elkjs (graph layout) | EPL-2.0 license is not on the allow list; d3-force (ISC) is enough for the relation map |
+| elkjs, d3-force (graph layout) | The relation map is laid out by a component of our own in columns by steps away, so the same answer always gives the same picture ([ADR-0009](../adr/0009-frontend-stack.md), amendment 2026-11-24); elkjs's EPL-2.0 license is not on the allow list either |
