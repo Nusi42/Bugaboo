@@ -3147,7 +3147,7 @@ Worked-out days are shown, never stored: a date is stored only when a person or 
 <p><strong>Releases on the timeline, the calendar and <em>Home</em></strong> (M10-Q8). A release with a <em>Release date</em> is a diamond on the timeline and a mark on the calendar, like a goal's due date (<a href="#adr-0043">ADR-0043</a>, amendment 2026-11-24); it is not dragged there. <em>Group by release</em> (by <em>Planned for release</em>, with <em>None</em> last) groups the rows of the timeline and of a board. An issue planned for a release that ends after the release date shows <em>Delay</em> with the same ways out as for a goal. <em>Due soon</em> on <em>Home</em> lists the <em>Planned</em> releases due in the next 7 days. A release shows only to a reader who sees its project. Enforced by: SEC-MATRIX (the timeline and the calendar under visibility), and the tests <code>plan_05_…</code> and <code>iss_08_…</code> of the packages that draw them.</p>
 </li>
 <li>
-<p><strong>AI apps and agents</strong> (M10-Q20): a read tool <code>list_releases</code> (the releases offered in a project the person sees), and the two fields through <code>change_issue</code> with its preview, like any field. No tool makes, changes, marks, retires or deletes a release, so neither an AI app nor an agent manages releases. Enforced by: ARCH-AI-TOOLS, and the tests <code>ai_21_list_releases_reads_only_releases_of_projects_the_person_sees</code> and <code>ai_21_change_issue_sets_planned_for_release_with_its_preview</code>.</p>
+<p><strong>AI apps and agents</strong> (M10-Q20): a read tool <code>list_releases</code> (the releases offered in a project the person sees), and the two fields through the tool <code>update_issue</code> (the use case <code>change_issue</code>) with its preview, like any field. No tool makes, changes, marks, retires or deletes a release, so neither an AI app nor an agent manages releases. Enforced by: ARCH-AI-TOOLS, and the tests <code>ai_21_list_releases_reads_only_releases_of_projects_the_person_sees</code> and <code>ai_21_update_issue_sets_planned_for_release_with_its_preview</code>.</p>
 </li>
 <li>
 <p><strong>A release is business data, not personal data.</strong> Its events name who changed it, shown as <em>Who sees people</em> allows (<code>PersonRef</code>); after <em>Remove a person</em> those events show <em>Former user</em>. Enforced by: DATA-MARKS, ARCH-PERSON-REF.</p>
@@ -3158,7 +3158,7 @@ Worked-out days are shown, never stored: a date is stored only when a person or 
 <li>A migration adds the releases of a project and the two fields of an issue; the API grows by the routes of releases under a project and two optional members of an issue (ARCH-API-FREEZE).</li>
 <li>The reserved words of the search language stand for something, and a saved search that used them before reads the same text with the new meaning (TEST-SEARCH-ROUNDTRIP).</li>
 <li>PLAN-04 is complete: rows by release join the timeline, and a release is a milestone of it beside a goal's due date.</li>
-<li>Standing rules of agents that change <em>Found in release</em> (AI-32) work on the new field through <code>change_issue</code> like any other field.</li>
+<li>Standing rules of agents that change <em>Found in release</em> (AI-32) work on the new field through the use case <code>change_issue</code>, the one the tool <code>update_issue</code> runs, like any other field.</li>
 </ul>
 <h3>Alternatives considered</h3>
 <ul>

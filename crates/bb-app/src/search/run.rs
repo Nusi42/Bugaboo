@@ -362,7 +362,12 @@ fn names_a_release(
             }
             Expr::Not { item, .. } => in_filter(item, looked),
             Expr::Field { field, .. } => is_release(looked, &field.word),
-            _ => false,
+            // A word search and the walks of the tree and of the relations name no field.
+            Expr::Contains { .. }
+            | Expr::Under { .. }
+            | Expr::Blocks { .. }
+            | Expr::BlockedBy { .. }
+            | Expr::ConnectedTo { .. } => false,
         }
     }
     let search = checked.search();
@@ -393,10 +398,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         looked: &Looked,
     ) -> Result<Vec<bb_core::id::ReleaseId>, AppError> {
         Ok(self
-            .releases_seen(&looked.seen)
+            .releases_known_to(looked)
             .await?
-            .into_iter()
-            .map(|release| release.id)
+            .iter()
+            .map(|(_, id)| *id)
             .collect())
     }
 }

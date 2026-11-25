@@ -16,6 +16,9 @@ impl ReleaseStore for FakeStore {
         tx: &mut Tx,
         projects: Vec<ProjectId>,
     ) -> Result<Vec<Release>, FakeError> {
+        tx.state
+            .release_list_reads
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         Ok(tx
             .state
             .releases

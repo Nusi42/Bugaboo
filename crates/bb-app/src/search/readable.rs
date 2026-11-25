@@ -275,6 +275,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .filter_map(|place| place.chain.last().copied())
                 .collect(),
             seen,
+            releases: std::sync::OnceLock::new(),
         };
         Ok(match withheld {
             Some(withheld) => looked.without(withheld),
@@ -304,6 +305,9 @@ pub(crate) struct Looked {
     pub(crate) projects: Vec<ProjectId>,
     /// The tree as the person sees it, with the levels.
     pub(crate) seen: crate::projects::Leveled,
+    /// The releases the person may know where the search looks, by name, read once for the request
+    /// when something asks for them (`Ctx::releases_known_to`).
+    pub(crate) releases: std::sync::OnceLock<Vec<(String, bb_core::id::ReleaseId)>>,
 }
 
 impl Looked {

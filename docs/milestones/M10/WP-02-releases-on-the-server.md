@@ -47,7 +47,7 @@ A project has releases. A person with *Manage releases* makes one, gives it a *R
 - `iss_08_search_filters_sorts_and_groups_by_both_release_fields` (and TEST-SEARCH-ROUNDTRIP).
 - `iss_08_every_release_change_is_an_event_with_old_and_new_values`.
 - `iss_08_an_issue_moved_out_of_the_tree_keeps_its_release_marked_not_offered`.
-- `ai_21_list_releases_reads_only_releases_of_projects_the_person_sees` and `ai_21_change_issue_sets_planned_for_release_with_its_preview` (ARCH-AI-TOOLS).
+- `ai_21_list_releases_reads_only_releases_of_projects_the_person_sees` and `ai_21_update_issue_sets_planned_for_release_with_its_preview` (ARCH-AI-TOOLS).
 - SEC-MATRIX: every release route and the two issue members, for every starting role, both databases.
 - PERF-N1: the list of releases and the list of issues with both columns.
 

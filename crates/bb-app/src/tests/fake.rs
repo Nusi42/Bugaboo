@@ -178,6 +178,8 @@ pub(crate) struct State {
     pub(crate) labels: Vec<bb_core::tags::Label>,
     pub(crate) issue_labels: Vec<bb_core::tags::IssueLabel>,
     pub(crate) releases: Vec<bb_core::project_release::Release>,
+    /// How many times the releases of projects were read, shared by every copy of the state.
+    pub(crate) release_list_reads: Arc<std::sync::atomic::AtomicUsize>,
     pub(crate) found_in: Vec<bb_core::project_release::IssueFoundIn>,
     pub(crate) jobs: Vec<bb_core::job::Job>,
     pub(crate) many_changes_runs: Vec<bb_core::many_changes::ManyChangeRun>,

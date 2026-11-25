@@ -88,6 +88,8 @@ pub const fn built_in_fields(kind: LayoutKind) -> &'static [Field] {
             Field::Labels,
             Field::StartDate,
             Field::DueDate,
+            Field::FoundInRelease,
+            Field::PlannedForRelease,
             Field::EstimatedTime,
             Field::TimeLeft,
             Field::TimeSpent,
@@ -100,6 +102,8 @@ pub const fn built_in_fields(kind: LayoutKind) -> &'static [Field] {
             Field::AssignedTo,
             Field::StartDate,
             Field::DueDate,
+            Field::FoundInRelease,
+            Field::PlannedForRelease,
             Field::EstimatedTime,
         ],
         // The description is too long for a card; the rest of the issue page may stand on it.
@@ -211,8 +215,9 @@ impl LayoutContent {
 
     /// The layout a form has until somebody customizes it: the fields the form has today, for every
     /// role. `own` are the own fields that reach the form, in the order they are offered in. The
-    /// new-issue form starts short (the description and the priority); the issue page starts with
-    /// everything; the card shows *Priority*, *Assigned to* and *Due date* (M10-Q4).
+    /// new-issue form starts short (the description, the priority and the dates; the releases are
+    /// placeable there, not placed); the issue page starts with everything; the card shows
+    /// *Priority*, *Assigned to* and *Due date* (M10-Q4).
     #[must_use]
     pub fn starting(kind: LayoutKind, own: &[FieldKey], roles: &[RoleId]) -> Self {
         let for_all = |field: FieldKey| PlacedField {
@@ -246,6 +251,8 @@ impl LayoutContent {
                         Field::Labels,
                         Field::StartDate,
                         Field::DueDate,
+                        Field::FoundInRelease,
+                        Field::PlannedForRelease,
                     ])
                     .into_iter()
                         .chain(own.iter().copied())

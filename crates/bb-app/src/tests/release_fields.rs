@@ -321,7 +321,7 @@ async fn ai_21_list_releases_reads_only_releases_of_projects_the_person_sees() -
 }
 
 #[tokio::test]
-async fn ai_21_change_issue_sets_planned_for_release_with_its_preview() -> Outcome {
+async fn ai_21_update_issue_sets_planned_for_release_with_its_preview() -> Outcome {
     let world = World::new().await?;
     let project = a_project(&world, "APP").await?;
     let release = a_release(&world, "APP", "2.4").await?;

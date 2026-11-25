@@ -22,11 +22,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         if let Some((_, found)) = cache.names.releases.iter().find(|(name, _)| *name == key) {
             return Ok(!found.is_empty());
         }
-        self.load_releases(looked, cache).await?;
-        let ids: Vec<_> = cache
-            .release_names
+        let ids: Vec<_> = self
+            .releases_known_to(looked)
+            .await?
             .iter()
-            .flatten()
             .filter(|(name, _)| same_name(name, &each.text))
             .map(|(_, id)| *id)
             .collect();
@@ -40,28 +39,31 @@ impl<S: AuthStore> Ctx<'_, S> {
         &self,
         looked: &Looked,
         id: bb_core::id::ReleaseId,
-        cache: &mut NameCache,
     ) -> Result<Option<String>, AppError> {
-        self.load_releases(looked, cache).await?;
-        Ok(cache
-            .release_names
+        Ok(self
+            .releases_known_to(looked)
+            .await?
             .iter()
-            .flatten()
             .find(|(_, each)| *each == id)
             .map(|(name, _)| name.clone()))
     }
 
-    /// Reads the releases of the projects the person sees into the cache, once.
-    async fn load_releases(&self, looked: &Looked, cache: &mut NameCache) -> Result<(), AppError> {
-        if cache.release_names.is_none() {
-            cache.release_names = Some(
-                self.releases_seen(&looked.seen)
-                    .await?
-                    .into_iter()
-                    .map(|release| (release.name, release.id))
-                    .collect(),
-            );
+    /// The releases the person may know where the search looks (those of the projects they see,
+    /// and the AI may see, also the retired ones), by name: read once for the request, for its
+    /// names, the IDs a release field reads and the names of its groups.
+    pub(crate) async fn releases_known_to<'l>(
+        &self,
+        looked: &'l Looked,
+    ) -> Result<&'l [(String, bb_core::id::ReleaseId)], AppError> {
+        if let Some(known) = looked.releases.get() {
+            return Ok(known);
         }
-        Ok(())
+        let read = self
+            .releases_seen(&looked.seen)
+            .await?
+            .into_iter()
+            .map(|release| (release.name, release.id))
+            .collect();
+        Ok(looked.releases.get_or_init(|| read))
     }
 }

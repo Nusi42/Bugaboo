@@ -471,3 +471,86 @@ async fn time_03_the_lengths_of_time_are_fields_a_layout_places_like_any_other()
     })
     .await
 }
+
+#[tokio::test]
+async fn iss_08_both_release_fields_are_placed_like_any_field_and_follow_field_levels() -> TestResult
+{
+    each_database("iss_08_layout_fields", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let releases = ["found-in-release", "planned-for-release"];
+        let mut lena = reader_of(
+            &site,
+            &rig,
+            "lena@example.test",
+            &LEAD,
+            &[
+                ("found-in-release", None, FieldLevel::Hidden),
+                ("planned-for-release", None, FieldLevel::CanSee),
+            ],
+        )
+        .await?;
+        // The issue page starts with both.
+        let page = ok(&ada
+            .send(
+                "POST",
+                LAYOUTS,
+                Some(json!({"project": "ACME", "kind": "issue-page"})),
+            )
+            .await?)?
+        .clone();
+        let placed = placed_in(&page);
+        assert!(
+            releases
+                .iter()
+                .all(|key| placed.contains(&(*key).to_owned())),
+            "{placed:?}"
+        );
+        // The new-issue form offers both, and a layout that places them is saved.
+        let form = customize(&mut ada, "ACME").await?;
+        let offered = offered_in(&form);
+        assert!(
+            releases
+                .iter()
+                .all(|key| offered.contains(&(*key).to_owned())),
+            "{offered:?}"
+        );
+        // Shown to Lena's role too, so only her field levels keep them from her.
+        let roles = [
+            role_named(&form, "Administrator")?,
+            role_named(&form, "lena@example.test")?,
+        ];
+        let (layout, version) = slot(&form)?;
+        let lock = token_of(&take_lock(&mut ada, &layout, AN_EDITOR).await?)?;
+        let fields: Vec<Value> = releases
+            .iter()
+            .map(|key| json!({"field": key, "roles": roles}))
+            .collect();
+        ok(&save(
+            &mut ada,
+            &layout,
+            &version,
+            &lock,
+            json!([{"tab": "", "title": "", "fields": fields}]),
+        )
+        .await?)?;
+        assert_eq!(form_of(&mut ada, "ACME", "new-issue").await?, releases);
+        // Field permissions win, as for *Due date*: who may not see a field is not shown it, and
+        // who may not change it is not asked for it on the new-issue form.
+        let shown = form_of(&mut lena, "ACME", "issue-page").await?;
+        assert!(!shown.contains(&"found-in-release".to_owned()), "{shown:?}");
+        assert!(
+            shown.contains(&"planned-for-release".to_owned()),
+            "{shown:?}"
+        );
+        let asked = form_of(&mut lena, "ACME", "new-issue").await?;
+        assert!(
+            releases
+                .iter()
+                .all(|key| !asked.contains(&(*key).to_owned())),
+            "{asked:?}"
+        );
+        Ok(())
+    })
+    .await
+}

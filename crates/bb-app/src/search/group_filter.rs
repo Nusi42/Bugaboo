@@ -405,7 +405,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .find(|link| link.id == *id)
                 .map(|link| Wanted::named(&link.short_name.to_string(), Thing::Project(*id))),
             GroupKey::Release(id) => self
-                .release_name_of(looked, *id, cache)
+                .release_name_of(looked, *id)
                 .await?
                 .map(|name| Wanted::named(&name, Thing::Release(*id))),
             GroupKey::IssueType(id) => looked

@@ -183,7 +183,6 @@ pub(crate) struct NameCache {
     mine: Option<Vec<GroupId>>,
     tags_known: Option<Vec<(String, bb_core::id::TagId)>>,
     labels_known: Option<Vec<(String, bb_core::id::LabelId)>>,
-    release_names: Option<Vec<(String, bb_core::id::ReleaseId)>>,
     missing_issues: Vec<String>,
     /// How many names were resolved with a read each for the request, against
     /// [`NAME_RESOLUTIONS_MAX`].

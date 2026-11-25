@@ -122,8 +122,9 @@ impl SearchStore for FakeStore {
         shared.searches.push(request.clone());
         shared.totals_asked.push(asked.clone());
         let mut totals = shared.search_totals.clone();
-        // People of one set are one group, as the statement makes them.
-        if let Some(by) = asked.by.as_ref().filter(|by| !by.people.is_empty()) {
+        // People of one set are one group, as the statement makes them, and a release the reader
+        // may not know is in the group of none, as the statement reads it.
+        if let Some(by) = asked.by.as_ref() {
             let mut merged: Vec<GroupTotal> = Vec::new();
             for group in totals.groups {
                 let key = match group.key {
@@ -133,13 +134,24 @@ impl SearchStore for FakeStore {
                         .position(|set| set.contains(&person))
                         .and_then(|at| u32::try_from(at).ok())
                         .map_or(GroupKey::Person(person), GroupKey::People),
+                    GroupKey::Release(release)
+                        if !request
+                            .releases_known
+                            .as_ref()
+                            .is_some_and(|known| known.contains(&release)) =>
+                    {
+                        GroupKey::Empty
+                    }
                     other => other,
                 };
-                match merged.iter_mut().find(|each| each.key == key) {
+                match merged
+                    .iter_mut()
+                    .find(|each| each.key == key && each.then == group.then)
+                {
                     Some(each) => each.total = each.total.plus(&group.total),
                     None => merged.push(GroupTotal {
                         key,
-                        then: None,
+                        then: group.then,
                         total: group.total,
                     }),
                 }

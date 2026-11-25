@@ -466,3 +466,171 @@ async fn iss_08_the_ai_naming_a_release_kept_from_it_is_refused_like_an_unknown_
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn iss_08_a_search_reads_the_releases_known_once_for_names_ids_and_groups() -> Outcome {
+    use crate::search::{SearchGroupsQuery, SearchScope, search_groups};
+    use std::sync::atomic::Ordering;
+    let split = split().await?;
+    let reads = || {
+        split
+            .world
+            .store
+            .lock()
+            .state
+            .release_list_reads
+            .load(Ordering::Relaxed)
+    };
+    let before = reads();
+    // A name in the filter, the IDs a release field reads, and the names of the groups.
+    search_groups(
+        &split.world.ctx(),
+        SearchGroupsQuery {
+            session_token: split.tea.session_token.clone(),
+            text: "found in release is \"2.4\"".to_owned(),
+            scope: SearchScope::Everywhere,
+            by: "planned for release".to_owned(),
+        },
+    )
+    .await
+    .map_err(text)?;
+    assert_eq!(reads() - before, 1);
+    // A search that names no release reads none.
+    let before = reads();
+    search_groups(
+        &split.world.ctx(),
+        SearchGroupsQuery {
+            session_token: split.tea.session_token.clone(),
+            text: String::new(),
+            scope: SearchScope::Everywhere,
+            by: "priority".to_owned(),
+        },
+    )
+    .await
+    .map_err(text)?;
+    assert_eq!(reads(), before);
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_08_the_ai_totals_by_release_name_no_release_kept_from_it() -> Outcome {
+    use crate::search::{GroupKey, SearchRequest};
+    let (world, _, secret) = kept_world().await?;
+    let open = a_release(&world, "APP", "1.0").await?.id;
+    // What the statement would count: one issue for each release, one without.
+    world.store.lock().search_totals = super::fake_search::counted(vec![
+        (GroupKey::Release(open), 1),
+        (GroupKey::Release(secret), 1),
+        (GroupKey::Empty, 1),
+    ]);
+    let answer = call_tool(
+        &world.ctx(),
+        call(
+            &token(&world),
+            "search_totals",
+            json!({"query": "", "group_by": "planned for release"}),
+        ),
+    )
+    .await
+    .map_err(text)?
+    .into_value();
+    let said = serde_json::to_string(&answer).map_err(text)?;
+    // The release the AI may know is a group by its name; the one kept from it is no group and no
+    // name, and its issue counts with none.
+    assert!(said.contains("1.0"), "{said}");
+    assert!(!said.contains("Classified"), "{said}");
+    assert!(!said.contains(&secret.to_string()), "{said}");
+    let request: SearchRequest = world.store.lock().searches.pop().ok_or("no search ran")?;
+    assert_eq!(request.releases_known, Some(vec![open]));
+    let grouped = world
+        .store
+        .lock()
+        .totals_asked
+        .last()
+        .and_then(|asked| asked.by.clone())
+        .map(|by| by.word);
+    assert_eq!(grouped.as_deref(), Some("planned for release"));
+    // Two groups: the release by its name with its issue, and none with the other two.
+    assert_eq!(said.matches("        issues: ").count(), 2, "{said}");
+    let none = said
+        .split("planned for release is empty")
+        .nth(1)
+        .ok_or("no group of none")?;
+    assert!(none.contains("issues: 2"), "{said}");
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_08_a_board_and_a_calendar_of_a_search_by_release_answer_as_any_other() -> Outcome {
+    use super::scenarios_searches::save;
+    use crate::boards::{BoardQuery, board};
+    use crate::calendar::{CalendarQuery, calendar};
+    use crate::search::ViewSearch;
+    let split = split().await?;
+    for (name, text) in [
+        ("Planned", "planned for release is \"2.4\""),
+        ("By release", "sort by found in release"),
+    ] {
+        let saved = save(&split.world, &split.tea.session_token, name, text)
+            .await
+            .map_err(super::scenarios::text)?
+            .id;
+        let shown = board(
+            &split.world.ctx(),
+            BoardQuery {
+                session_token: split.tea.session_token.clone(),
+                search: ViewSearch::Saved(saved),
+                project: None,
+                only_this_project: false,
+                options: None,
+                more: None,
+                limit: 10,
+            },
+        )
+        .await;
+        assert!(shown.is_ok(), "{text}: {:?}", shown.err());
+        let days = calendar(
+            &split.world.ctx(),
+            CalendarQuery {
+                session_token: split.tea.session_token.clone(),
+                search: ViewSearch::Saved(saved),
+                project: None,
+                only_this_project: false,
+                options: bb_core::saved_search::CalendarOptions::default(),
+                first: jiff::civil::date(2027, 3, 1),
+                last: jiff::civil::date(2027, 3, 31),
+            },
+        )
+        .await;
+        assert!(days.is_ok(), "{text}: {:?}", days.err());
+        // The search the view ran read the releases Tea may know, so no release field went unread.
+        let request = split
+            .world
+            .store
+            .lock()
+            .searches
+            .pop()
+            .ok_or("no search ran")?;
+        assert_eq!(request.releases_known, Some(vec![split.web]), "{text}");
+    }
+    // A text that names a release Tea may not know is refused like an unknown name.
+    let unknown = board(
+        &split.world.ctx(),
+        BoardQuery {
+            session_token: split.tea.session_token.clone(),
+            search: ViewSearch::Text("planned for release is \"Moonbeam\"".to_owned()),
+            project: None,
+            only_this_project: false,
+            options: None,
+            more: None,
+            limit: 10,
+        },
+    )
+    .await;
+    assert!(
+        matches!(unknown, Err(crate::auth::AppError::Mistakes(_))),
+        "{:?}",
+        unknown.err()
+    );
+    Ok(())
+}
