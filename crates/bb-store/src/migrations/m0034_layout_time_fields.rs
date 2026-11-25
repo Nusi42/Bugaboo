@@ -199,54 +199,14 @@ pub(super) fn steps() -> Result<Vec<Step>, sea_query::error::Error> {
 
 #[cfg(test)]
 mod tests {
-    use bb_app::layouts::LayoutStore as _;
     use bb_core::fields::{Field, FieldKey};
     use bb_core::id::{FieldId, LayoutId, RoleId, SequentialIds};
     use bb_core::layout::{LayoutContent, LayoutKind};
-    use bb_testing::{Failure, TestResult, each_database};
+    use bb_testing::{TestResult, each_database};
 
-    use super::super::Database;
-    use super::super::old_rows::{old_layout, old_role};
-    use crate::auth::AuthStorage;
+    use super::super::old_rows::{Placed, old_layout, old_role, read_layout as read, shown};
+    use super::super::{Database, latest_version};
     use crate::test_support::at;
-
-    /// A field of a stored layout with the roles it is shown to, in order of role.
-    type Placed = (FieldKey, Vec<RoleId>);
-
-    /// What a stored layout holds: its version and the fields of each section.
-    async fn read(
-        database: &Database,
-        layout: LayoutId,
-    ) -> Result<(i64, Vec<Vec<Placed>>), Failure> {
-        let mut read = database.begin_read().await?;
-        let stored = AuthStorage::stored_layout_in(&mut read, layout)
-            .await?
-            .ok_or("the layout is gone")?;
-        let sections = stored
-            .content
-            .sections
-            .iter()
-            .map(|section| {
-                section
-                    .fields
-                    .iter()
-                    .map(|placed| {
-                        let mut roles = placed.roles.clone();
-                        roles.sort();
-                        (placed.field, roles)
-                    })
-                    .collect()
-            })
-            .collect();
-        Ok((stored.layout.version, sections))
-    }
-
-    /// These fields, each shown to these roles.
-    fn shown(fields: &[FieldKey], roles: &[RoleId]) -> Vec<Placed> {
-        let mut roles = roles.to_vec();
-        roles.sort();
-        fields.iter().map(|field| (*field, roles.clone())).collect()
-    }
 
     fn field(word: &str) -> FieldKey {
         FieldKey::from_code(word).unwrap()
@@ -330,10 +290,10 @@ mod tests {
         .await
     }
 
-    // A layout nobody changed, saved as the starting layout of the issue page was before, is the
-    // starting layout of now once the migration has run.
+    // A layout nobody changed, saved as the starting layout of the issue page was before
+    // migration 34, is the starting layout of now once every migration has run.
     #[tokio::test]
-    async fn time_03_migration_34_makes_the_old_starting_layout_the_starting_layout_of_now()
+    async fn time_03_the_old_starting_layout_is_the_starting_layout_of_now_after_every_migration()
     -> TestResult {
         each_database("migration_34_starting_layout", async |db| {
             let database = Database::connect(db.url()).await?;
@@ -352,7 +312,9 @@ mod tests {
             ];
             old_layout(&database, layout, "issue-page", old, &[], &roles).await?;
 
-            database.migrate_until(34, at(1)).await?;
+            // Every migration since, not only 34: a field that joins the starting layout later
+            // comes with the step that puts it into the layouts saved before.
+            database.migrate_until(latest_version(), at(1)).await?;
 
             let starting = LayoutContent::starting(LayoutKind::IssuePage, &own, &roles);
             let expected: Vec<Vec<Placed>> = starting

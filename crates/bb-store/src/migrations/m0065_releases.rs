@@ -14,6 +14,9 @@
 //! permission is given by the use case of the starting roles at the next start, with its events
 //! and its line in the security log, never here. The key of the permission is written out here,
 //! not read from the program, so the migration stays what it was.
+//!
+//! Then the layouts of the issue page saved before get the two fields where the starting layout
+//! has them (`release_layouts.rs`), so an upgraded layout nobody changed is the starting layout.
 
 use sea_query::{ColumnDef, Expr, ForeignKey, Index, Query, Table};
 
@@ -132,6 +135,7 @@ pub(super) fn steps() -> Result<Vec<Step>, sea_query::error::Error> {
     let mut steps = release_table();
     steps.extend(issue_releases());
     steps.extend(due_permission()?);
+    steps.extend(super::release_layouts::steps()?);
     Ok(steps)
 }
 

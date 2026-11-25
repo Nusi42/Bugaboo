@@ -2,11 +2,14 @@
 //! change what is stored: written with the column names of `crate::schema`, never through the
 //! program's use cases, so a test starts from what an old server left.
 
+use bb_app::layouts::LayoutStore as _;
+use bb_core::fields::FieldKey;
 use bb_core::id::{LayoutId, RoleId, SavedSearchId, UserId};
-use bb_testing::TestResult;
+use bb_testing::{Failure, TestResult};
 use sea_query::{DynIden, Expr, IntoIden as _, Query};
 
 use super::Database;
+use crate::auth::AuthStorage;
 use crate::db::StoredId as _;
 use crate::schema::{
     LayoutFieldRoleRow, LayoutFieldRow, LayoutOffFieldRow, LayoutRow, LayoutSectionRow, RoleRow,
@@ -226,4 +229,42 @@ pub(super) async fn old_history_row(
         ],
     )
     .await
+}
+
+/// A field of a stored layout with the roles it is shown to, in order of role.
+pub(super) type Placed = (FieldKey, Vec<RoleId>);
+
+/// What a stored layout holds: its version and the fields of each section.
+pub(super) async fn read_layout(
+    database: &Database,
+    layout: LayoutId,
+) -> Result<(i64, Vec<Vec<Placed>>), Failure> {
+    let mut read = database.begin_read().await?;
+    let stored = AuthStorage::stored_layout_in(&mut read, layout)
+        .await?
+        .ok_or("the layout is gone")?;
+    let sections = stored
+        .content
+        .sections
+        .iter()
+        .map(|section| {
+            section
+                .fields
+                .iter()
+                .map(|placed| {
+                    let mut roles = placed.roles.clone();
+                    roles.sort();
+                    (placed.field, roles)
+                })
+                .collect()
+        })
+        .collect();
+    Ok((stored.layout.version, sections))
+}
+
+/// These fields, each shown to these roles.
+pub(super) fn shown(fields: &[FieldKey], roles: &[RoleId]) -> Vec<Placed> {
+    let mut roles = roles.to_vec();
+    roles.sort();
+    fields.iter().map(|field| (*field, roles.clone())).collect()
 }
