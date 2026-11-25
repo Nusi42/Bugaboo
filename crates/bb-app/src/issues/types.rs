@@ -126,6 +126,23 @@ pub struct ChangeIssue {
     /// The values of own fields to set, by the key of the field; `null` takes a value away. A
     /// long text is saved on its own route, under its edit lock.
     pub fields: BTreeMap<String, Value>,
+    /// Who asks for the change: a person, the AI for them, or *Undo my run*.
+    pub asker: Asker,
+}
+
+/// Who asks for a change of an issue, where that decides more than the person's rights do.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub enum Asker {
+    /// The person, by what they see.
+    #[default]
+    Person,
+    /// The AI for the person, with what is kept from AI: a release of a project kept from it is
+    /// one the person may not know, so the change keeps it like one of a project they do not see
+    /// (ADR-0049, decision 8).
+    Ai(Box<crate::ai::Withheld>),
+    /// *Undo my run*, which puts back what the issue held before: a release the issue named then
+    /// is no new choice, so one retired since may come back (ADR-0049, decision 3).
+    Undo,
 }
 
 impl ChangeIssue {
@@ -148,6 +165,7 @@ impl ChangeIssue {
             found_in_release: None,
             planned_for_release: None,
             fields: BTreeMap::default(),
+            asker: Asker::Person,
         }
     }
 

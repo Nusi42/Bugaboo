@@ -113,21 +113,8 @@ async fn retitle(world: &World, given: &Handed, title: &str) -> Result<(), AppEr
         .issue
         .version;
     let change = ChangeIssue {
-        session_token: given.key.clone(),
-        issue: given.issue.to_string(),
-        version,
-        issue_type: None,
         title: Some(title.to_owned()),
-        status: None,
-        priority: None,
-        start_date: None,
-        due_date: None,
-        estimated_time: None,
-        time_left: None,
-        assigned_to: None,
-        fields: std::collections::BTreeMap::default(),
-        found_in_release: None,
-        planned_for_release: None,
+        ..ChangeIssue::of(&given.key, given.issue.to_string(), version)
     };
     change_issue::<_, ChangedIssue>(&world.ctx(), change)
         .await

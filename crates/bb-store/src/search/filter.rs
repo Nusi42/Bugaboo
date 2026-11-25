@@ -42,7 +42,7 @@ impl Compiler<'_> {
         if let Test::Contains { text, .. } = test {
             return self.contains(target, text);
         }
-        let (subject, domain) = self.subject_of(target);
+        let (subject, domain) = self.subject_of(target)?;
         match test {
             Test::Is { value, .. } => self.equals_in(&subject, domain, value),
             Test::IsNot { value, .. } => self.is_not(&subject, domain, std::slice::from_ref(value)),

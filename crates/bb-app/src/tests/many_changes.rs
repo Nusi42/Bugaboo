@@ -182,6 +182,7 @@ async fn iss_09_an_issue_changed_after_the_preview_is_left_alone_and_named() -> 
             fields: BTreeMap::new(),
             found_in_release: None,
             planned_for_release: None,
+            asker: crate::issues::Asker::Person,
         },
     )
     .await?;

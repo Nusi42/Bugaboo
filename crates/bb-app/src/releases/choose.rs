@@ -6,7 +6,9 @@
 //! of the tree keeps its releases. A release the person may not know is refused like one that does
 //! not exist (`release.not-offered`), and one the issue names that the person may not know is kept
 //! at its place when they set the others, and *Planned for release* keeps one they may not know when
-//! they set none, so a change never takes away or reorders what they cannot see.
+//! they set none, so a change never takes away or reorders what they cannot see. For the AI, a
+//! release of a project kept from AI is one the person may not know (`Asker::Ai`). *Undo my run*
+//! puts back a release the issue named before, also one retired since (`Asker::Undo`).
 
 use bb_core::ErrorCode;
 use bb_core::id::{ProjectId, ReleaseId};
@@ -23,6 +25,19 @@ pub(crate) struct ReleaseChoice<'a> {
     pub(crate) found_now: &'a [ReleaseId],
     /// The release the issue is planned for now.
     pub(crate) planned_now: Option<ReleaseId>,
+    /// Whether *Undo my run* puts back what the issue named before ([`may_name`]).
+    pub(crate) putting_back: bool,
+}
+
+/// Whether a release may be named where an issue is: chosen anew, it is offered there and not
+/// retired; put back by *Undo my run*, it is offered there, also when retired since, as putting
+/// back what the issue named is no new choice.
+fn may_name(release: &Release, chain: &[ProjectId], putting_back: bool) -> bool {
+    if putting_back {
+        release.offered_in(chain)
+    } else {
+        release.choosable_in(chain)
+    }
 }
 
 /// Each once, in the order given.
@@ -62,7 +77,9 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map_err(|error| internal::<S>(&error))?;
         let choosable = |release: &ReleaseId| {
             found.iter().any(|each: &Release| {
-                each.id == *release && shown.sees(each.project) && each.choosable_in(choice.chain)
+                each.id == *release
+                    && shown.sees(each.project)
+                    && may_name(each, choice.chain, choice.putting_back)
             })
         };
         if new.iter().all(choosable) {
@@ -155,11 +172,11 @@ fn kept_in_place(
 }
 
 /// Inside the change that writes an issue's releases, after the lock of the releases: every
-/// release it names that it did not name before is still offered and not in the trash (it may
-/// have been retired or deleted since it was judged).
+/// release it names that it did not name before may still be named ([`may_name`]: it may have been
+/// retired or deleted since it was judged).
 pub(crate) async fn ensure_still_choosable_in<S: AuthStore>(
     transaction: &mut S::Transaction,
-    chain: &[ProjectId],
+    (chain, putting_back): (&[ProjectId], bool),
     new: &[ReleaseId],
     stopped: &crate::projects::Why,
 ) -> Result<(), S::Error> {
@@ -171,7 +188,7 @@ pub(crate) async fn ensure_still_choosable_in<S: AuthStore>(
     let all = new.iter().all(|release| {
         found
             .iter()
-            .any(|each| each.id == *release && each.choosable_in(chain))
+            .any(|each| each.id == *release && may_name(each, chain, putting_back))
     });
     if all {
         Ok(())

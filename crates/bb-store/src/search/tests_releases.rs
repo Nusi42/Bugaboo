@@ -5,7 +5,7 @@
 use bb_app::issues::IssueStore as _;
 use bb_app::ports::ChangeStore;
 use bb_app::releases::ReleaseStore as _;
-use bb_app::search::{FieldTarget, GroupKey, SearchRequest, Searchable};
+use bb_app::search::{FieldTarget, GroupKey, SearchRequest, SearchStore as _, Searchable};
 use bb_core::id::{ReleaseId, UserId};
 use bb_core::names::name_key;
 use bb_core::project_release::{Release, ReleaseState, found_in_rows};
@@ -113,7 +113,7 @@ fn asked(data: &Data, made: &[Release], text: &str) -> SearchRequest {
         .iter()
         .map(|each| (name_key(&each.name), vec![each.id]))
         .collect();
-    request.releases_known = made.iter().map(|each| each.id).collect();
+    request.releases_known = Some(made.iter().map(|each| each.id).collect());
     request
 }
 
@@ -203,6 +203,35 @@ async fn iss_08_search_filters_sorts_and_groups_by_both_release_fields() -> Test
             .await
             .map_err(|error| format!("{error:?}"))?;
         assert_eq!(planned.len(), 4, "{planned:?}");
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn iss_08_a_release_the_person_may_not_know_sorts_with_the_issues_without_one() -> TestResult
+{
+    each_database("search_releases_order", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut data = seed(storage).await;
+        let made = with_releases(storage, &mut data).await?;
+        // No filter: *Secret* (October) would come first if the person knew it; Slow page sorts
+        // after the releases they know, with the issues that name none.
+        let sorted = found(
+            storage,
+            &data,
+            &made,
+            "sort by planned for release oldest first",
+        )
+        .await?;
+        assert_eq!(sorted[..2], ["Login broken", "Printer jams"], "{sorted:?}");
+        let slow = sorted.iter().position(|title| title == "Slow page");
+        assert!(slow.is_some_and(|at| at >= 2), "{sorted:?}");
+        // A request that did not read the releases the person may know cannot read a release field.
+        let mut unread = asked(&data, &made, "sort by planned for release");
+        unread.releases_known = None;
+        assert!(storage.search_page(&unread).await.is_err());
         Ok(())
     })
     .await

@@ -160,6 +160,7 @@ async fn set_up(world: &World, seeds: &[Seed]) -> Result<Setup, TestCaseError> {
                     fields: BTreeMap::new(),
                     found_in_release: None,
                     planned_for_release: None,
+                    asker: crate::issues::Asker::Person,
                 },
             )
             .await

@@ -165,7 +165,7 @@ impl Compiler<'_> {
     /// many values is placed by its smallest, or by its largest when the key runs the other way
     /// (`desc`), so it is where the best of its values would put it.
     fn sort_value(&self, target: FieldTarget, desc: bool) -> Result<(Expr, Kind), CompileError> {
-        let (subject, domain) = self.subject_of(target);
+        let (subject, domain) = self.subject_of(target)?;
         let pick = |value: Expr| {
             if desc {
                 Func::max(value)
@@ -318,7 +318,7 @@ impl Compiler<'_> {
     /// built-in choice), never by a name: the use case shows it as the person may see it.
     pub(super) fn grouping(&self, word: &str) -> Result<Grouping, CompileError> {
         let target = self.target(word)?;
-        let (subject, domain) = self.subject_of(target);
+        let (subject, domain) = self.subject_of(target)?;
         let what = group_value_of(domain);
         match subject.clone() {
             Subject::Column(value) => {
@@ -383,7 +383,7 @@ impl Compiler<'_> {
                 );
                 // Without a word: the newest, the highest, A to Z. What the key holds is found out
                 // first, as the direction it reads in without a word depends on it.
-                let desc = down || (!up && kind_of(self.subject_of(target).1) == Kind::Whole);
+                let desc = down || (!up && kind_of(self.subject_of(target)?.1) == Kind::Whole);
                 let (value, kind) = self.sort_value(target, desc)?;
                 let (value, always) = match target {
                     FieldTarget::Created | FieldTarget::Changed => (value, true),

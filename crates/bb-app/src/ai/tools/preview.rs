@@ -11,8 +11,7 @@ use bb_core::ErrorCode;
 use bb_core::ai::{AuthorKind, ToolCaller};
 use bb_core::event::FieldChange;
 use bb_core::fields::{Field, FieldKey};
-use bb_core::given::SetTo;
-use bb_core::id::{IssueId, ReleaseId};
+use bb_core::id::IssueId;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
@@ -54,56 +53,12 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !names_releases {
             return Ok(changes);
         }
-        let shown = self.shown_to(run.actor).await?;
-        let seen = |project| shown.sees(project) && !run.withheld.hides_project(project);
+        let shown = self.shown_to(run.actor).await?.kept_from_ai(run.withheld);
+        let seen = |project| shown.sees(project);
         Ok(changes
             .into_iter()
             .filter_map(|change| crate::issues::release_change_seen(change, seen))
             .collect())
-    }
-
-    /// The change `update_issue` asks for, with the releases of projects kept from AI kept: the AI
-    /// does not know them, so a list it sets never takes one away, and setting no release it is
-    /// planned for leaves one there (ADR-0049, decision 8).
-    pub(super) async fn update_request(&self, run: &Run<'_>) -> Result<ChangeIssue, AppError> {
-        let mut request = requests::update_issue(run)?;
-        if request.found_in_release.is_none() && request.planned_for_release.is_none() {
-            return Ok(request);
-        }
-        let (issue, _) = self.visible_issue(run.actor, &request.issue).await?;
-        let found_now: Vec<ReleaseId> = self
-            .store()
-            .found_in_of_issues(vec![issue.id])
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .into_iter()
-            .map(|row| row.release)
-            .collect();
-        let named: Vec<ReleaseId> = found_now
-            .iter()
-            .copied()
-            .chain(issue.planned_for_release)
-            .collect();
-        let kept: Vec<ReleaseId> = self
-            .store()
-            .releases_by_ids(named)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .into_iter()
-            .filter(|release| run.withheld.hides_project(release.project))
-            .map(|release| release.id)
-            .collect();
-        if let Some(found) = &mut request.found_in_release {
-            found.extend(found_now.iter().filter(|release| kept.contains(release)));
-        }
-        if request.planned_for_release == Some(SetTo::Nothing)
-            && issue
-                .planned_for_release
-                .is_some_and(|release| kept.contains(&release))
-        {
-            request.planned_for_release = None;
-        }
-        Ok(request)
     }
 
     /// The preview of a change of an issue, for `update_issue` and `change_status`.
@@ -219,8 +174,8 @@ pub(super) fn update_issue<'a, S: AuthStore>(
     run: Run<'a>,
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
-        let request = ctx.update_request(&run).await?;
-        ctx.preview_change_of_issue(&run, request).await
+        ctx.preview_change_of_issue(&run, requests::update_issue(&run)?)
+            .await
     })
 }
 

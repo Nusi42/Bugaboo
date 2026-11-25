@@ -403,11 +403,38 @@ impl<S: AuthStore> Ctx<'_, S> {
         input: &ProposeChange,
     ) -> Result<Vec<bb_core::event::FieldChange>, AppError> {
         let (_, proposal, _) = self.plan_proposal(input).await?;
+        let after = match proposal.field {
+            // A release as the history keeps it, with its name and project, so only a reader
+            // who may know the release is told of it (ADR-0049, decision 7).
+            RuleField::FoundInRelease => self.release_as_recorded(&proposal.after).await?,
+            _ => proposal.after,
+        };
         Ok(vec![bb_core::event::FieldChange {
             field: proposal.field.code().to_owned(),
             before: (!proposal.before.is_null()).then_some(proposal.before),
-            after: Some(proposal.after),
+            after: Some(after),
         }])
+    }
+
+    /// The release a proposal names by its ID, as an event of an issue keeps it; nothing for a
+    /// release that is not there.
+    async fn release_as_recorded(
+        &self,
+        id: &serde_json::Value,
+    ) -> Result<serde_json::Value, AppError> {
+        let Some(id) = id
+            .as_str()
+            .and_then(|text| text.parse::<bb_core::id::ReleaseId>().ok())
+        else {
+            return Ok(serde_json::Value::Null);
+        };
+        Ok(self
+            .store()
+            .releases_by_ids(vec![id])
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .first()
+            .map_or(serde_json::Value::Null, crate::issues::release_json))
     }
 }
 

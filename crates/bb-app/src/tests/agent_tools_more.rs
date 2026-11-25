@@ -169,6 +169,7 @@ pub(super) async fn retitle(world: &World, id: IssueId, title: &str) -> Result<(
             fields: std::collections::BTreeMap::default(),
             found_in_release: None,
             planned_for_release: None,
+            asker: crate::issues::Asker::Person,
         },
     )
     .await?;
@@ -628,6 +629,7 @@ async fn ai_36_the_answer_to_an_old_version_is_judged_for_the_agent_not_its_pers
             fields: std::collections::BTreeMap::default(),
             found_in_release: None,
             planned_for_release: None,
+            asker: crate::issues::Asker::Person,
         },
     )
     .await?;

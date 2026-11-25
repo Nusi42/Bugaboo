@@ -24,7 +24,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         self.load_releases(looked, cache).await?;
         let ids: Vec<_> = cache
-            .releases_known
+            .release_names
             .iter()
             .flatten()
             .filter(|(name, _)| same_name(name, &each.text))
@@ -44,7 +44,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Option<String>, AppError> {
         self.load_releases(looked, cache).await?;
         Ok(cache
-            .releases_known
+            .release_names
             .iter()
             .flatten()
             .find(|(_, each)| *each == id)
@@ -53,8 +53,8 @@ impl<S: AuthStore> Ctx<'_, S> {
 
     /// Reads the releases of the projects the person sees into the cache, once.
     async fn load_releases(&self, looked: &Looked, cache: &mut NameCache) -> Result<(), AppError> {
-        if cache.releases_known.is_none() {
-            cache.releases_known = Some(
+        if cache.release_names.is_none() {
+            cache.release_names = Some(
                 self.releases_seen(&looked.seen)
                     .await?
                     .into_iter()

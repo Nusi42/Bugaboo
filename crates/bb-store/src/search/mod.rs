@@ -52,6 +52,8 @@ pub(crate) enum CompileError {
     UnknownField,
     /// A test the compiler does not know for the field.
     Unsupported(&'static str),
+    /// A release field in a request that did not read the releases the person may know.
+    ReleasesNotRead,
 }
 
 impl std::fmt::Display for CompileError {
@@ -59,6 +61,9 @@ impl std::fmt::Display for CompileError {
         match self {
             Self::UnknownField => formatter.write_str("a word that is not a readable field"),
             Self::Unsupported(what) => write!(formatter, "not supported yet: {what}"),
+            Self::ReleasesNotRead => {
+                formatter.write_str("a release field without the releases the person may know")
+            }
         }
     }
 }
@@ -123,12 +128,15 @@ impl<'a> Compiler<'a> {
     }
 
     /// What the target reads, with the sight and the reach of the own fields of this request.
-    fn subject_of(&self, target: FieldTarget) -> (source::Subject, source::Domain) {
+    fn subject_of(
+        &self,
+        target: FieldTarget,
+    ) -> Result<(source::Subject, source::Domain), CompileError> {
         source::subject_of(
             target,
             &self.request.sight,
             &self.request.own_reach,
-            &self.request.releases_known,
+            self.request.releases_known.as_deref(),
         )
     }
 

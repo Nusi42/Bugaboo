@@ -386,7 +386,7 @@ pub(super) fn request_with(
             ],
             ..Names::default()
         },
-        releases_known: Vec::new(),
+        releases_known: None,
         status_groups: vec![
             (StatusGroup::NotStarted, vec![starter::OPEN.to_owned()]),
             (StatusGroup::InProgress, vec!["in-progress".to_owned()]),

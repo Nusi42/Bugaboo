@@ -16,7 +16,7 @@ use crate::ai::Withheld;
 use crate::ai::context::{AuthorKind, Part, drop_withheld, people_in};
 use crate::auth::{AppError, AuthStore, Ctx};
 use crate::history::{HistoryQuery, history};
-use crate::issues::{IssueQuery, IssueView, issue};
+use crate::issues::{IssueQuery, IssueView, issue, releases_seen_in};
 use crate::projects::{ProjectsQuery, projects};
 use crate::search::{
     GroupOrder, SearchQuery, SearchScope, SearchTotalsQuery, search_page_within,
@@ -76,20 +76,19 @@ fn keep_next_statuses(value: &mut Value) {
 /// (ADR-0049, decision 8): the AI is told nothing of such a project, also not the name of its
 /// releases.
 fn drop_withheld_releases(value: &mut Value, withheld: &Withheld) {
-    let kept = |item: &Value| project_of_release(item).is_some_and(|id| withheld.hides_project(id));
-    if let Some(Value::Array(items)) = value.get_mut("found_in_release") {
-        items.retain(|item| !kept(item));
+    let Some(object) = value.as_object_mut() else {
+        return;
+    };
+    let seen = |project| !withheld.hides_project(project);
+    if let Some(found @ Value::Array(_)) = object.get_mut("found_in_release") {
+        *found = Value::Array(releases_seen_in(found, seen));
     }
-    if value.get("planned_for_release").is_some_and(kept)
-        && let Some(object) = value.as_object_mut()
+    if object
+        .get("planned_for_release")
+        .is_some_and(|planned| planned.is_object() && releases_seen_in(planned, seen).is_empty())
     {
         object.remove("planned_for_release");
     }
-}
-
-/// The project of a release in the masked value of an issue.
-fn project_of_release(item: &Value) -> Option<ProjectId> {
-    item.get("project")?.as_str()?.parse().ok()
 }
 
 fn drop_html(value: &mut Value) {

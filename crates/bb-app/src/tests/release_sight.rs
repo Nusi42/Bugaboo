@@ -229,7 +229,167 @@ async fn iss_08_the_ai_is_told_nothing_of_a_release_of_a_project_kept_from_it() 
     .map_err(text)?
     .into_value();
     assert!(preview.changes.is_empty(), "{:?}", preview.changes);
+    // Made for real, the change keeps the release kept from AI in both fields at its place, and
+    // the one the AI named comes after it.
+    let open = a_release(&world, "APP", "1.0").await?.id;
+    call_tool(
+        &world.ctx(),
+        crate::ai::tools::ToolCallQuery {
+            mode: crate::ai::tools::ToolMode::Apply,
+            ..call(
+                &token(&world),
+                "update_issue",
+                json!({
+                    "issue": issue.to_string(),
+                    "version": version,
+                    "found_in_release": [open.to_string()],
+                    "planned_for_release": "",
+                }),
+            )
+        },
+    )
+    .await
+    .map_err(text)?;
     let still = seen(&world, issue).await?;
+    let found: Vec<ReleaseId> = still
+        .found_in_release
+        .unwrap_or_default()
+        .iter()
+        .map(|each| each.id)
+        .collect();
+    assert_eq!(found, [secret, open]);
     assert_eq!(still.planned_for_release.map(|each| each.id), Some(secret));
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_08_an_agent_proposing_a_release_is_shown_it_only_when_it_may_know_it() -> Outcome {
+    use super::agent_tools::previewed;
+    use super::agent_work_rules::{found_by_search, made, rule_world};
+    let world = World::with_ai_apps_and_agents().await?;
+    let given = rule_world(&world).await?;
+    let rule = made(&world, &given).await?;
+    a_project(&world, "SEC").await?;
+    let open = a_release(&world, "WEB", "2.4").await?.id;
+    let secret = a_release(&world, "SEC", "Classified").await?.id;
+    mark(&world, NeverSentTarget::Project("SEC".to_owned())).await?;
+    found_by_search(&world);
+    world
+        .ctx()
+        .run_rule_matches(&json!({ "project": given.project.to_string() }))
+        .await?;
+    let proposing = |release: ReleaseId| {
+        json!({
+            "rule": rule.id.to_string(),
+            "issue": given.issue.to_string(),
+            "field": "found-in-release",
+            "value": release.to_string(),
+        })
+    };
+    // The release the agent may know is in the preview, by its name.
+    let shown = previewed(&world, &given.key, "propose", proposing(open)).await?;
+    let change = shown
+        .changes
+        .iter()
+        .find(|change| change.field == "found-in-release")
+        .ok_or("no change of found in release")?;
+    assert_eq!(
+        change
+            .after
+            .as_ref()
+            .and_then(|after| after[0]["name"].as_str()),
+        Some("2.4")
+    );
+    // One of a project kept from AI is no change it is told of.
+    let kept = previewed(&world, &given.key, "propose", proposing(secret)).await?;
+    assert!(kept.changes.is_empty(), "{:?}", kept.changes);
+    let said = serde_json::to_string(&kept).map_err(text)?;
+    assert!(!said.contains("Classified"), "{said}");
+    Ok(())
+}
+
+/// The releases the last search the store was asked for read as the ones the reader may know.
+fn known_by_last_search(world: &World) -> Result<Option<Vec<ReleaseId>>, String> {
+    let request = world.store.lock().searches.pop().ok_or("no search ran")?;
+    Ok(request.releases_known.map(|mut known| {
+        known.sort_unstable();
+        known
+    }))
+}
+
+#[tokio::test]
+async fn iss_08_a_search_reads_the_releases_known_only_when_it_names_a_release_field() -> Outcome {
+    use crate::search::{
+        SearchCountQuery, SearchGroupsQuery, SearchScope, search_count, search_groups,
+    };
+    let split = split().await?;
+    let counted = |text: &str| SearchCountQuery {
+        session_token: split.tea.session_token.clone(),
+        text: text.to_owned(),
+        scope: SearchScope::Everywhere,
+    };
+    // A search that names no release field reads none.
+    search_count(&split.world.ctx(), counted("title contains crash"))
+        .await
+        .map_err(text)?;
+    assert_eq!(known_by_last_search(&split.world)?, None);
+    // In the filter, in the order and in the groups: only the releases of the projects she sees.
+    for asked in ["planned for release is empty", "sort by found in release"] {
+        search_count(&split.world.ctx(), counted(asked))
+            .await
+            .map_err(text)?;
+        assert_eq!(
+            known_by_last_search(&split.world)?,
+            Some(vec![split.web]),
+            "{asked}"
+        );
+    }
+    search_groups(
+        &split.world.ctx(),
+        SearchGroupsQuery {
+            session_token: split.tea.session_token.clone(),
+            text: String::new(),
+            scope: SearchScope::Everywhere,
+            by: "planned for release".to_owned(),
+        },
+    )
+    .await
+    .map_err(text)?;
+    assert_eq!(known_by_last_search(&split.world)?, Some(vec![split.web]));
+    // Grouped by another field, none again.
+    search_groups(
+        &split.world.ctx(),
+        SearchGroupsQuery {
+            session_token: split.tea.session_token.clone(),
+            text: String::new(),
+            scope: SearchScope::Everywhere,
+            by: "priority".to_owned(),
+        },
+    )
+    .await
+    .map_err(text)?;
+    assert_eq!(known_by_last_search(&split.world)?, None);
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_08_a_search_of_the_ai_knows_no_release_of_a_project_kept_from_it() -> Outcome {
+    let world = World::new().await?;
+    a_project(&world, "SEC").await?;
+    a_project(&world, "APP").await?;
+    a_release(&world, "SEC", "Classified").await?;
+    let open = a_release(&world, "APP", "1.0").await?.id;
+    mark(&world, NeverSentTarget::Project("SEC".to_owned())).await?;
+    call_tool(
+        &world.ctx(),
+        call(
+            &token(&world),
+            "search_issues",
+            json!({"query": "found in release is empty"}),
+        ),
+    )
+    .await
+    .map_err(text)?;
+    assert_eq!(known_by_last_search(&world)?, Some(vec![open]));
     Ok(())
 }

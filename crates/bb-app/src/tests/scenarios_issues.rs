@@ -46,6 +46,7 @@ pub(crate) fn change_of(who: &str, issue: IssueId, version: i64) -> ChangeIssue 
         fields: std::collections::BTreeMap::new(),
         found_in_release: None,
         planned_for_release: None,
+        asker: crate::issues::Asker::Person,
     }
 }
 
@@ -145,6 +146,7 @@ fn titled_and_done(world: &World, issue: &impl ToString) -> ChangeIssue {
         fields: std::collections::BTreeMap::new(),
         found_in_release: None,
         planned_for_release: None,
+        asker: crate::issues::Asker::Person,
     }
 }
 
@@ -153,7 +155,11 @@ pub(crate) async fn change_issue_scenario(world: &World) -> Added {
     let issue = an_issue(world, project).await?;
     measured(
         &world.store,
-        change_issue::<_, ChangedIssue>(&world.ctx(), titled_and_done(world, &issue)),
+        // Boxed: the change of an issue is a large future.
+        Box::pin(change_issue::<_, ChangedIssue>(
+            &world.ctx(),
+            titled_and_done(world, &issue),
+        )),
     )
     .await
 }

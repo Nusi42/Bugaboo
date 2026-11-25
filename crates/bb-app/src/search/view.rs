@@ -14,7 +14,7 @@ use bb_searchlang::{
 };
 
 use super::readable::{SearchScope, readable_of};
-use super::run::Prepared;
+use super::run::{Prepared, Shape};
 use super::target::{FieldTarget, target_of};
 use crate::access::{Actor, place_of_address};
 use crate::auth::{AppError, AuthStore, Ctx};
@@ -190,7 +190,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
         };
         let prepared = self
-            .prepare_in(actor, looked, &text, None, |_| None)
+            .prepare_in(actor, looked, &text, Shape::default(), |_| None)
             .await?;
         Ok(ViewPrepared {
             text,

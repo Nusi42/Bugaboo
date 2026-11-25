@@ -161,6 +161,16 @@ pub(crate) struct Prepared {
     pub(crate) looked: Looked,
 }
 
+/// What a search is prepared for besides its text and where it looks.
+#[derive(Clone, Copy, Default)]
+pub(crate) struct Shape<'a> {
+    /// For the AI: what is kept from AI.
+    pub(crate) withheld: Option<&'a Withheld>,
+    /// The words of the fields whose groups the issues are counted in (the groups of a list, the
+    /// rows and the columns of a board).
+    pub(crate) grouped_by: &'a [&'a str],
+}
+
 impl<S: AuthStore> Ctx<'_, S> {
     /// Reads and checks the text, and gathers what the store needs to compile it.
     pub(crate) async fn prepare_search(
@@ -169,7 +179,24 @@ impl<S: AuthStore> Ctx<'_, S> {
         text: &str,
         scope: SearchScope,
     ) -> Result<Prepared, AppError> {
-        self.prepare_search_as(actor, text, scope, None).await
+        self.prepare(actor, text, scope, Shape::default(), |_| None)
+            .await
+    }
+
+    /// The same for a search whose issues are counted in the groups of the field of `by`: the
+    /// releases the person may know are read when that field is a release field.
+    pub(crate) async fn prepare_search_grouped(
+        &self,
+        actor: &Actor,
+        text: &str,
+        scope: SearchScope,
+        by: &str,
+    ) -> Result<Prepared, AppError> {
+        let shape = Shape {
+            grouped_by: std::slice::from_ref(&by),
+            ..Shape::default()
+        };
+        self.prepare(actor, text, scope, shape, |_| None).await
     }
 
     /// The same for the AI (AI-03): what is kept from AI is not among the fields, the projects or
@@ -194,7 +221,11 @@ impl<S: AuthStore> Ctx<'_, S> {
         scope: SearchScope,
         withheld: Option<&Withheld>,
     ) -> Result<Prepared, AppError> {
-        self.prepare(actor, text, scope, withheld, |_| None).await
+        let shape = Shape {
+            withheld,
+            ..Shape::default()
+        };
+        self.prepare(actor, text, scope, shape, |_| None).await
     }
 
     /// The same with a filter added to the text: what `narrow` makes from the fields the person may
@@ -207,20 +238,22 @@ impl<S: AuthStore> Ctx<'_, S> {
         scope: SearchScope,
         narrow: impl FnOnce(&Looked) -> Option<Expr>,
     ) -> Result<Prepared, AppError> {
-        self.prepare(actor, text, scope, None, narrow).await
+        self.prepare(actor, text, scope, Shape::default(), narrow)
+            .await
     }
 
-    /// The one way a search is prepared: for the person, or for the AI with what is kept from AI.
-    async fn prepare(
+    /// The one way a search is prepared: for the person, or for the AI with what is kept from AI,
+    /// and for counting its issues in groups ([`Shape`]).
+    pub(crate) async fn prepare(
         &self,
         actor: &Actor,
         text: &str,
         scope: SearchScope,
-        withheld: Option<&Withheld>,
+        shape: Shape<'_>,
         narrow: impl FnOnce(&Looked) -> Option<Expr>,
     ) -> Result<Prepared, AppError> {
-        let looked = self.looked_at(actor, scope, withheld).await?;
-        self.prepare_in(actor, looked, text, withheld, narrow).await
+        let looked = self.looked_at(actor, scope, shape.withheld).await?;
+        self.prepare_in(actor, looked, text, shape, narrow).await
     }
 
     /// The same, with what the person may search by read already (a view reads it once to write
@@ -230,7 +263,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         looked: Looked,
         text: &str,
-        withheld: Option<&Withheld>,
+        Shape {
+            withheld,
+            grouped_by,
+        }: Shape<'_>,
         narrow: impl FnOnce(&Looked) -> Option<Expr>,
     ) -> Result<Prepared, AppError> {
         let readable = readable_of(&looked.fields);
@@ -260,10 +296,10 @@ impl<S: AuthStore> Ctx<'_, S> {
             .retain(|project| looked.projects.contains(project));
         let region = Region::of(&self.setting_layers_of(Some(actor.person.id)).await?);
         let blocking = self.blocking_kinds().await?;
-        let releases_known = if names_a_release(&checked, &looked) {
-            self.releases_known(&looked).await?
+        let releases_known = if names_a_release(&checked, &looked, grouped_by) {
+            Some(self.releases_known(&looked).await?)
         } else {
-            Vec::new()
+            None
         };
         let request = SearchRequest {
             search: checked,
@@ -303,9 +339,14 @@ pub(crate) fn narrow_by(search: &mut bb_searchlang::Search, extra: Expr) {
     });
 }
 
-/// Whether a field of the search is a release field, in its filter or its order: only then does the
-/// request read the releases the person may know.
-fn names_a_release(checked: &bb_searchlang::CheckedSearch, looked: &Looked) -> bool {
+/// Whether a field of the search is a release field, in its filter, its order or the groups it is
+/// counted in: only then does the request read the releases the person may know. The one place
+/// that decides it.
+fn names_a_release(
+    checked: &bb_searchlang::CheckedSearch,
+    looked: &Looked,
+    grouped_by: &[&str],
+) -> bool {
     fn in_filter(node: &Expr, looked: &Looked) -> bool {
         match node {
             Expr::Or { items, .. } | Expr::And { items, .. } => {
@@ -325,6 +366,7 @@ fn names_a_release(checked: &bb_searchlang::CheckedSearch, looked: &Looked) -> b
             .sort
             .iter()
             .any(|key| is_release(looked, &key.field.word))
+        || grouped_by.iter().any(|word| is_release(looked, word))
 }
 
 /// Whether the word is the word of a release field.
@@ -578,16 +620,14 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
     query: SearchGroupsQuery,
 ) -> Result<Authorized<SearchGroups>, AppError> {
     let actor = ctx.actor(&query.session_token).await?;
-    let mut prepared = ctx.prepare_search(&actor, &query.text, query.scope).await?;
+    let mut prepared = ctx
+        .prepare_search_grouped(&actor, &query.text, query.scope, &query.by)
+        .await?;
     // The groups of a list are by a field the person may search by (ADR-0022): a field of people
     // whose names are hidden somewhere is refused here like a field that does not exist; only the
     // totals group people by how they are shown (ADR-0050, decision 7).
     if super::target::target_of(&prepared.looked.fields, &query.by).is_none() {
         return Err(AppError::Refused(ErrorCode::InvalidRequest));
-    }
-    // The groups by a release are those of the releases the person may know, and of none.
-    if is_release(&prepared.looked, &query.by) && prepared.request.releases_known.is_empty() {
-        prepared.request.releases_known = ctx.releases_known(&prepared.looked).await?;
     }
     let grouping = ctx
         .grouping_of(&actor, &mut prepared, &query.by, None)

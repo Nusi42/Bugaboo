@@ -164,7 +164,7 @@ impl Compiler<'_> {
                 "a sum of a field that is no number",
             ));
         }
-        Ok(self.subject_of(target).0.one_value())
+        Ok(self.subject_of(target)?.0.one_value())
     }
 
     /// The value of a sum where the reader may read it, `NULL` elsewhere. A field that is to count

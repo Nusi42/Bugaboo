@@ -591,3 +591,59 @@ async fn iss_08_manage_releases_is_given_once_at_the_next_start_where_the_roles_
     assert_eq!(world.store.event_count() - events, 2);
     Ok(())
 }
+
+#[tokio::test]
+async fn iss_08_undo_of_a_run_puts_back_a_release_retired_since() -> Outcome {
+    use super::runs::{open, preview_of, undo};
+    let world = World::new().await?;
+    let admin = token(&world);
+    let project = a_project(&world, "ACME").await?;
+    let old = a_release(&world, "ACME", "2.4").await?;
+    let new = a_release(&world, "ACME", "2.5").await?.id;
+    let issue = an_issue(&world, project).await?;
+    set_releases(
+        &world,
+        issue,
+        Some(vec![old.id]),
+        Some(SetTo::Value(old.id)),
+    )
+    .await?;
+    // A run names the other release in both fields.
+    let person = world.ctx().session_actor(&admin).await?.person.id;
+    let run = open(&world, &admin, person).await?;
+    let version = seen(&world, issue).await?.version;
+    let in_run = world.ctx();
+    in_run.set_run(Some(run));
+    change_issue::<_, IssueView>(
+        &in_run,
+        ChangeIssue {
+            found_in_release: Some(vec![new]),
+            planned_for_release: Some(SetTo::Value(new)),
+            ..ChangeIssue::of(&admin, issue.to_string(), version)
+        },
+    )
+    .await?;
+    // The release the issue named before is retired since: no new choice may name it.
+    change_release(
+        &world.ctx(),
+        ChangeRelease {
+            state: Some(ReleaseState::Retired),
+            ..changing(&admin, "ACME", &old)
+        },
+    )
+    .await?;
+    let preview = preview_of(&world, &admin, run).await?;
+    assert_eq!((preview.goes_back, preview.skipped), (2, 0));
+    undo(&world, &admin, run, preview).await?;
+    // Putting back what the issue named is no new choice: the retired release comes back.
+    let back = seen(&world, issue).await?;
+    let found: Vec<ReleaseId> = back
+        .found_in_release
+        .unwrap_or_default()
+        .iter()
+        .map(|each| each.id)
+        .collect();
+    assert_eq!(found, [old.id]);
+    assert_eq!(back.planned_for_release.map(|each| each.id), Some(old.id));
+    Ok(())
+}

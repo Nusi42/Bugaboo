@@ -18,8 +18,8 @@ use sea_query::{
     SelectStatement,
 };
 
-use super::scalar;
 use super::time::Clock;
+use super::{CompileError, scalar};
 use crate::db::StoredId as _;
 use crate::fields::kind_text;
 use crate::schema::{
@@ -248,11 +248,11 @@ pub(super) fn subject_of(
     target: FieldTarget,
     sight: &IssueSight,
     reach: &[OwnReach],
-    releases: &[ReleaseId],
-) -> (Subject, Domain) {
+    releases: Option<&[ReleaseId]>,
+) -> Result<(Subject, Domain), CompileError> {
     use FieldTarget as T;
     let linked = Subject::Linked;
-    match target {
+    Ok(match target {
         T::Title => (Subject::Column(issue_column(IssueRow::Title)), Domain::Text),
         T::Description => (
             Subject::Column(issue_column(IssueRow::Description)),
@@ -304,7 +304,7 @@ pub(super) fn subject_of(
             Domain::Label,
         ),
         T::FoundInRelease | T::PlannedForRelease => {
-            (release_subject(target, releases), Domain::Release)
+            (release_subject(target, releases)?, Domain::Release)
         }
         T::Parent => (
             reading_the_other_end(
@@ -347,15 +347,20 @@ pub(super) fn subject_of(
         ),
         T::Agent | T::AgentState => agent_subject(target),
         T::Own { field, kind } => own_subject(field, kind, target.people_kind(), reach, sight),
-    }
+    })
 }
 
 /// What *Found in release* (the rows of the issue, any number) or *Planned for release* (a column
 /// of the issue) reads: the IDs of the releases the person may know (ADR-0049, decision 4). A
 /// release of a project they do not see is no value for them, as the issue shows none: `is
 /// empty` finds it, it sorts with the issues without one, and it is in the group of none, never in
-/// a group of its own.
-fn release_subject(target: FieldTarget, known: &[ReleaseId]) -> Subject {
+/// a group of its own. A request that did not read them cannot read a release field
+/// (`ReleasesNotRead`), so no search reads every release as none by mistake.
+fn release_subject(
+    target: FieldTarget,
+    known: Option<&[ReleaseId]>,
+) -> Result<Subject, CompileError> {
+    let known = known.ok_or(CompileError::ReleasesNotRead)?;
     let one_of = |column: Expr| -> Cond {
         if known.is_empty() {
             Cond::all().add(Expr::val(1).eq(2))
@@ -365,17 +370,17 @@ fn release_subject(target: FieldTarget, known: &[ReleaseId]) -> Subject {
     };
     if target == FieldTarget::FoundInRelease {
         let value = Expr::col((IssueFoundInRow::Table, IssueFoundInRow::Release));
-        Subject::Linked(
+        Ok(Subject::Linked(
             Rows::keyed(IssueFoundInRow::Table, IssueFoundInRow::Issue).and(one_of(value.clone())),
             value,
-        )
+        ))
     } else {
         let column = issue_column(IssueRow::PlannedForRelease);
-        Subject::Column(
+        Ok(Subject::Column(
             Expr::case(one_of(column.clone()), column)
                 .finally(Expr::null())
                 .into(),
-        )
+        ))
     }
 }
 

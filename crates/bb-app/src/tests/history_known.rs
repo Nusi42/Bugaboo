@@ -62,6 +62,7 @@ async fn changed(
             fields: BTreeMap::new(),
             found_in_release: None,
             planned_for_release: None,
+            asker: crate::issues::Asker::Person,
         },
     )
     .await?;

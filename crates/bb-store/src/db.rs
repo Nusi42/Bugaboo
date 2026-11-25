@@ -53,6 +53,7 @@ use upkeep::Upkeep;
 /// smaller counts, less a little room for the values a statement binds besides its list. This is
 /// the one limit: what is asked about or written in bulk is cut into chunks that fit it, here in
 /// the store, and no caller chunks for it.
+/// A search binds the releases a person may know as one list, far below it (no chunks).
 pub(crate) const BIND_LIMIT: usize = 32_000;
 
 /// How many things one statement names when each is one bound value (people, items).

@@ -74,6 +74,7 @@ async fn salary_changes(
                     )]),
                     found_in_release: None,
                     planned_for_release: None,
+                    asker: bb_app::issues::Asker::Person,
                 },
             )
             .await?;

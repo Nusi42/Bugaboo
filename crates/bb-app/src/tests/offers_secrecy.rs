@@ -224,6 +224,7 @@ async fn sec_03_a_subject_in_use_on_an_issue_the_reader_reads_is_known() -> Outc
             fields: std::collections::BTreeMap::new(),
             found_in_release: None,
             planned_for_release: None,
+            asker: crate::issues::Asker::Person,
         },
     )
     .await?;

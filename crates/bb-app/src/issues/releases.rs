@@ -11,7 +11,7 @@ use bb_core::project_release::{IssueFoundIn, Release, found_in_rows};
 use serde_json::{Value, json};
 
 use super::fields::member;
-use super::types::{ChangeIssue, CreateIssue};
+use super::types::{Asker, ChangeIssue, CreateIssue};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::projects::{Shown, Why};
@@ -86,6 +86,8 @@ pub(crate) struct IssueReleases {
     found_next: Vec<ReleaseId>,
     /// The records of every release named before or after.
     records: Vec<Release>,
+    /// Whether *Undo my run* puts back what the issue named before.
+    putting_back: bool,
 }
 
 impl IssueReleases {
@@ -157,6 +159,7 @@ impl IssueReleases {
             found_rows: (self.found_now != self.found_next)
                 .then(|| found_in_rows(issue, &self.found_next)),
             chain: self.chain,
+            putting_back: self.putting_back,
             new,
         }
     }
@@ -166,6 +169,8 @@ impl IssueReleases {
 #[derive(Clone, Default)]
 pub(crate) struct IssueReleaseWrite {
     chain: Vec<ProjectId>,
+    /// Whether *Undo my run* puts back what the issue named before.
+    putting_back: bool,
     /// The releases the issue names newly.
     new: Vec<ReleaseId>,
     /// The rows of *Found in release*, when they changed.
@@ -181,7 +186,13 @@ impl IssueReleaseWrite {
         issue: IssueId,
         stopped: &Why,
     ) -> Result<(), S::Error> {
-        ensure_still_choosable_in::<S>(transaction, &self.chain, &self.new, stopped).await?;
+        ensure_still_choosable_in::<S>(
+            transaction,
+            (&self.chain, self.putting_back),
+            &self.new,
+            stopped,
+        )
+        .await?;
         match &self.found_rows {
             Some(rows) => S::replace_found_in(transaction, issue, rows).await,
             None => Ok(()),
@@ -217,11 +228,16 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect();
         let mut found_next = found_now.clone();
         {
-            let shown = self.shown_to(actor).await?;
+            // For the AI, a release of a project kept from it is one the person may not know.
+            let mut shown = self.shown_to(actor).await?;
+            if let Asker::Ai(withheld) = &input.asker {
+                shown = shown.kept_from_ai(withheld);
+            }
             let choice = ReleaseChoice {
                 chain,
                 found_now: &found_now,
                 planned_now: current.planned_for_release,
+                putting_back: input.asker == Asker::Undo,
             };
             if let Some(wanted) = found_asked {
                 found_next = self.found_in_after(&shown, &choice, wanted).await?;
@@ -232,8 +248,11 @@ impl<S: AuthStore> Ctx<'_, S> {
                     .await?;
             }
         }
-        self.issue_releases(chain, found_now, found_next, [current, next])
-            .await
+        let mut releases = self
+            .issue_releases(chain, found_now, found_next, [current, next])
+            .await?;
+        releases.putting_back = input.asker == Asker::Undo;
+        Ok(releases)
     }
 
     /// The releases a new issue names, judged by the one rule of a choice; `issue` gets the release
@@ -254,6 +273,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 chain,
                 found_now: &[],
                 planned_now: None,
+                putting_back: false,
             };
             if let Some(wanted) = found_asked {
                 found = self.found_in_after(&shown, &choice, wanted).await?;
@@ -299,6 +319,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             found_now,
             found_next,
             records,
+            putting_back: false,
         })
     }
 

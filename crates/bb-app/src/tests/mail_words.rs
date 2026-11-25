@@ -144,6 +144,7 @@ async fn ntf_02_a_moment_in_an_e_mail_is_written_in_the_time_zone_of_the_recipie
             fields: BTreeMap::from([(starts.id.to_string(), json!("2026-10-05T07:30:00Z"))]),
             found_in_release: None,
             planned_for_release: None,
+            asker: crate::issues::Asker::Person,
         },
     )
     .await
