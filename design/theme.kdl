@@ -4078,6 +4078,7 @@ part "timeline-release.diamond" {
     width "$space-2"
     height "$space-2"
     use "diamond"
+    // Under forced colors it keeps the edge of the mixin `diamond`, as the goal's diamond does.
     flex none
 }
 
@@ -4353,18 +4354,28 @@ part "timeline-phone.line" {
     min-width 0
 }
 
+// The facts of an issue stand on one line: a long name ends in an ellipsis, so the word of a driver
+// never moves the rows when it comes.
 part "timeline-phone.facts" {
     display flex
-    flex-wrap wrap
-    gap "$space-1" "$space-3"
+    gap "$space-3"
+    min-width 0
+    overflow hidden
     color "$fg-muted"
     font-size "$fs-sm"
+    white-space nowrap
+}
+
+part "timeline-phone.person" {
+    min-width 0
+    overflow hidden
+    text-overflow ellipsis
 }
 
 // The word of a deadline driver in the phone list (*Sets the end*), in the color of the outline on a computer.
 part "timeline-phone.driver" {
+    flex none
     color "$accent-fg"
-    white-space nowrap
 }
 
 // The diamond and the *Release date* of a release in the head of its group in the phone list.

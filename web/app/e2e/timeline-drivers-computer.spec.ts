@@ -86,6 +86,11 @@ test("plan_05_the_outline_is_seen_in_forced_colours_and_read_by_a_screen_reader"
   await expect
     .poll(() => first.evaluate((bar) => getComputedStyle(bar).outlineStyle))
     .toBe("dashed");
+  // The diamond of the release keeps an edge where the fill is gone.
+  const diamond = page.locator('[data-part="timeline-release.diamond"]').first();
+  await expect
+    .poll(() => diamond.evaluate((mark) => getComputedStyle(mark).borderTopStyle))
+    .toBe("solid");
 });
 
 test("a11y the timeline with deadline drivers on, in the four themes", async ({ page }) => {

@@ -66,7 +66,9 @@ export function PhoneIssue({ row, days, span, today, onOpen }: PhoneIssueProps) 
         </span>
         <span {...partOf(part.timelinePhoneFacts)}>
           <span>{days === undefined ? t("timeline.no-dates") : daysText(days)}</span>
-          {person === undefined ? null : <span>{person}</span>}
+          {person === undefined ? null : (
+            <span {...partOf(part.timelinePhonePerson)}>{person}</span>
+          )}
           {sets === undefined ? null : (
             <span {...partOf(part.timelinePhoneDriver)}>
               <span aria-hidden>{t("timeline.sets-end-short")}</span>

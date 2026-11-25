@@ -3116,15 +3116,23 @@ textarea,
 
 [data-part="timeline-phone.facts"] {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-3);
+  gap: var(--space-3);
+  min-width: 0;
+  overflow: hidden;
   color: var(--fg-muted);
   font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+
+[data-part="timeline-phone.person"] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 [data-part="timeline-phone.driver"] {
+  flex: none;
   color: var(--accent-fg);
-  white-space: nowrap;
 }
 
 [data-part="timeline-phone.release"] {

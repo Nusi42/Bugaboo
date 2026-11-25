@@ -21,7 +21,7 @@ use super::read::goals_of;
 use super::types::{DriverView, GoalView, ReleaseMark, WarningView};
 use crate::auth::{AppError, AuthStore, Ctx};
 use crate::releases::in_order;
-use crate::search::{MapStep, SearchScope, SearchStore, stopped};
+use crate::search::{MapStep, SearchFailure, SearchScope, SearchStore, stopped};
 
 /// How many issues the walk along dependencies adds to the plan of one page at most: the chains of
 /// a page are worked out within this many issues the reader sees.
@@ -34,8 +34,13 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
     /// one statement for each step, through only the issues the reader sees in every project, not
     /// only those of the page's search and project (an issue they may not see is neither walked past
     /// nor counted), stopping in the statement at the room left, at most [`MAX_STEPS`] steps, and all
-    /// of it in the time of one search.
-    pub(crate) async fn plan_with_chains(&self, mut ask: PlanAsk<'_>) -> Result<Plan, AppError> {
+    /// of it within the time of the page's search, which `began` with it. When that time runs out
+    /// the walk keeps what it reached, as at the cap and the limit of steps, and says nothing of it.
+    pub(crate) async fn plan_with_chains(
+        &self,
+        mut ask: PlanAsk<'_>,
+        began: std::time::Instant,
+    ) -> Result<Plan, AppError> {
         let kinds = self.dependency_kinds().await?;
         let sight = self
             .prepare_search(ask.actor, "", SearchScope::Everywhere)
@@ -43,13 +48,12 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         let mut known: Vec<IssueId> = ask.issues.iter().map(|issue| issue.id).collect();
         let asked = known.len();
         let mut near = known.clone();
-        let began = std::time::Instant::now();
         for _ in 0..MAX_STEPS {
             let room = CHAIN_ISSUES_MOST.saturating_sub(known.len() - asked);
             if near.is_empty() || room == 0 {
                 break;
             }
-            near = self
+            let step = self
                 .store()
                 .map_step(
                     &sight.request,
@@ -62,8 +66,12 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                         began,
                     },
                 )
-                .await
-                .map_err(stopped)?;
+                .await;
+            near = match step {
+                Ok(found) => found,
+                Err(SearchFailure::TooSlow) => break,
+                Err(other) => return Err(stopped(other)),
+            };
             known.extend(near.iter().copied());
         }
         let reached = known.get(asked..).unwrap_or_default();

@@ -655,6 +655,8 @@ pub async fn timeline<S: AuthStore + SearchStore>(
     query: TimelineQuery,
 ) -> Result<Authorized<TimelinePage>, AppError> {
     let actor = ctx.actor(&query.session_token).await?;
+    // The page has the time of one search, its walk along dependencies too.
+    let began = std::time::Instant::now();
     let span =
         Days::new(query.first, query.last).ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
     let window = window_of(span)?;
@@ -714,7 +716,7 @@ pub async fn timeline<S: AuthStore + SearchStore>(
     };
     let drivers_on = query.options.deadline_drivers && query.part == TimelinePart::Rows;
     let plan = match query.part {
-        TimelinePart::Rows if drivers_on => ctx.plan_with_chains(ask).await?,
+        TimelinePart::Rows if drivers_on => ctx.plan_with_chains(ask, began).await?,
         TimelinePart::Rows => ctx.plan_with_surroundings(ask).await?,
         TimelinePart::NotScheduled => ctx.work_out_plan(ask, &[], &[]).await?,
     };
