@@ -6,6 +6,8 @@ export const messages = {
   "search.mails-title": "E-mailed searches",
   "search.mails-count": "E-mailed searches · {count} of {most}",
   "search.mails-no-longer-opens": "Sends nothing: you can no longer open this search",
+  "search.mails-opens-again":
+    "Sends nothing since you could not open this search. You can open it again: choose Change to start it",
   "search.mails-switched-off": "Sends nothing: you were switched off. Change it to start it again",
   "search.mails-lost-search": "A saved search you can no longer open",
   "search.mails-change": "Change",

@@ -136,6 +136,7 @@ mod search_groups_http;
 mod search_groups_names;
 mod search_http;
 mod search_mail_http;
+mod search_mail_rounds_http;
 mod search_names_http;
 mod search_totals_http;
 mod search_totals_more_http;

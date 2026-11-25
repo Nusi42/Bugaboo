@@ -1,16 +1,20 @@
-//! The delivery column of the matrix (SEC-MATRIX, M2-F65, NTF-01, NTF-02, SEC-06): what a person
-//! is told through the entry points `notifications` and `e-mail`, for each starting role as the
-//! recipient. The routes of the API are run for every actor by `routes`; what the server sends
+//! The delivery column of the matrix (SEC-MATRIX, M2-F65, NTF-01, NTF-02, SEC-06, QRY-07): what a
+//! person is told through the entry points `notifications`, `e-mail` and `search-mail`, for each
+//! starting role as the recipient. The routes of the API are run for every actor by `routes`; what the server sends
 //! on its own is run here, for the people who can receive it.
 //!
 //! The scene is the same for every role: an issue the recipient follows, and one change of its
 //! status by the administrator. What the recipient is told is compared with what the tables of the
 //! starting roles say they may see: the field *Status* (`StartingRole::field_level`) and the
-//! author of the change (*Who sees people*, kind *Authors*, `StartingRole::people_level`).
+//! author of the change (*Who sees people*, kind *Authors*, `StartingRole::people_level`). The
+//! e-mail of an e-mailed search of the recipient's own (`search-mail`) is compared with the fields
+//! *Status* and *Title* of the same tables, and a recipient who is switched off gets none.
 
 use bb_api_words::sec_matrix as words;
 use bb_app::access::{Permission, StartingRole};
+use bb_app::mailer::MailMessage;
 use bb_core::access::{FieldLevel, PeopleLevel};
+use bb_core::app_paths;
 use bb_core::fields::Field;
 use bb_core::message::{Message, STATUS_DONE};
 use bb_core::people_kinds::PeopleKind;
@@ -28,30 +32,64 @@ pub(super) const CHANGER: &str = "Ada Admin";
 /// this far before the jobs run.
 const AFTER_THE_WAIT: i64 = bb_core::notification::MAIL_BATCH_SECONDS + 1;
 
-/// What one recipient was told through one entry point.
+/// What one recipient was told through one entry point, in the words of the record: each a name
+/// and its word (`heard=yes`).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct Delivered {
-    /// The entry point: [`words::ENTRY_NOTIFICATIONS`] or [`words::ENTRY_MAIL`].
+    /// The entry point: one of [`words::DELIVERY_POINTS`].
     pub(super) entry: &'static str,
     /// The starting role of the recipient.
     pub(super) role: StartingRole,
-    /// Whether anything reached them.
-    pub(super) heard: bool,
-    /// Whether the status, the changed field, was in it.
-    pub(super) status_shown: bool,
-    /// How the author of the change was shown.
-    pub(super) author: PeopleLevel,
+    /// What they were told.
+    pub(super) said: Vec<(&'static str, &'static str)>,
+}
+
+/// `yes` or `no`, in the words of the record.
+const fn yes_no(yes: bool) -> &'static str {
+    if yes { words::YES } else { words::NO }
+}
+
+/// `shown` or `hidden`, in the words of the record.
+const fn shown(shown: bool) -> &'static str {
+    if shown { words::SHOWN } else { words::LEFT_OUT }
 }
 
 impl Delivered {
     /// What the tables of the starting roles say the recipient is told, when anything reaches them.
     fn expected(entry: &'static str, role: StartingRole) -> Self {
+        let sees = |field| shown(role.field_level(field) != FieldLevel::Hidden);
+        let said = if entry == words::ENTRY_SEARCH_MAIL {
+            vec![
+                ("heard", yes_no(follows_issues(role))),
+                ("status", sees(Field::Status)),
+                ("title", sees(Field::Title)),
+                ("switched-off", words::NO),
+            ]
+        } else {
+            vec![
+                ("heard", yes_no(follows_issues(role))),
+                ("status", sees(Field::Status)),
+                ("author", role.people_level(PeopleKind::Authors).code()),
+            ]
+        };
+        Self { entry, role, said }
+    }
+
+    /// What was told about a change of the status: whether anything came, whether the status was
+    /// in it, and how its author was shown.
+    fn of_a_change(
+        entry: &'static str,
+        role: StartingRole,
+        (heard, status, author): (bool, bool, PeopleLevel),
+    ) -> Self {
         Self {
             entry,
             role,
-            heard: follows_issues(role),
-            status_shown: role.field_level(Field::Status) != FieldLevel::Hidden,
-            author: role.people_level(PeopleKind::Authors),
+            said: vec![
+                ("heard", yes_no(heard)),
+                ("status", shown(status)),
+                ("author", author.code()),
+            ],
         }
     }
 }
@@ -104,10 +142,14 @@ pub(super) async fn run(db: &TestDatabase) -> Result<Vec<Delivered>, Failure> {
     let (site, mut ada) = Site::start(&rig, &app).await?;
     switch_mail_on(&rig, &mut ada).await?;
     let mut everyone = Vec::new();
+    let mut issues = Vec::new();
     for role in StartingRole::ALL.iter().copied() {
         let (mut person, _) = site.person(role, role.code()).await?;
+        mail_me_my_search(&mut person).await?;
+        switched_off_with_a_search(&site, &mut ada, role).await?;
         if !follows_issues(role) {
             everyone.push(in_the_app(role, &mut person).await?);
+            issues.push((role, None));
             continue;
         }
         let issue = issue_of(&site, &mut ada, role, &mut person).await?;
@@ -122,13 +164,117 @@ pub(super) async fn run(db: &TestDatabase) -> Result<Vec<Delivered>, Failure> {
             .await?;
         assert!(changed.status.is_success(), "{}", changed.body);
         everyone.push(in_the_app(role, &mut person).await?);
+        issues.push((role, Some(issue)));
     }
     rig.clock.advance(AFTER_THE_WAIT);
     rig.run_jobs().await?;
     for role in StartingRole::ALL.iter().copied() {
         everyone.push(by_mail(&rig, role));
     }
+    send_the_search_mails(&rig).await?;
+    for (role, issue) in issues {
+        everyone.push(by_search_mail(&rig, role, issue.as_deref()));
+    }
     Ok(everyone)
+}
+
+/// The hour the e-mailed searches of the scene go at: the clock of the tests starts at 8:00 UTC.
+const SEARCH_MAIL_HOUR: i64 = 9;
+
+/// The address of the person of the role who is switched off.
+fn switched_off_address(role: StartingRole) -> String {
+    format!("{}-off@example.test", role.code())
+}
+
+/// The person saves a search for everything they may see and gets it by e-mail every day.
+async fn mail_me_my_search(person: &mut Browser) -> Result<(), Failure> {
+    let saved = person
+        .send(
+            "POST",
+            "/api/v1/saved-searches",
+            Some(json!({"name": "Everything I see", "search_text": ""})),
+        )
+        .await?;
+    assert!(saved.status.is_success(), "{}", saved.body);
+    let search = saved.body["id"]
+        .as_str()
+        .ok_or("a saved search without ID")?;
+    let set = person
+        .send(
+            "PUT",
+            &format!("/api/v1/saved-searches/{search}/mail"),
+            Some(json!({"days": [true, true, true, true, true, true, true], "hour": SEARCH_MAIL_HOUR, "only_when_changed": false})),
+        )
+        .await?;
+    assert!(set.status.is_success(), "{}", set.body);
+    Ok(())
+}
+
+/// A second person of the role sets an e-mailed search and is switched off.
+async fn switched_off_with_a_search(
+    site: &Site<'_>,
+    ada: &mut Browser,
+    role: StartingRole,
+) -> Result<(), Failure> {
+    let (mut person, id) = site.person(role, &format!("{}-off", role.code())).await?;
+    mail_me_my_search(&mut person).await?;
+    let off = ada
+        .send("POST", &format!("/api/v1/people/{id}/switch-off"), None)
+        .await?;
+    assert!(off.status.is_success(), "{}", off.body);
+    Ok(())
+}
+
+/// The rounds of the jobs start, as at a start of the server, and the hour of the e-mailed searches
+/// passes.
+async fn send_the_search_mails(rig: &Rig) -> Result<(), Failure> {
+    rig.services
+        .ctx(Rig::info())
+        .start_daily_jobs()
+        .await
+        .map_err(|error| error.to_string())?;
+    for _ in 0..2 {
+        rig.clock.advance(3600);
+        rig.run_jobs().await?;
+    }
+    Ok(())
+}
+
+/// Whether an e-mail is the e-mail of an e-mailed search: it links to the list of them.
+fn is_search_mail(mail: &MailMessage) -> bool {
+    mail.text.contains(app_paths::NOTIFICATION_SETTINGS)
+}
+
+/// The e-mail of the recipient's e-mailed search: the entry point `search-mail`. `issue` is the
+/// issue of the scene the recipient may see, if any.
+fn by_search_mail(rig: &Rig, role: StartingRole, issue: Option<&str>) -> Delivered {
+    let address = format!("{}@example.test", role.code());
+    let mails = rig.mailer.messages();
+    let text = mails
+        .iter()
+        .find(|mail| mail.to == address && is_search_mail(mail))
+        .map(|mail| mail.text.clone())
+        .unwrap_or_default();
+    let off = switched_off_address(role);
+    let off_heard = mails
+        .iter()
+        .any(|mail| mail.to == off && is_search_mail(mail));
+    Delivered {
+        entry: words::ENTRY_SEARCH_MAIL,
+        role,
+        said: vec![
+            ("heard", yes_no(issue.is_some_and(|key| text.contains(key)))),
+            (
+                "status",
+                shown(text.contains(&Message::from(STATUS_DONE).render())),
+            ),
+            (
+                "title",
+                shown(text.contains(&format!("> Printer of the {}", role.code()))),
+            ),
+            ("switched-off", yes_no(off_heard)),
+        ],
+    }
 }
 
 /// The people in the app list: the entry points `notifications`.
@@ -137,29 +283,35 @@ async fn in_the_app(role: StartingRole, person: &mut Browser) -> Result<Delivere
     let items: Vec<Value> = listed.body["items"].as_array().cloned().unwrap_or_default();
     let status_shown = items.iter().any(|item| item["change"]["field"] == "status");
     let text = items.iter().map(Value::to_string).collect::<String>();
-    Ok(Delivered {
-        entry: words::ENTRY_NOTIFICATIONS,
+    Ok(Delivered::of_a_change(
+        words::ENTRY_NOTIFICATIONS,
         role,
-        heard: !items.is_empty(),
-        status_shown,
-        author: author_in(&text, CHANGER, "Administrator"),
-    })
+        (
+            !items.is_empty(),
+            status_shown,
+            author_in(&text, CHANGER, "Administrator"),
+        ),
+    ))
 }
 
 /// The e-mail the recipient got: the entry point `e-mail`.
 fn by_mail(rig: &Rig, role: StartingRole) -> Delivered {
     let address = format!("{}@example.test", role.code());
     let mails = rig.mailer.messages();
-    let mail = mails.iter().find(|mail| mail.to == address);
+    let mail = mails
+        .iter()
+        .find(|mail| mail.to == address && !is_search_mail(mail));
     let text = mail.map(|mail| mail.text.clone()).unwrap_or_default();
-    Delivered {
-        entry: words::ENTRY_MAIL,
+    Delivered::of_a_change(
+        words::ENTRY_MAIL,
         role,
-        heard: mail.is_some(),
-        // The e-mail says the status in words, the same words as the screen (the catalog).
-        status_shown: text.contains(&Message::from(STATUS_DONE).render()),
-        author: author_in(&text, CHANGER, "Administrator"),
-    }
+        (
+            mail.is_some(),
+            // The e-mail says the status in words, the same words as the screen (the catalog).
+            text.contains(&Message::from(STATUS_DONE).render()),
+            author_in(&text, CHANGER, "Administrator"),
+        ),
+    )
 }
 
 /// Everyone is told by e-mail too, and the mail server is there.
@@ -186,17 +338,16 @@ async fn switch_mail_on(rig: &Rig, ada: &mut Browser) -> Result<(), Failure> {
 impl Delivered {
     /// The line of the record.
     pub(super) fn line(&self) -> String {
+        let said: Vec<String> = self
+            .said
+            .iter()
+            .map(|(name, word)| format!("{name}={word}"))
+            .collect();
         format!(
-            "delivery {} {} : heard={} status={} author={}",
+            "delivery {} {} : {}",
             self.entry,
             words::role_actor(self.role.code()),
-            if self.heard { words::YES } else { words::NO },
-            if self.status_shown {
-                words::SHOWN
-            } else {
-                words::LEFT_OUT
-            },
-            self.author.code()
+            said.join(" ")
         )
     }
 }

@@ -13,10 +13,11 @@ import {
   type SearchMail,
 } from "../search/index.ts";
 
-/** What the line under the name says: when it comes, or why it sends nothing. */
+/** What the line under the name says: when it comes, or why it sends nothing and how it starts again. */
 function lineOf(mail: SearchMail, when: string): string {
   if (mail.paused === "no-longer-opens") {
-    return t("search.mails-no-longer-opens");
+    // The search opens again (it came back from the trash, or was shared again): *Change* starts it.
+    return mail.name === null ? t("search.mails-no-longer-opens") : t("search.mails-opens-again");
   }
   return mail.paused === "switched-off" ? t("search.mails-switched-off") : when;
 }

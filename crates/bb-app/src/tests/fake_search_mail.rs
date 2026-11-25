@@ -145,4 +145,19 @@ impl SearchMailStore for FakeStore {
         mails.retain(|mail| mail.id != id);
         Ok(mails.len() < before)
     }
+
+    async fn pause_search_mails_of(
+        tx: &mut Tx,
+        holder: UserId,
+        pause: MailPause,
+    ) -> Result<u64, FakeError> {
+        let mut paused = 0;
+        for mail in &mut tx.state.search_mails {
+            if mail.holder == holder && mail.paused.is_none() {
+                mail.paused = Some(pause);
+                paused += 1;
+            }
+        }
+        Ok(paused)
+    }
 }

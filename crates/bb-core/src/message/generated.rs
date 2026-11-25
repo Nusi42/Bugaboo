@@ -9424,6 +9424,9 @@ pub const SEARCH_MAILS_NO_LONGER_OPENS: MessageKey =
 /// The message `search.mails-none`.
 pub const SEARCH_MAILS_NONE: MessageKey = MessageKey::new("search.mails-none");
 
+/// The message `search.mails-opens-again`.
+pub const SEARCH_MAILS_OPENS_AGAIN: MessageKey = MessageKey::new("search.mails-opens-again");
+
 /// The message `search.mails-stop`.
 pub const SEARCH_MAILS_STOP: MessageKey = MessageKey::new("search.mails-stop");
 

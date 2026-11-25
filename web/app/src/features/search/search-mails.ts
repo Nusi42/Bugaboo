@@ -1,4 +1,4 @@
-import { dataOf, type ReadonlyDeep, type Schema } from "@bugaboo/api-client";
+import { dataOf, mailLastHour, type ReadonlyDeep, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
@@ -24,8 +24,11 @@ export interface SearchMailChoice {
   readonly only_when_changed: boolean;
 }
 
-/** The hours of the day a person may choose, 0 to 23. */
-export const mailHours: readonly number[] = Array.from({ length: 24 }, (_, hour) => hour);
+/** The hours of the day a person may choose, 0 to the last one the server takes. */
+export const mailHours: readonly number[] = Array.from(
+  { length: mailLastHour + 1 },
+  (_, hour) => hour,
+);
 
 /** What a new e-mailed search starts with: Monday at 8:00, only when something is new or changed. */
 export const firstChoice: SearchMailChoice = {

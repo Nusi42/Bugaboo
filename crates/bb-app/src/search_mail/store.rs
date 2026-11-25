@@ -54,5 +54,8 @@ pub trait SearchMailStore: ChangeStore + 'static {
         fn put_search_mail(mail: &SearchMail) -> ();
         /// Deletes an e-mailed search; `false` when it was gone.
         fn delete_search_mail(id: SearchMailId) -> bool;
+        /// Makes every e-mailed search of a person that sends wait for them, for `pause` (the person
+        /// is switched off); how many.
+        fn pause_search_mails_of(holder: UserId, pause: MailPause) -> u64;
     }
 }

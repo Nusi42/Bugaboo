@@ -255,6 +255,20 @@ impl SearchMailStore for AuthStorage {
             .and_where(Expr::col(SearchMailRow::Id).eq(id.stored()));
         Ok(transaction.execute(&delete).await? > 0)
     }
+
+    async fn pause_search_mails_of(
+        transaction: &mut Transaction,
+        holder: UserId,
+        pause: MailPause,
+    ) -> Result<u64, StoreError> {
+        let mut update = Query::update();
+        update
+            .table(SearchMailRow::Table)
+            .value(SearchMailRow::Paused, pause.code())
+            .and_where(Expr::col(SearchMailRow::Holder).eq(holder.stored()))
+            .and_where(Expr::col(SearchMailRow::Paused).is_null());
+        transaction.execute(&update).await
+    }
 }
 
 #[cfg(test)]

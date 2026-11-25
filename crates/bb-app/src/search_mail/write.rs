@@ -109,16 +109,24 @@ pub async fn set_search_mail<S: AuthStore>(
         changes(before.as_ref(), Some(&mail)),
     )?;
     let why = Why::default();
-    let written = mail.clone();
+    let chosen = mail.clone();
     let stop = why.clone();
-    ctx.store()
+    let mail = ctx
+        .store()
         .record_change(&event, move |transaction| {
             Box::pin(async move {
                 // Under the lock of the person's saved searches, so two changes at once cannot pass
                 // the limit (one lock serves both).
                 S::lock_saved_searches_of(transaction, holder).await?;
-                match S::search_mail_of_in(transaction, holder, written.search).await? {
-                    Some(found) if found.id == written.id => {}
+                let written = match S::search_mail_of_in(transaction, holder, chosen.search).await?
+                {
+                    // What the jobs keep (when the last e-mail went) is read inside the change, so
+                    // a job that wrote meanwhile is not undone.
+                    Some(found) if found.id == chosen.id => SearchMail {
+                        last_sent_at: found.last_sent_at,
+                        created_at: found.created_at,
+                        ..chosen
+                    },
                     // Made by another change a moment ago: this one is told so.
                     Some(_) => return Err(stop.stop::<S>(ErrorCode::VersionChanged)),
                     None => {
@@ -126,9 +134,11 @@ pub async fn set_search_mail<S: AuthStore>(
                         if have >= u64::try_from(SEARCH_MAILS_MAX).unwrap_or(u64::MAX) {
                             return Err(stop.stop::<S>(ErrorCode::LimitReached));
                         }
+                        chosen
                     }
-                }
-                S::put_search_mail(transaction, &written).await
+                };
+                S::put_search_mail(transaction, &written).await?;
+                Ok(written)
             })
         })
         .await

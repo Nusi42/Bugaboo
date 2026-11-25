@@ -6,16 +6,14 @@ use bb_core::job::FailureKind;
 impl<S: AuthStore> Ctx<'_, S> {
     /// The job `search-mail.send`: one e-mail of an e-mailed search (QRY-07).
     pub(super) async fn do_search_mail(&self, job: &Job) -> Result<(), JobFailure> {
-        Box::pin(self.run_search_mail(&job.payload))
-            .await
-            .map_err(|error| {
-                // The class only: the answer of the mail server can hold an address.
-                tracing::warn!(
-                    refused = matches!(error, AppError::Refused(_)),
-                    "an e-mailed search did not go"
-                );
-                JobFailure::of(&error, FAILED, job)
-            })
+        Box::pin(self.run_search_mail(job)).await.map_err(|error| {
+            // The class only: the answer of the mail server can hold an address.
+            tracing::warn!(
+                refused = matches!(error, AppError::Refused(_)),
+                "an e-mailed search did not go"
+            );
+            JobFailure::of(&error, FAILED, job)
+        })
     }
 
     /// The job `backups.now`: the backup a person asked for (ADR-0046, amendment of 2026-11-23).

@@ -7480,6 +7480,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "search.mails-none",
         "You get no saved search by e-mail. Choose E-mail me this search beside a saved search.",
     ),
+    (
+        "search.mails-opens-again",
+        "Sends nothing since you could not open this search. You can open it again: choose Change to start it",
+    ),
     ("search.mails-stop", "Stop"),
     ("search.mails-stop-name", "Stop: {name}"),
     (

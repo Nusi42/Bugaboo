@@ -42,21 +42,24 @@ function startingChoice(mail: SearchMailChoice | undefined): SearchMailChoice {
 /** The weekdays, in the order the person's week starts, each a box to tick. */
 function DayTicks({
   days,
+  isDisabled,
   onChange,
 }: {
   readonly days: readonly boolean[];
+  readonly isDisabled: boolean;
   readonly onChange: (days: readonly boolean[]) => void;
 }) {
   const week = weekOf(useRegion().firstDay);
   return (
-    <fieldset {...partOf(part.searchHelpGroup)}>
-      <legend {...partOf(part.searchHelpTitle)}>{t("search.mail-days")}</legend>
-      <div {...partOf(part.choiceGroupChoices)}>
+    <fieldset {...partOf(part.searchMailDays)}>
+      <legend {...partOf(part.searchMailLegend)}>{t("search.mail-days")}</legend>
+      <div {...partOf(part.searchMailDayBoxes)}>
         {week.map(({ at, date }) => (
           <span key={at}>
             <Checkbox
               label={weekdayName(date, "short")}
               isSelected={days[at] === true}
+              isDisabled={isDisabled}
               onChange={(ticked) => {
                 onChange(days.map((each, which) => (which === at ? ticked : each)));
               }}
@@ -68,12 +71,18 @@ function DayTicks({
   );
 }
 
-/** The form of the window: the days, the hour, *Only when something is new or changed*. */
+/**
+ * The form of the window: the days, the hour, *Only when something is new or changed*. It cannot be
+ * used until the person's e-mailed searches are read, so a choice never overwrites one it did not
+ * start from.
+ */
 function MailForm({
   choice,
+  isDisabled,
   onChange,
 }: {
   readonly choice: SearchMailChoice;
+  readonly isDisabled: boolean;
   readonly onChange: (choice: SearchMailChoice) => void;
 }) {
   const region = useRegion();
@@ -82,6 +91,7 @@ function MailForm({
     <>
       <DayTicks
         days={choice.days}
+        isDisabled={isDisabled}
         onChange={(days) => {
           onChange({ ...choice, days });
         }}
@@ -93,6 +103,7 @@ function MailForm({
           label: t("search.mail-hour-choice", { time: hourText(hour, region), zone }),
         }))}
         value={String(choice.hour)}
+        isDisabled={isDisabled}
         onChange={(value) => {
           onChange({ ...choice, hour: Number(value) });
         }}
@@ -100,6 +111,7 @@ function MailForm({
       <Checkbox
         label={t("search.mail-only-when-changed")}
         isSelected={choice.only_when_changed}
+        isDisabled={isDisabled}
         onChange={(only) => {
           onChange({ ...choice, only_when_changed: only });
         }}
@@ -147,6 +159,7 @@ export function SearchMailWindow({ search, isOpen, onClose }: SearchMailWindowPr
   const [choice, setChoice] = useState<SearchMailChoice | null>(null);
   const shown = choice ?? startingChoice(mailOf(list.data, search.id));
   const noDay = !shown.days.includes(true);
+  const read = list.isSuccess;
   const close = (): void => {
     setChoice(null);
     set.reset();
@@ -164,7 +177,7 @@ export function SearchMailWindow({ search, isOpen, onClose }: SearchMailWindowPr
       labels={windowLabels()}
       footer={
         <Footer
-          isDisabled={noDay}
+          isDisabled={noDay || !read}
           isPending={set.isPending}
           onCancel={close}
           onSave={() => {
@@ -173,8 +186,8 @@ export function SearchMailWindow({ search, isOpen, onClose }: SearchMailWindowPr
         />
       }
     >
-      <div {...partOf(part.shareBody)}>
-        <MailForm choice={shown} onChange={setChoice} />
+      <div {...partOf(part.searchMail)}>
+        <MailForm choice={shown} isDisabled={!read} onChange={setChoice} />
         {noDay ? <p {...partOf(part.muted)}>{t("search.mail-days-needed")}</p> : null}
         <p {...partOf(part.muted)}>
           {t("search.mail-note", { most: list.data?.most_listed ?? 0 })}

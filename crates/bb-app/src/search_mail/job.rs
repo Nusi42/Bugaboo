@@ -14,6 +14,7 @@ use bb_core::ErrorCode;
 use bb_core::app_paths;
 use bb_core::fields::Field;
 use bb_core::id::{JobId, SearchMailId};
+use bb_core::job::Job;
 use bb_core::saved_search::SavedSearch;
 use bb_core::search_mail::{
     MailPause, SEARCH_MAIL_ISSUES_MAX, SearchMail, next_due, place_in_hour,
@@ -23,7 +24,6 @@ use bb_core::wording::Region;
 use bb_searchlang::{Direction, FieldRef, SortKey, Span, check};
 use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use super::sending;
 use crate::access::Actor;
@@ -37,10 +37,12 @@ use crate::search::{FieldTarget, Prepared, SearchScope, readable_of, stopped};
 /// How many due e-mailed searches one read of the hourly round takes.
 const DUE_PAGE: u64 = 200;
 
-/// The payload of a `search-mail.send` job: the e-mailed search, never a word of its person.
+/// The payload of a `search-mail.send` job: the e-mailed search and the moment its e-mail was due,
+/// never a word of its person.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct SendPayload {
     mail: SearchMailId,
+    due: Timestamp,
 }
 
 /// What a search found for its e-mail.
@@ -71,7 +73,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map_err(failed)?;
             let page = due.len();
             for mail in due {
-                if self.queue_one(&mail, &kind).await? {
+                if self.queue_one(&mail, &kind, next_round).await? {
                     queued += 1;
                 }
             }
@@ -81,18 +83,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
-    /// Queues the e-mail of one e-mailed search that is due and moves it on to its next day, in the
-    /// person's time zone now. An e-mail that was due while the server did not run goes once, now.
+    /// Queues the e-mail of one e-mailed search that is due and moves it on to its next day after
+    /// the next round, in the person's time zone now. An e-mail that was due while the server did
+    /// not run goes once, now, and stands for every hour up to the next round, so a late one is not
+    /// followed by another within the hour.
     async fn queue_one(
         &self,
         mail: &SearchMail,
         kind: &bb_core::technical::TechnicalName,
+        next_round: Timestamp,
     ) -> Result<bool, AppError> {
         let now = self.now();
         let zone = Region::of(&self.setting_layers_of(Some(mail.holder)).await?)
             .zone()
             .clone();
-        let after = mail.next_at.max(now);
+        let after = mail.next_at.max(next_round);
         let next = next_due(mail.days, mail.hour, &zone, after)
             .ok_or_else(|| AppError::Internal("no next day for an e-mailed search".to_owned()))?;
         let run_at = mail
@@ -104,8 +109,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             id: JobId::generate(&mut self.ids())
                 .map_err(|error| AppError::Internal(error.to_string()))?,
             kind: kind.clone(),
-            payload: serde_json::to_value(SendPayload { mail: mail.id })
-                .map_err(|error| AppError::Internal(error.to_string()))?,
+            payload: serde_json::to_value(SendPayload {
+                mail: mail.id,
+                due: mail.next_at,
+            })
+            .map_err(|error| AppError::Internal(error.to_string()))?,
             run_at,
         };
         self.store()
@@ -120,15 +128,17 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// # Errors
     /// A refusal for a payload that names nothing or an address the mail server turns away for
     /// good; an internal error when another try may work.
-    pub(crate) async fn run_search_mail(&self, payload: &Value) -> Result<(), AppError> {
-        let SendPayload { mail: id } = serde_json::from_value(payload.clone())
+    pub(crate) async fn run_search_mail(&self, job: &Job) -> Result<(), AppError> {
+        let SendPayload { mail: id, due } = serde_json::from_value(job.payload.clone())
             .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?;
         let failed = |error| internal::<S>(&error);
         let Some(mail) = self.store().search_mail(id).await.map_err(failed)? else {
             // Stopped since it was queued.
             return Ok(());
         };
-        if mail.paused.is_some() {
+        // Changed since this job was queued, or due again at this hour or before: the e-mail that
+        // is queued for the choice as it is now goes instead, so one hour never brings two.
+        if mail.paused.is_some() || mail.updated_at > job.created_at || mail.next_at <= due {
             return Ok(());
         }
         let layers = self.setting_layers_of(None).await?;

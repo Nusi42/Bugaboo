@@ -92,6 +92,7 @@ export { reasonMax } from "./texts.generated.ts";
 export { searchWords, type SearchWord } from "./search-words.generated.ts";
 export { issueMemberOf } from "./issue-member.ts";
 export { pageSizeDefault, pageSizeMax } from "./paging.generated.ts";
+export { mailLastHour } from "./search-mail.generated.ts";
 export { timeZones } from "./time-zones.generated.ts";
 export {
   minutesPerHour,

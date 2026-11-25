@@ -9491,6 +9491,37 @@ textarea,
   gap: var(--space-2);
 }
 
+[data-part="search-mail"] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin-inline: calc((var(--pad-dialog) - var(--pad-box)) * -1);
+}
+
+[data-part="search-mail.days"] {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+[data-part="search-mail.legend"] {
+  margin: 0;
+  padding: 0;
+  font-size: var(--fs-md);
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+}
+
+[data-part="search-mail.day-boxes"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 [data-part="name-value.value"] > [data-part="field"],
 [data-part="name-value.value"] > [data-part="value-frame"],
 [data-part="name-value.value"] > [data-part="stack"],

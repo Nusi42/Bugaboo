@@ -115,6 +115,9 @@ pub mod sec_matrix {
     /// The e-mail the server sends to a person on its own, shaped for them when it is sent
     /// (NTF-02, SEC-06).
     pub const ENTRY_MAIL: &str = "e-mail";
+    /// The e-mail of an e-mailed search, which the server sends to its person on its own at the
+    /// hour they chose, run with their rights when it is sent (QRY-07).
+    pub const ENTRY_SEARCH_MAIL: &str = "search-mail";
     /// The tools of the one registry as an AI app or an agent calls them at `/mcp` (AI-21, AI-36):
     /// every tool has a `tool` line in the record, answered for every actor of [`mcp_actors`].
     pub const ENTRY_MCP: &str = "mcp";
@@ -246,7 +249,7 @@ pub mod sec_matrix {
     pub const LEFT_OUT: &str = "hidden";
     /// Every entry point the record may name for what the server sends on its own: each has a
     /// `delivery` line for every starting role as the recipient.
-    pub const DELIVERY_POINTS: [&str; 2] = [ENTRY_NOTIFICATIONS, ENTRY_MAIL];
+    pub const DELIVERY_POINTS: [&str; 3] = [ENTRY_NOTIFICATIONS, ENTRY_MAIL, ENTRY_SEARCH_MAIL];
 
     /// Nobody is signed in.
     pub const NOBODY: &str = "nobody";

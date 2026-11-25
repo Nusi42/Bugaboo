@@ -234,16 +234,26 @@ fn actor_findings(actors: &[String], routes: &[Route]) -> Vec<Finding> {
     findings
 }
 
-/// What a recipient with this starting role may be told, in the words of the record: the tables
-/// of the starting roles are the one place that says it.
-fn delivery_words(role: StartingRole) -> [(&'static str, &'static str); 3] {
+/// What a recipient with this starting role may be told through `entry`, in the words of the
+/// record: the tables of the starting roles are the one place that says it. The e-mail of an
+/// e-mailed search names the status and the title of the issue, and reaches nobody who is switched
+/// off (QRY-07).
+fn delivery_words(entry: &str, role: StartingRole) -> Vec<(&'static str, &'static str)> {
     // A role that sees no project follows no issue, so it hears of none (*HR*, ADR-0035).
     let heard = if role.permissions().contains(&Permission::SeeProjects) {
         words::YES
     } else {
         words::NO
     };
-    [
+    if entry == words::ENTRY_SEARCH_MAIL {
+        return vec![
+            ("heard", heard),
+            ("status", shown_word(role, Field::Status)),
+            ("title", shown_word(role, Field::Title)),
+            ("switched-off", words::NO),
+        ];
+    }
+    vec![
         ("heard", heard),
         ("status", shown_word(role, Field::Status)),
         ("author", people_word(role, PeopleKind::Authors)),
@@ -280,7 +290,7 @@ fn delivery_findings(deliveries: &BTreeMap<String, Said>) -> Vec<Finding> {
                 ));
                 continue;
             };
-            for (name, wanted) in delivery_words(*role) {
+            for (name, wanted) in delivery_words(entry, *role) {
                 if said.get(name).map(String::as_str) != Some(wanted) {
                     found.push(Finding::at(
                         RECORD_PATH,
@@ -501,7 +511,7 @@ mod tests {
         let mut text = String::new();
         for entry in words::DELIVERY_POINTS {
             for role in StartingRole::ALL {
-                let said: Vec<String> = delivery_words(*role)
+                let said: Vec<String> = delivery_words(entry, *role)
                     .iter()
                     .map(|(name, word)| format!("{name}={word}"))
                     .collect();

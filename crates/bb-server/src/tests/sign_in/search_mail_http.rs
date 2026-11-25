@@ -26,15 +26,15 @@ use super::issues_site::{ISSUES, Site, key_of, ok, version_of};
 use super::removal_http::{remove, switch_off};
 use super::rig::Rig;
 
-const SEARCHES: &str = "/api/v1/saved-searches";
-const MAILS: &str = "/api/v1/search-mails";
+pub(super) const SEARCHES: &str = "/api/v1/saved-searches";
+pub(super) const MAILS: &str = "/api/v1/search-mails";
 /// Every day of the week.
-const EVERY_DAY: [bool; 7] = [true; 7];
-const HOUR: i64 = 9;
+pub(super) const EVERY_DAY: [bool; 7] = [true; 7];
+pub(super) const HOUR: i64 = 9;
 const SECONDS_PER_HOUR: i64 = 3600;
 
 /// Saves a search under `name` as `browser`: its ID.
-async fn save(browser: &mut Browser, name: &str, text: &str) -> Result<String, Failure> {
+pub(super) async fn save(browser: &mut Browser, name: &str, text: &str) -> Result<String, Failure> {
     let made = browser
         .send(
             "POST",
@@ -49,23 +49,33 @@ async fn save(browser: &mut Browser, name: &str, text: &str) -> Result<String, F
 }
 
 /// Sets the e-mailed search of `search` as `browser`: the answer.
-async fn set(
+pub(super) async fn set(
     browser: &mut Browser,
     search: &str,
     days: [bool; 7],
+    only_when_changed: bool,
+) -> Result<Reply, Failure> {
+    set_at(browser, search, (days, HOUR), only_when_changed).await
+}
+
+/// Sets the e-mailed search of `search` as `browser` for the days and the hour of `when`.
+pub(super) async fn set_at(
+    browser: &mut Browser,
+    search: &str,
+    (days, hour): ([bool; 7], i64),
     only_when_changed: bool,
 ) -> Result<Reply, Failure> {
     browser
         .send(
             "PUT",
             &format!("{SEARCHES}/{search}/mail"),
-            Some(json!({"days": days, "hour": HOUR, "only_when_changed": only_when_changed})),
+            Some(json!({"days": days, "hour": hour, "only_when_changed": only_when_changed})),
         )
         .await
 }
 
 /// Lets `hours` hours pass, one at a time, with the jobs that are due at each.
-async fn pass_hours(rig: &Rig, hours: i64) -> Result<(), Failure> {
+pub(super) async fn pass_hours(rig: &Rig, hours: i64) -> Result<(), Failure> {
     for _ in 0..hours {
         rig.clock.advance(SECONDS_PER_HOUR);
         rig.run_jobs().await?;
@@ -74,7 +84,7 @@ async fn pass_hours(rig: &Rig, hours: i64) -> Result<(), Failure> {
 }
 
 /// Switches e-mail on and starts the rounds of the jobs, as a server does when it starts.
-async fn start(rig: &Rig) -> Result<(), Failure> {
+pub(super) async fn start(rig: &Rig) -> Result<(), Failure> {
     rig.turn_mail_on().await?;
     rig.services
         .ctx(Rig::info())
@@ -86,7 +96,7 @@ async fn start(rig: &Rig) -> Result<(), Failure> {
 }
 
 /// The e-mails of e-mailed searches that went to `to`.
-fn mails_to(rig: &Rig, to: &str) -> Vec<MailMessage> {
+pub(super) fn mails_to(rig: &Rig, to: &str) -> Vec<MailMessage> {
     rig.mailer
         .messages()
         .into_iter()
@@ -95,7 +105,7 @@ fn mails_to(rig: &Rig, to: &str) -> Vec<MailMessage> {
 }
 
 /// The e-mailed search of `search` for `holder`, as stored.
-async fn stored(
+pub(super) async fn stored(
     rig: &Rig,
     holder: UserId,
     search: &str,
@@ -109,7 +119,11 @@ async fn stored(
 }
 
 /// Changes the title of `issue` as `browser`.
-async fn retitle(browser: &mut Browser, issue: &str, title: &str) -> Result<(), Failure> {
+pub(super) async fn retitle(
+    browser: &mut Browser,
+    issue: &str,
+    title: &str,
+) -> Result<(), Failure> {
     let version = version_of(browser, issue).await?;
     ok(&browser
         .send(
@@ -121,7 +135,44 @@ async fn retitle(browser: &mut Browser, issue: &str, title: &str) -> Result<(), 
     Ok(())
 }
 
-fn items(list: &Reply) -> Result<Vec<Value>, Failure> {
+/// Bob, a team member, saves a search for everything and gets it by e-mail every day at the hour
+/// of the tests; an issue is there for it to find. Bob, his ID and the ID of his search.
+pub(super) async fn bob_mails_his_search(
+    site: &Site<'_>,
+    ada: &mut Browser,
+) -> Result<(Browser, UserId, String), Failure> {
+    let (mut bob, bob_id) = site
+        .person_called(StartingRole::TeamMember, "bob", "Bob Baker")
+        .await?;
+    key_of(&site.create(ada, "Printer jams").await?)?;
+    let search = save(&mut bob, "Mine", "").await?;
+    ok(&set(&mut bob, &search, EVERY_DAY, false).await?)?;
+    Ok((bob, bob_id, search))
+}
+
+/// A person with a role of their own that sees the projects and the issues, and of their fields
+/// only `fields` (`reader@example.test`).
+pub(super) async fn reader_seeing(
+    site: &Site<'_>,
+    rig: &Rig,
+    fields: &[Field],
+) -> Result<Browser, Failure> {
+    let levels: Vec<_> = fields
+        .iter()
+        .map(|field| (FieldKey::BuiltIn(*field), None, FieldLevel::CanSee))
+        .collect();
+    let (reader, _) = person_with_levels(
+        site,
+        rig,
+        "reader",
+        &[Permission::SeeProjects, Permission::SeeIssues],
+        &levels,
+    )
+    .await?;
+    Ok(reader)
+}
+
+pub(super) fn items(list: &Reply) -> Result<Vec<Value>, Failure> {
     Ok(ok(list)?["search_mails"]
         .as_array()
         .cloned()
@@ -337,12 +388,7 @@ async fn qry_07_a_switched_off_person_gets_nothing_and_the_schedule_is_paused() 
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         start(&rig).await?;
-        let (mut bob, bob_id) = site
-            .person_called(StartingRole::TeamMember, "bob", "Bob Baker")
-            .await?;
-        key_of(&site.create(&mut ada, "Printer jams").await?)?;
-        let search = save(&mut bob, "Mine", "").await?;
-        ok(&set(&mut bob, &search, EVERY_DAY, false).await?)?;
+        let (_, bob_id, search) = bob_mails_his_search(&site, &mut ada).await?;
         switch_off(&mut ada, bob_id).await?;
         pass_hours(&rig, 3).await?;
         assert!(mails_to(&rig, "bob@example.test").is_empty());
@@ -455,14 +501,7 @@ async fn qry_07_a_field_the_person_may_not_read_never_reaches_the_e_mail() -> Te
         let (site, mut ada) = Site::start(&rig, &app).await?;
         start(&rig).await?;
         // The reader sees the status and not the title.
-        let (mut reader, _) = person_with_levels(
-            &site,
-            &rig,
-            "reader",
-            &[Permission::SeeProjects, Permission::SeeIssues],
-            &[(FieldKey::BuiltIn(Field::Status), None, FieldLevel::CanSee)],
-        )
-        .await?;
+        let mut reader = reader_seeing(&site, &rig, &[Field::Status]).await?;
         let issue = key_of(&site.create(&mut ada, "Printer jams").await?)?;
         let search = save(&mut reader, "Mine", "").await?;
         ok(&set(&mut reader, &search, EVERY_DAY, false).await?)?;

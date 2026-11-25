@@ -148,7 +148,7 @@ export type SettingChoice<Name extends keyof typeof settingChoices> =
 }
 
 /// The value of `pub const NAME: u32 = 100;` in the file, which was read from `path`.
-fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<String> {
+pub(super) fn number_const(file: &syn::File, path: &str, name: &str) -> anyhow::Result<String> {
     file.items
         .iter()
         .find_map(|item| match item {

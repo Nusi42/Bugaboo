@@ -14,6 +14,7 @@ use bb_core::event::{FieldChange, RecordKind};
 use bb_core::id::UserId;
 use bb_core::oauth::GrantEnd;
 use bb_core::person::{PersonStanding, Standing};
+use bb_core::search_mail::MailPause;
 use bb_core::sign_in::SecurityAction;
 use bb_policy::guards::ensure_a_manager_remains;
 use bb_policy::{Permission, Place};
@@ -111,6 +112,9 @@ pub async fn switch_off_in<S: AuthStore>(
         taken_back_in::<S, _>(transaction, at, ReplayKind::AccessKey, &keys).await?;
     }
     let invitations = S::delete_open_invitations_by(transaction, person).await?;
+    // Their e-mailed searches wait for them; *Switch on* does not start them again (ADR-0044,
+    // amendment 2026-11-24).
+    S::pause_search_mails_of(transaction, person, MailPause::SwitchedOff).await?;
     S::wait_to_replay(
         transaction,
         &[line(at, ReplayKind::SwitchOff, person, None)],

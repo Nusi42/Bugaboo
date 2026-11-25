@@ -779,6 +779,7 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
     selector "card.topic" role="section"
     selector "notification-group.head" role="section"
     selector "search-help.title" role="section"
+    selector "search-mail.legend" role="section"
     selector "timeline-side.heading" role="title"
     selector "priority[variant=critical]" role="priority"
     selector "priority[variant=high]" role="priority"
@@ -16948,6 +16949,36 @@ part "search-help.group" {
     use "fieldset-reset"
     display flex
     flex-direction column
+    gap "$space-2"
+}
+
+// The window *E-mail me this search* (QRY-07): its form under the title, on the edge of the title,
+// and the weekdays as one group of boxes with its name, side by side while they fit.
+part "search-mail" {
+    display flex
+    flex-direction column
+    gap "$space-5"
+    margin-inline "calc(($pad-dialog - $pad-box) * -1)"
+}
+
+part "search-mail.days" {
+    use "fieldset-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+part "search-mail.legend" {
+    margin 0
+    padding 0
+    font-size "$fs-md"
+    font-family "$font-display"
+    font-weight "$weight-bold"
+}
+
+part "search-mail.day-boxes" {
+    display flex
+    flex-wrap wrap
     gap "$space-2"
 }
 

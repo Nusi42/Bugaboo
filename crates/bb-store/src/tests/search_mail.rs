@@ -157,6 +157,34 @@ async fn qry_07_an_e_mailed_search_is_kept_and_found_when_it_is_due() -> TestRes
 }
 
 #[tokio::test]
+async fn qry_07_switch_off_makes_every_e_mailed_search_of_the_person_wait() -> TestResult {
+    each_database("qry_07_store_pause_holder", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let holder = UserId::generate(&mut source);
+        let other = UserId::generate(&mut source);
+        let search = a_search(storage, &mut source, holder).await?;
+        let mine = mail(&mut source, holder, search, 100);
+        put(storage, &mut source, &mine).await?;
+        let theirs = mail(&mut source, other, search, 100);
+        put(storage, &mut source, &theirs).await?;
+        let paused = changed(storage, &mut source, move |tx| {
+            Box::pin(async move {
+                AuthStorage::pause_search_mails_of(tx, holder, MailPause::SwitchedOff).await
+            })
+        })
+        .await?;
+        assert_eq!(paused, 1);
+        let waiting = storage.search_mail(mine.id).await?.ok_or("gone")?;
+        assert_eq!(waiting.paused, Some(MailPause::SwitchedOff));
+        assert_eq!(storage.search_mail(theirs.id).await?, Some(theirs));
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn priv_04_the_e_mailed_searches_of_a_private_search_go_with_it() -> TestResult {
     each_database("qry_07_store_removal", async |db| {
         let fixture = fixture(db).await?;
@@ -166,12 +194,18 @@ async fn priv_04_the_e_mailed_searches_of_a_private_search_go_with_it() -> TestR
         let search = a_search(storage, &mut source, holder).await?;
         let made = mail(&mut source, holder, search, 100);
         put(storage, &mut source, &made).await?;
+        // Another person's e-mailed search of another saved search stays.
+        let other = UserId::generate(&mut source);
+        let theirs_search = a_search(storage, &mut source, other).await?;
+        let theirs = mail(&mut source, other, theirs_search, 100);
+        put(storage, &mut source, &theirs).await?;
         let gone = changed(storage, &mut source, move |tx| {
             Box::pin(async move { AuthStorage::delete_private_searches_of(tx, holder).await })
         })
         .await?;
         assert_eq!(gone, [search]);
         assert_eq!(storage.search_mail(made.id).await?, None);
+        assert_eq!(storage.search_mail(theirs.id).await?, Some(theirs));
         // Stopping one that is gone says so.
         let deleted = changed(storage, &mut source, move |tx| {
             Box::pin(async move { AuthStorage::delete_search_mail(tx, made.id).await })

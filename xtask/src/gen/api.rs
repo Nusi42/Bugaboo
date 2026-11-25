@@ -18,6 +18,8 @@
 //!   as the browser client's `src/request-time.generated.ts`;
 //! - the page sizes (`crates/bb-core/src/paging.rs`) are read as Rust source and written as the
 //!   browser client's `src/paging.generated.ts`;
+//! - the last hour of an e-mailed search (`crates/bb-core/src/search_mail.rs`) is written as
+//!   `src/search-mail.generated.ts`;
 //! - the times and sizes of editing (`crates/bb-core/src/edit.rs`) are written as
 //!   `src/editing.generated.ts`;
 //! - the scale of own-field decimals (`crates/bb-core/src/own_fields.rs`) is written as
@@ -69,6 +71,7 @@ use crate::source::{Kind, Source, read_sources};
 use crate::tools;
 
 mod request_time;
+mod search_mail;
 mod time_zones;
 mod web_constants;
 
@@ -86,6 +89,8 @@ pub(crate) const SETTING_KEYS_PATH: &str = "web/packages/api-client/src/setting-
 pub(crate) const PAGING_PATH: &str = "web/packages/api-client/src/paging.generated.ts";
 /// The time the server gives an API request, for the browser client's own limit.
 pub(crate) const REQUEST_TIME_PATH: &str = "web/packages/api-client/src/request-time.generated.ts";
+/// The bounds of e-mailed searches, for the browser app.
+pub(crate) const SEARCH_MAIL_PATH: &str = "web/packages/api-client/src/search-mail.generated.ts";
 /// The times and sizes of editing, for the browser app.
 pub(crate) const EDITING_PATH: &str = "web/packages/api-client/src/editing.generated.ts";
 /// The scale of own-field numbers, for the browser app.
@@ -134,6 +139,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         SETTING_KEYS_PATH,
         PAGING_PATH,
         REQUEST_TIME_PATH,
+        SEARCH_MAIL_PATH,
         EDITING_PATH,
         FILES_PATH,
         MANY_CHANGES_PATH,
@@ -228,6 +234,10 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
                 REQUEST_TIME_PATH,
                 &request_time::request_time(&sources)?,
             )?,
+        ),
+        Generated::new(
+            SEARCH_MAIL_PATH,
+            format_with_oxfmt(repo, SEARCH_MAIL_PATH, &search_mail::search_mail(&sources)?)?,
         ),
         Generated::new(
             EDITING_PATH,
