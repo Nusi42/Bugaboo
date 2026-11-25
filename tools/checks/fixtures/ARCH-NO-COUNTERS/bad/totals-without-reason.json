@@ -1,0 +1,34 @@
+{
+  "paths": {
+    "/api/v1/search/totals": {
+      "post": {
+        "operationId": "totalSearchedIssues",
+        "responses": {
+          "200": {
+            "description": "The totals.",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Totals" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Totals": {
+        "type": "object",
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "issues": { "type": "integer", "description": "How many issues the group holds, hidden ones too." },
+                "sum": { "type": "integer" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

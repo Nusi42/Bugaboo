@@ -214,10 +214,13 @@ pub(super) fn group_key(key: ShownKey) -> SearchGroupKeyBody {
                 from: range.from,
                 to: range.to,
             }),
-            // A person, a tag and a label are shown by the use case, never as a bare ID.
-            GroupKey::Empty | GroupKey::Person(_) | GroupKey::Tag(_) | GroupKey::Label(_) => {
-                SearchGroupKeyBody::Empty
-            }
+            // A person, a set of people, a tag and a label are shown by the use case, never as a
+            // bare ID.
+            GroupKey::Empty
+            | GroupKey::Person(_)
+            | GroupKey::People(_)
+            | GroupKey::Tag(_)
+            | GroupKey::Label(_) => SearchGroupKeyBody::Empty,
         },
     }
 }
@@ -606,6 +609,7 @@ where
         .routes(routes!(search_issues))
         .routes(routes!(count_searched_issues))
         .routes(routes!(group_searched_issues))
+        .routes(routes!(super::search_totals::total_searched_issues))
         .routes(routes!(list_search_fields))
         .routes(routes!(list_search_names))
         .layer(Extension(Arc::clone(limits)))

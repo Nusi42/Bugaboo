@@ -57,6 +57,8 @@ pub(super) enum GroupValue {
     StatusGroup,
     /// The start of the range of a length of time, in whole minutes (`LengthRange`).
     Length,
+    /// The place of a set of people that are one group (`GroupKey::People`).
+    People,
 }
 
 /// What an ID in a group is the ID of.
@@ -150,7 +152,7 @@ pub(crate) fn bigint(value: Expr) -> Expr {
 
 impl Compiler<'_> {
     /// A text in the order of its bytes on both databases.
-    fn bytes(&self, text: Expr) -> Expr {
+    pub(super) fn bytes(&self, text: Expr) -> Expr {
         match self.dialect {
             Dialect::Sqlite => text,
             Dialect::Postgres => Expr::cust_with_expr("$1 COLLATE \"C\"", text),
@@ -307,7 +309,7 @@ impl Compiler<'_> {
         match subject.clone() {
             Subject::Column(value) => {
                 let value = match what {
-                    GroupValue::Id(_) | GroupValue::Whole => value,
+                    GroupValue::Id(_) | GroupValue::Whole | GroupValue::People => value,
                     GroupValue::Text => self.bytes(value),
                     GroupValue::Priority | GroupValue::StatusGroup => {
                         bigint(self.rank(&subject, domain)?)

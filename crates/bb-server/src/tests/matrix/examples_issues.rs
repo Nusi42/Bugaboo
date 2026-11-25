@@ -272,6 +272,11 @@ fn search_request(operation: &str) -> Option<Request> {
             "/api/v1/search/issues/groups?by=priority".into(),
             None,
         ),
+        "totalSearchedIssues" => (
+            "POST",
+            "/api/v1/search/totals".into(),
+            Some(serde_json::json!({"by": "priority", "sums": ["count", "estimated"]})),
+        ),
         "listSearchFields" => ("GET", "/api/v1/search/fields".into(), None),
         "listSearchNames" => (
             "GET",

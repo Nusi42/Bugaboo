@@ -419,6 +419,7 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("searchIssues", &[Quirk::KeysActAsThePerson]),
     Example::with("countSearchedIssues", &[Quirk::KeysActAsThePerson]),
     Example::with("groupSearchedIssues", &[Quirk::KeysActAsThePerson]),
+    Example::with("totalSearchedIssues", &[Quirk::KeysActAsThePerson]),
     Example::with("listSearchFields", &[Quirk::KeysActAsThePerson]),
     Example::with("listSearchNames", &[Quirk::KeysActAsThePerson]),
     Example::with("listAssignablePeople", &[Quirk::HidesUnseen]),

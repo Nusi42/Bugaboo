@@ -1190,6 +1190,9 @@ pub const AI_TOOL_REPORT: MessageKey = MessageKey::new("ai-tool.report");
 /// The message `ai-tool.search-issues`.
 pub const AI_TOOL_SEARCH_ISSUES: MessageKey = MessageKey::new("ai-tool.search-issues");
 
+/// The message `ai-tool.search-totals`.
+pub const AI_TOOL_SEARCH_TOTALS: MessageKey = MessageKey::new("ai-tool.search-totals");
+
 /// The message `ai-tool.start-timer`.
 pub const AI_TOOL_START_TIMER: MessageKey = MessageKey::new("ai-tool.start-timer");
 

@@ -272,7 +272,7 @@ async fn auth_07_an_expired_a_deleted_and_an_unknown_key_get_the_same_answer_ove
 /// of images, which every page needs to be shown, the labels, which every signed-in person reads, and
 /// the run of a change to many issues, which a key reads as its owner (it cannot start one that runs in the background, but it reads the
 /// state of the person's own), and the page of a run, which a key reads as its owner as well.
-const MY_SETTINGS: [&str; 29] = [
+const MY_SETTINGS: [&str; 30] = [
     "getImageHosts",
     "listFieldTypes",
     "listMySettings",
@@ -296,6 +296,7 @@ const MY_SETTINGS: [&str; 29] = [
     "searchIssues",
     "countSearchedIssues",
     "groupSearchedIssues",
+    "totalSearchedIssues",
     "listSearchFields",
     "listSearchNames",
     // The map of a search reads as a search does.

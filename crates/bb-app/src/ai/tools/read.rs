@@ -6,7 +6,8 @@ use bb_core::id::{ProjectId, UserId};
 use serde_json::Value;
 
 use super::inputs::{
-    GetIssueInput, GetMyWorkInput, ListProjectsInput, SearchIssuesInput, limit_within,
+    GetIssueInput, GetMyWorkInput, ListProjectsInput, SearchIssuesInput, SearchTotalsInput,
+    limit_within,
 };
 use super::preview::proposer;
 use super::registry::{Boxed, Run};
@@ -17,7 +18,10 @@ use crate::auth::{AppError, AuthStore, Ctx};
 use crate::history::{HistoryQuery, history};
 use crate::issues::{IssueQuery, IssueView, issue};
 use crate::projects::{ProjectsQuery, projects};
-use crate::search::{SearchQuery, SearchScope, search_page_within};
+use crate::search::{
+    GroupOrder, SearchQuery, SearchScope, SearchTotalsQuery, search_page_within,
+    search_totals_within, totals_list,
+};
 use bb_core::ErrorCode;
 use bb_core::history::HistoryTab;
 
@@ -212,6 +216,50 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(parts)
     }
 
+    /// `search_totals`: the totals the person's own route answers (M10-Q20), without what is kept
+    /// from AI.
+    pub(super) async fn tool_search_totals(
+        &self,
+        run: &Run<'_>,
+        input: SearchTotalsInput,
+    ) -> Result<Vec<Part>, AppError> {
+        let mut query = SearchTotalsQuery {
+            session_token: run.token.to_owned(),
+            text: input.query,
+            scope: SearchScope::Everywhere,
+            by: input.group_by,
+            sums: input.sums,
+            order: GroupOrder::Key,
+            cursor: None,
+        };
+        // The cursor is sealed for the person and the totals, like that of the route.
+        let list = totals_list(run.actor.person.id, &query);
+        query.cursor = input
+            .cursor
+            .as_deref()
+            .map(|cursor| {
+                crate::seal::open_cursor(&list, cursor)
+                    .ok_or(AppError::Refused(ErrorCode::BadCursor))
+            })
+            .transpose()?;
+        let totals = search_totals_within(self, run.actor, &query, run.withheld).await?;
+        let mut value = masked(&totals)?;
+        if let Some(next) = value.get_mut("next_cursor")
+            && let Some(position) = next.as_str()
+        {
+            let sealed = crate::seal::seal_cursor(&list, position).ok_or_else(|| {
+                AppError::Internal("no random bytes for the key of the seal".into())
+            })?;
+            *next = Value::String(sealed);
+        }
+        Ok(vec![Part {
+            name: "totals",
+            value,
+            author: AuthorKind::Member,
+            project: None,
+        }])
+    }
+
     /// `get_my_work`.
     pub(super) async fn tool_get_my_work(
         &self,
@@ -364,6 +412,17 @@ pub(super) fn search_issues<'a, S: AuthStore>(
     Box::pin(async move {
         let input: SearchIssuesInput = run.input()?;
         ctx.tool_search_issues(&run, &input).await
+    })
+}
+
+/// `search_totals`.
+pub(super) fn search_totals<'a, S: AuthStore>(
+    ctx: &'a Ctx<'_, S>,
+    run: Run<'a>,
+) -> Boxed<'a, Result<Vec<Part>, AppError>> {
+    Box::pin(async move {
+        let input: SearchTotalsInput = run.input()?;
+        ctx.tool_search_totals(&run, input).await
     })
 }
 

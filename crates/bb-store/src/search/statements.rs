@@ -2,7 +2,7 @@
 //! place of an issue in the order (to continue after it). All of them start from the same sight, so
 //! the count line and the groups always agree with the page.
 
-use bb_app::search::{GroupCount, GroupKey, SearchHit, SearchRequest};
+use bb_app::search::{GroupKey, SearchHit, SearchRequest};
 use bb_core::id::{ChoiceId, GroupId, IssueId, IssueTypeId, LabelId, ProjectId, TagId, UserId};
 use bb_core::issue::{Priority, StatusGroup};
 use bb_core::tags::IssueSight;
@@ -12,12 +12,11 @@ use bb_core::time::Minutes;
 use bb_core::time::range::LengthRange;
 use bb_searchlang::{MAX_CONTAINS_WORDS, MAX_SORT_KEYS};
 use sea_query::{
-    Alias, Cond, Expr, ExprTrait as _, Func, Iden, NullOrdering, Order, Query, SelectStatement,
-    UnionType, WithClause, WithQuery,
+    Alias, Cond, Expr, ExprTrait as _, Func, Iden, Query, SelectStatement, UnionType, WithClause,
+    WithQuery,
 };
 
-use super::order::{GroupValue, Grouping, IdOf, Key, Kind, SortValue};
-use super::source::Repeats;
+use super::order::{GroupValue, IdOf, Key, Kind, SortValue};
 use super::{CompileError, Compiler, Form};
 use crate::db::{Dialect, Row, Statement, StoredId as _};
 use crate::error::StoreError;
@@ -47,7 +46,7 @@ const SORT_COLUMNS: [&str; MAX_SORT_KEYS] = ["s0", "s1", "s2", "s3", "s4"];
 
 /// The name of the column that holds the nth sort value of a row.
 #[derive(Clone, Copy)]
-struct Sorted(usize);
+pub(super) struct Sorted(usize);
 
 impl Iden for Sorted {
     fn unquoted(&self) -> &'static str {
@@ -383,51 +382,6 @@ pub(crate) fn count_statement(
     Ok(finish(&compiler, select))
 }
 
-/// How many issues the search finds for each value of the field, the value in the column `s0`.
-/// An issue with several values counts in the group of each; one with none in the group without a
-/// value (the last).
-pub(crate) fn groups_statement(
-    request: &SearchRequest,
-    dialect: Dialect,
-    by: &str,
-) -> Result<(Built, GroupValue), CompileError> {
-    let compiler = Compiler::new(request, dialect);
-    let grouping = compiler.grouping(by)?;
-    let cond = found(&compiler)?;
-    let issue = || Expr::col((IssueRow::Table, IssueRow::Id));
-    match grouping {
-        Grouping::One(value, what) => {
-            let mut select = Query::select();
-            select
-                .expr_as(value, Sorted(0))
-                .expr_as(Func::count(Expr::col(sea_query::Asterisk)), Counted)
-                .from(IssueRow::Table)
-                .cond_where(cond)
-                .group_by_col(Sorted(0));
-            select.order_by_expr_with_nulls(Expr::col(Sorted(0)), Order::Asc, NullOrdering::Last);
-            Ok((finish(&compiler, select), what))
-        }
-        Grouping::Many { rows, value, what } => {
-            // Counting rows lets PostgreSQL count in its parallel workers, which it cannot do for
-            // distinct issues (a quarter of the time of the groups by *Assigned to*, M5-F169).
-            let counted = match rows.repeats() {
-                Repeats::Never => Func::count(Expr::col(sea_query::Asterisk)),
-                Repeats::Maybe => Func::count_distinct(issue()),
-            };
-            // The rows of the values of an issue, joined to it: an issue with none is one row with
-            // no value, the group without a value, so the issues are read once.
-            let mut select = Query::select();
-            select
-                .expr_as(value, Sorted(0))
-                .expr_as(counted, Counted)
-                .from(IssueRow::Table);
-            rows.join_to(&mut select);
-            select.cond_where(cond).group_by_col(Sorted(0));
-            Ok((finish(&compiler, select), what))
-        }
-    }
-}
-
 /// The issue of a row of a page.
 pub(crate) fn read_hit(row: &Row) -> Result<SearchHit, StoreError> {
     Ok(SearchHit {
@@ -456,16 +410,27 @@ pub(crate) fn read_count(row: &Row) -> Result<u64, StoreError> {
     u64::try_from(row.get::<i64>(Counted)?).map_err(|_| StoreError::Corrupt("a count"))
 }
 
-/// The key of a group from the value of its row.
-fn read_key(row: &Row, what: GroupValue) -> Result<GroupKey, StoreError> {
+/// The column a statement of groups holds the value of each group in.
+pub(super) const GROUP_COLUMN: Sorted = Sorted(0);
+
+/// The key of a group from the value of its row; none for a row of no set of people, which is
+/// no group (`GroupValue::People`).
+pub(super) fn read_key(row: &Row, what: GroupValue) -> Result<Option<GroupKey>, StoreError> {
     let corrupt = || StoreError::Corrupt("a group");
-    Ok(match what {
+    Ok(Some(match what {
         GroupValue::Text => row
             .get::<Option<String>>(Sorted(0))?
             .map_or(GroupKey::Empty, GroupKey::Text),
         GroupValue::Whole => row
             .get::<Option<i64>>(Sorted(0))?
             .map_or(GroupKey::Empty, GroupKey::Whole),
+        GroupValue::People => match row.get::<Option<i64>>(Sorted(0))? {
+            None => GroupKey::Empty,
+            Some(place) => match u32::try_from(place) {
+                Ok(place) => GroupKey::People(place),
+                Err(_) => return Ok(None),
+            },
+        },
         GroupValue::Length => match row.get::<Option<i64>>(Sorted(0))? {
             None => GroupKey::Empty,
             Some(from) => Minutes::try_from(from)
@@ -501,15 +466,7 @@ fn read_key(row: &Row, what: GroupValue) -> Result<GroupKey, StoreError> {
                 IdOf::Choice => GroupKey::Choice(ChoiceId::read(bytes)?),
             },
         },
-    })
-}
-
-/// A group and its count from a row of the groups statement.
-pub(crate) fn read_group(row: &Row, what: GroupValue) -> Result<GroupCount, StoreError> {
-    Ok(GroupCount {
-        key: read_key(row, what)?,
-        issues: read_count(row)?,
-    })
+    }))
 }
 
 /// The names of the columns of the probe: the stream, the word and how many rows it has.

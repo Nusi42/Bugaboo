@@ -395,6 +395,18 @@ mod tests {
     }
 
     #[test]
+    fn bad_example_a_total_of_a_search_without_the_reason_that_it_counts_only_what_is_seen() {
+        let found = messages(&fixture("bad", "totals-without-reason.json"), &[]);
+        assert_eq!(found.len(), 2, "{found:?}");
+        for name in ["`issues`", "`sum`"] {
+            assert!(
+                found.iter().any(|message| message.contains(name)),
+                "{name}: {found:?}"
+            );
+        }
+    }
+
+    #[test]
     fn good_example_a_count_of_what_the_viewer_may_see_is_named_with_its_reason() {
         let spec = fixture("good", "second-step-gap.json");
         assert!(

@@ -47,6 +47,7 @@ fn example(tool: Tool, ground: &Ground<'_>) -> Value {
     let issue = ground.issue;
     match tool {
         Tool::SearchIssues => json!({"query": ""}),
+        Tool::SearchTotals => json!({"query": "", "sums": ["count"]}),
         Tool::GetIssue
         | Tool::RelationMap
         | Tool::StartTimer

@@ -10,30 +10,17 @@
 //! A cursor holds only a position. Every filter and every permission comes from the request, every
 //! time, so a cursor can never widen what a person sees.
 
-use base64ct::{Base64UrlUnpadded, Encoding as _};
 use bb_core::ErrorCode;
 
 use crate::errors::ApiError;
-use crate::seal::{self, TAG_BYTES};
-
-/// The purpose the tag of a cursor is bound to, before the name of the list.
-const PURPOSE_PREFIX: &str = "cursor:";
-
-fn purpose_of(list: &str) -> String {
-    format!("{PURPOSE_PREFIX}{list}")
-}
 
 /// The cursor text for a page of `list` that ends at `position`.
 ///
 /// # Errors
 /// An internal error when the system has no random bytes for the key of the seal.
 pub(crate) fn seal(list: &str, position: &str) -> Result<String, ApiError> {
-    let tag = seal::process()
-        .and_then(|seal| seal.tag(&purpose_of(list), position.as_bytes()))
-        .ok_or_else(|| ApiError::internal(&"no random bytes for the key of the seal"))?;
-    let mut bytes = tag.to_vec();
-    bytes.extend_from_slice(position.as_bytes());
-    Ok(Base64UrlUnpadded::encode_string(&bytes))
+    bb_app::seal::seal_cursor(list, position)
+        .ok_or_else(|| ApiError::internal(&"no random bytes for the key of the seal"))
 }
 
 /// The position inside a cursor of `list`.
@@ -41,21 +28,17 @@ pub(crate) fn seal(list: &str, position: &str) -> Result<String, ApiError> {
 /// # Errors
 /// `request.bad-cursor` when the text is not a cursor this server made for this list.
 pub(crate) fn open(list: &str, cursor: &str) -> Result<String, ApiError> {
-    let bad = || ApiError::new(ErrorCode::BadCursor);
-    let bytes = Base64UrlUnpadded::decode_vec(cursor).map_err(|_| bad())?;
-    let (tag, position) = bytes.split_at_checked(TAG_BYTES).ok_or_else(bad)?;
-    let sealed = seal::process().is_some_and(|seal| seal.verify(&purpose_of(list), position, tag));
-    if !sealed {
-        return Err(bad());
-    }
-    String::from_utf8(position.to_vec()).map_err(|_| bad())
+    bb_app::seal::open_cursor(list, cursor).ok_or_else(|| ApiError::new(ErrorCode::BadCursor))
 }
 
 #[cfg(test)]
 mod tests {
+    use base64ct::{Base64UrlUnpadded, Encoding as _};
+    use bb_app::seal::cursor_purpose as purpose_of;
     use proptest::prelude::*;
 
     use super::*;
+    use crate::seal;
 
     const LIST: &str = "things";
 

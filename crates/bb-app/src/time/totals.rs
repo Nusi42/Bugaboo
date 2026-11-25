@@ -22,8 +22,8 @@ use serde::Serialize;
 use crate::access::{Actor, place_of_address};
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::search::{
-    FieldTarget, GroupKey, SearchRequest, SearchScope, Searchable, lengths_readable_in, stopped,
-    target_of,
+    FieldTarget, GroupBy, GroupKey, ReadableWhere, SearchRequest, SearchScope, Searchable,
+    SumAsked, TotalsAsked, lengths_readable_in, stopped, target_of,
 };
 
 /// Ask for the time of one issue.
@@ -169,18 +169,42 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The totals of the issues a search finds, for the reader the search was prepared for; none
     /// when it finds none.
     async fn totals_of(&self, request: &SearchRequest) -> Result<Option<Found>, AppError> {
-        let lengths = self
+        let lengths = [
+            FieldTarget::EstimatedTime,
+            FieldTarget::TimeLeft,
+            FieldTarget::TimeSpent,
+        ];
+        let asked = TotalsAsked {
+            by: None,
+            sums: lengths
+                .iter()
+                .map(|target| SumAsked {
+                    target: *target,
+                    readable: ReadableWhere::Everywhere,
+                })
+                .collect(),
+            all: true,
+        };
+        let totals = self
             .store()
-            .search_lengths(request)
+            .search_totals(request, &asked)
             .await
             .map_err(stopped)?;
-        if !lengths.found_any {
+        if totals.all.issues == 0 {
             return Ok(None);
         }
+        let minutes = |at: usize| {
+            totals
+                .all
+                .sums
+                .get(at)
+                .and_then(|sum| sum.sum)
+                .and_then(|sum| Minutes::try_from(sum).ok())
+        };
         Ok(Some(Found {
-            estimated: Summed::of(request, Field::EstimatedTime, lengths.estimated),
-            left: Summed::of(request, Field::TimeLeft, lengths.time_left),
-            spent: Summed::of(request, Field::TimeSpent, lengths.time_spent),
+            estimated: Summed::of(request, Field::EstimatedTime, minutes(0)),
+            left: Summed::of(request, Field::TimeLeft, minutes(1)),
+            spent: Summed::of(request, Field::TimeSpent, minutes(2)),
         }))
     }
 
@@ -195,11 +219,21 @@ impl<S: AuthStore> Ctx<'_, S> {
         let mut prepared = self
             .prepare_search(actor, &format!("under {key}"), SearchScope::Everywhere)
             .await?;
+        let by_project = TotalsAsked {
+            by: Some(GroupBy {
+                word: IssueField::Project.word().to_owned(),
+                people: Vec::new(),
+                page: None,
+            }),
+            sums: Vec::new(),
+            all: false,
+        };
         let projects: Vec<ProjectId> = self
             .store()
-            .search_groups(&prepared.request, IssueField::Project.word())
+            .search_totals(&prepared.request, &by_project)
             .await
             .map_err(stopped)?
+            .groups
             .into_iter()
             .filter_map(|group| match group.key {
                 GroupKey::Project(project) => Some(project),

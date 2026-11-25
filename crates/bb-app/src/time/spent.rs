@@ -1,7 +1,7 @@
 //! The port of time spent (ADR-0035, decision 4): how everything outside the module of time
 //! entries reads the minutes booked on issues. The store implements it; the issue's own time and
 //! the comparison of the timesheet with working hours read it. The totals over a search read the
-//! time spent with the other lengths, in the one statement of the search (`search_lengths`,
+//! time spent with the other lengths, in the one statement of the search (`search_totals`,
 //! ADR-0035, amendment M8).
 //!
 //! The port decides nothing: it reads only the issues the caller passes and one person's own

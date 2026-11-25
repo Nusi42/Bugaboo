@@ -45,6 +45,10 @@ use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::fields::Definition;
 
+mod sums;
+
+pub(crate) use sums::Summable;
+
 /// Where a search looks.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SearchScope {
@@ -406,16 +410,7 @@ pub(crate) fn lengths_readable_in(
     seen: &crate::projects::Leveled,
     projects: &[ProjectId],
 ) -> Vec<Searchable> {
-    let places: Vec<Place> = seen
-        .seen_places(None)
-        .into_iter()
-        .filter(|(chain, _)| {
-            chain
-                .last()
-                .is_some_and(|project| projects.contains(project))
-        })
-        .map(|(chain, held)| Place::of(chain, held))
-        .collect();
+    let places = places_in(seen, projects);
     let sources = Sources {
         statuses: Vec::new(),
         issue_types: Vec::new(),
@@ -426,6 +421,21 @@ pub(crate) fn lengths_readable_in(
         &sources,
         &[Field::EstimatedTime, Field::TimeLeft, Field::TimeSpent],
     )
+}
+
+/// The places of `projects` among those the person sees, with what they may do in each: the one
+/// way the places of some projects are made, for the lengths of the totals with the sub-issues and
+/// for the totals of a search.
+fn places_in(seen: &crate::projects::Leveled, projects: &[ProjectId]) -> Vec<Place> {
+    seen.seen_places(None)
+        .into_iter()
+        .filter(|(chain, _)| {
+            chain
+                .last()
+                .is_some_and(|project| projects.contains(project))
+        })
+        .map(|(chain, held)| Place::of(chain, held))
+        .collect()
 }
 
 /// The fields of the catalogue among `fields` that a search may use in these places: readable in

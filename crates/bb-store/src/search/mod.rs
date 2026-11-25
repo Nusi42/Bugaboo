@@ -18,16 +18,15 @@
 use std::cell::{Cell, RefCell};
 
 use bb_app::search::{
-    FieldTarget, GroupCount, GroupKey, LengthTotals, MapStep, SearchFailure, SearchHit,
-    SearchRequest, SearchStore, target_of,
+    FieldTarget, MapStep, SearchFailure, SearchHit, SearchRequest, SearchStore, Total, Totals,
+    TotalsAsked, target_of,
 };
 use bb_core::id::IssueId;
-use bb_core::issue::{Priority, StatusGroup};
 use sea_query::{CommonTableExpression, Cond, Expr, ExprTrait as _};
 
 use self::statements::{
-    Forms, SET_ROWS_AT_MOST, SortPlan, count_statement, groups_statement, page_statement,
-    place_statement, probe_statement, read_count, read_forms, read_group, read_hit, read_place,
+    Forms, SET_ROWS_AT_MOST, SortPlan, count_statement, page_statement, place_statement,
+    probe_statement, read_count, read_forms, read_hit, read_place,
 };
 use crate::auth::AuthStorage;
 use crate::db::{Dialect, Statement};
@@ -42,6 +41,7 @@ mod statements;
 pub(crate) use self::statements::seen_by;
 mod text;
 mod time;
+mod totals;
 mod values;
 
 /// Why a search cannot be compiled.
@@ -154,40 +154,6 @@ pub(crate) fn nothing() -> Cond {
 /// How long a search may run on the database (SEC-17, architecture §7 *Search limits*).
 pub(crate) const SEARCH_TIME: std::time::Duration = std::time::Duration::from_secs(2);
 
-/// The place of a word among all the words of its kind.
-fn place_in<T: PartialEq>(all: &[T], one: &T) -> i64 {
-    all.iter()
-        .position(|each| each == one)
-        .and_then(|place| i64::try_from(place).ok())
-        .unwrap_or(0)
-}
-
-/// The place of a group in the order: the group without a value last, a priority and a status group
-/// by the order of a list (`LIST_ORDER`, not the order that sorting and comparing use), the others
-/// by the bytes of their text or ID, or by the size of their number.
-fn group_order(group: &GroupCount) -> (bool, String, i64) {
-    match &group.key {
-        GroupKey::Empty => (true, String::new(), 0),
-        GroupKey::Whole(number) => (false, String::new(), *number),
-        GroupKey::Length(range) => (false, String::new(), i64::from(range.from)),
-        GroupKey::Text(text) => (false, text.clone(), 0),
-        GroupKey::Person(id) => (false, id.to_string(), 0),
-        GroupKey::Group(id) => (false, id.to_string(), 0),
-        GroupKey::Issue(id) => (false, id.to_string(), 0),
-        GroupKey::Project(id) => (false, id.to_string(), 0),
-        GroupKey::Tag(id) => (false, id.to_string(), 0),
-        GroupKey::Label(id) => (false, id.to_string(), 0),
-        GroupKey::IssueType(id) => (false, id.to_string(), 0),
-        GroupKey::Choice(id) => (false, id.to_string(), 0),
-        GroupKey::Priority(each) => (false, String::new(), place_in(&Priority::LIST_ORDER, each)),
-        GroupKey::StatusGroup(each) => (
-            false,
-            String::new(),
-            place_in(&StatusGroup::LIST_ORDER, each),
-        ),
-    }
-}
-
 pub(crate) fn failed(error: impl std::fmt::Display) -> SearchFailure {
     SearchFailure::Failed(error.to_string())
 }
@@ -283,41 +249,39 @@ impl SearchStore for AuthStorage {
             .map(Option::unwrap_or_default)
     }
 
-    async fn search_groups(
+    async fn search_totals(
         &self,
         request: &SearchRequest,
-        by: &str,
-    ) -> Result<Vec<GroupCount>, SearchFailure> {
-        let (built, what) =
-            groups_statement(request, self.database().dialect(), by).map_err(failed)?;
-        let rows = self
-            .database()
-            .fetch_all_within(&built, SEARCH_TIME)
-            .await
-            .map_err(stopped)?;
-        let mut groups: Vec<GroupCount> = rows
-            .iter()
-            .map(|row| read_group(row, what))
-            .collect::<Result<_, _>>()
+        asked: &TotalsAsked,
+    ) -> Result<Totals, SearchFailure> {
+        let database = self.database();
+        let plan = totals::totals_statements(request, database.dialect(), asked).map_err(failed)?;
+        let sums = asked.sums.len();
+        let (groups, outside, read) = match &plan.groups {
+            Some((built, what)) => {
+                let rows = database
+                    .fetch_all_within(built, SEARCH_TIME)
+                    .await
+                    .map_err(stopped)?;
+                let (groups, outside) = totals::read_groups(&rows, *what, sums).map_err(failed)?;
+                (groups, outside, rows.len())
+            }
+            None => (Vec::new(), Total::default(), 0),
+        };
+        // The total of all is read after the groups: a first page that holds every group adds up to
+        // it without its statement.
+        let all = match &plan.all {
+            Some(built) if plan.reads_all(read) => Some(
+                database
+                    .fetch_all_within(built, SEARCH_TIME)
+                    .await
+                    .map_err(stopped)?,
+            ),
+            _ => None,
+        };
+        let all = totals::read_all(&plan, all.as_deref(), (&groups, &outside, read), sums)
             .map_err(failed)?;
-        // The groups of a field with many values come from two reads put together, so they are
-        // put in order here: by their value, the group without a value last.
-        groups.sort_by_cached_key(group_order);
-        Ok(groups)
-    }
-
-    async fn search_lengths(&self, request: &SearchRequest) -> Result<LengthTotals, SearchFailure> {
-        let built = spent::lengths_statement(request, self.database().dialect()).map_err(failed)?;
-        let rows = self
-            .database()
-            .fetch_all_within(&built, SEARCH_TIME)
-            .await
-            .map_err(stopped)?;
-        rows.first()
-            .map(spent::read_lengths)
-            .transpose()
-            .map_err(failed)
-            .map(Option::unwrap_or_default)
+        Ok(totals::totals_of(groups, all))
     }
 }
 
@@ -353,3 +317,5 @@ mod tests_streams;
 mod tests_time;
 #[cfg(test)]
 mod tests_time_spent;
+#[cfg(test)]
+mod tests_totals;

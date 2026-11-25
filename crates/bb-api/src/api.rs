@@ -97,6 +97,7 @@ mod roles;
 mod runs;
 mod saved_searches;
 mod search;
+mod search_totals;
 mod second_step_gap;
 mod settings;
 mod several_agents;

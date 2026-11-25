@@ -6,7 +6,7 @@ import { utcDayFromToday } from "./reads.ts";
 import { type Context, type Scenario } from "./scenarios.ts";
 
 // The scenarios of the timeline on the large dataset (M8 WP-12, PLAN-01, PLAN-12, PERF-01),
-// registered in the list of `scenarios.ts`, which spreads this one. Their data is made by the large
+// registered in the list of `scenarios.ts` with those of the totals (`totals-scenarios.ts`). Their data is made by the large
 // dataset itself: a share of the issues of the biggest project has a start date, a due date and an
 // estimate (`large.datedPercent` of `tools/dev/sample.json`). Beside them, the relation map of an
 // issue (ISS-16), walked through the relations and the parents the large dataset makes.

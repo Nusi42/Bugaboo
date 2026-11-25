@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use bb_core::id::UserId;
 use bb_core::id::{ChoiceId, FieldId, GroupId, IssueId, IssueTypeId, LabelId, ProjectId, TagId};
 use bb_core::issue::Issue;
-use bb_core::names::name_key;
+use bb_core::names::{name_key, same_name};
 use bb_core::own_fields::{DECIMAL_PARTS, FieldType};
 use bb_core::own_fields_value::{Cell, FieldValue, date_of};
 use bb_core::people_kinds::PeopleKind;
@@ -27,7 +27,7 @@ use bb_searchlang::{
     is_filter_text, parse_with, range_filter_text,
 };
 
-use super::names::NameCache;
+use super::names::{Matching, NameCache};
 use super::readable::{Looked, readable_of};
 use super::request::{GroupKey, Names, ProjectLink};
 use super::run::{GroupShown, ShownKey};
@@ -256,6 +256,17 @@ impl<S: AuthStore> Ctx<'_, S> {
         // searches are, and never out of budget: a group is one name.
         let mut cache = NameCache::default();
         cache.lift();
+        if let Some(kind) = target.and_then(FieldTarget::people_kind) {
+            let names: Vec<String> = keyed
+                .iter()
+                .filter_map(|(key, _)| match key {
+                    ShownKey::Person(PersonRef::Name { name, .. }) => Some(name.clone()),
+                    _ => None,
+                })
+                .collect();
+            self.people_named_at_once((actor, viewer), kind, &names, &mut cache)
+                .await?;
+        }
         let mut groups = Vec::with_capacity(keyed.len());
         for (key, count) in keyed {
             let wanted = self
@@ -448,8 +459,76 @@ impl<S: AuthStore> Ctx<'_, S> {
                 value: Asked::Range(*range),
                 thing: Thing::Plain,
             }),
-            GroupKey::Empty | GroupKey::Person(_) | GroupKey::Tag(_) | GroupKey::Label(_) => None,
+            GroupKey::Empty
+            | GroupKey::Person(_)
+            | GroupKey::People(_)
+            | GroupKey::Tag(_)
+            | GroupKey::Label(_) => None,
         })
+    }
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// Resolves the names of many people of one kind at once into `cache` (the groups of a search
+    /// by a field of people): one read for all of them by the one place that decides which people
+    /// a search may name (`people_matching`), where each name alone would be a read of its own
+    /// (PERF-05).
+    pub(crate) async fn people_named_at_once(
+        &self,
+        (actor, viewer): (&Actor, &Evaluation),
+        kind: PeopleKind,
+        names: &[String],
+        cache: &mut NameCache,
+    ) -> Result<(), AppError> {
+        let mut keys: Vec<String> = names
+            .iter()
+            .map(|name| name_key(name))
+            .filter(|key| {
+                !cache
+                    .names
+                    .people
+                    .iter()
+                    .any(|(of, known, _)| *of == kind && known == key)
+            })
+            .collect();
+        keys.sort();
+        keys.dedup();
+        if keys.is_empty() {
+            return Ok(());
+        }
+        let asked: Vec<&str> = keys.iter().map(String::as_str).collect();
+        let matched = self
+            .people_matching(actor, viewer, kind, &asked, Matching::Whole, usize::MAX)
+            .await?;
+        // The pages of one read are bounded for all the names together: when they ran out, the
+        // names from the last one read on are read one by one, each with the bound of one name.
+        let read_to = matched.cut.then(|| {
+            matched
+                .people
+                .iter()
+                .map(|person| name_key(&person.display_name))
+                .max()
+                .unwrap_or_default()
+        });
+        for key in keys {
+            let people = match &read_to {
+                Some(last) if key >= *last => self
+                    .people_matching(actor, viewer, kind, &[&key], Matching::Whole, usize::MAX)
+                    .await?
+                    .people
+                    .iter()
+                    .map(|person| person.id)
+                    .collect(),
+                _ => matched
+                    .people
+                    .iter()
+                    .filter(|person| same_name(&person.display_name, &key))
+                    .map(|person| person.id)
+                    .collect(),
+            };
+            cache.names.people.push((kind, key, people));
+        }
+        Ok(())
     }
 }
 

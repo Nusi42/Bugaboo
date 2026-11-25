@@ -14,7 +14,7 @@ use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::tags::IssueSight;
 use sea_query::{
-    Alias, Cond, DynIden, Expr, ExprTrait as _, Iden, IntoIden as _, JoinType, Query,
+    Alias, Cond, DynIden, Expr, ExprTrait as _, Func, Iden, IntoIden as _, JoinType, Query,
     SelectStatement,
 };
 
@@ -113,6 +113,20 @@ impl Subject {
                 let mut rows = rows.select();
                 rows.cond_where(condition(value.clone()));
                 Cond::all().add(Expr::exists(rows))
+            }
+        }
+    }
+
+    /// The one value of a field that holds at most one for an issue (an own field of numbers), as
+    /// an expression of the issue: `NULL` without a value. A sum adds it once for each issue.
+    pub(super) fn one_value(&self) -> Expr {
+        match self {
+            Self::Column(value) => value.clone(),
+            Self::Linked(rows, value) => {
+                let mut one = rows.select();
+                one.clear_selects();
+                one.expr(Func::max(value.clone()));
+                scalar(one)
             }
         }
     }

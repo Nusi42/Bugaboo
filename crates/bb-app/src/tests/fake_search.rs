@@ -9,7 +9,8 @@ use bb_core::agent_records::GivingState;
 use super::fake::{FakeStore, State};
 use super::fake_offers::reads;
 use crate::search::{
-    GroupCount, LengthTotals, MapStep, SearchFailure, SearchHit, SearchRequest, SearchStore, WorkOf,
+    GroupKey, GroupTotal, MapStep, SearchFailure, SearchHit, SearchRequest, SearchStore, Total,
+    Totals, TotalsAsked, WorkOf,
 };
 
 /// Whether the work of an agent reaches the issue at its moment: open work whose hand-over has not
@@ -102,19 +103,56 @@ impl SearchStore for FakeStore {
         Ok(u64::try_from(shared.search_hits.len()).unwrap_or(u64::MAX))
     }
 
-    async fn search_groups(
+    async fn search_totals(
         &self,
         request: &SearchRequest,
-        _by: &str,
-    ) -> Result<Vec<GroupCount>, SearchFailure> {
+        asked: &TotalsAsked,
+    ) -> Result<Totals, SearchFailure> {
         let mut shared = self.lock();
         shared.searches.push(request.clone());
-        Ok(shared.search_groups.clone())
+        shared.totals_asked.push(asked.clone());
+        let mut totals = shared.search_totals.clone();
+        // People of one set are one group, as the statement makes them.
+        if let Some(by) = asked.by.as_ref().filter(|by| !by.people.is_empty()) {
+            let mut merged: Vec<GroupTotal> = Vec::new();
+            for group in totals.groups {
+                let key = match group.key {
+                    GroupKey::Person(person) => by
+                        .people
+                        .iter()
+                        .position(|set| set.contains(&person))
+                        .and_then(|at| u32::try_from(at).ok())
+                        .map_or(GroupKey::Person(person), GroupKey::People),
+                    other => other,
+                };
+                match merged.iter_mut().find(|each| each.key == key) {
+                    Some(each) => each.total = each.total.plus(&group.total),
+                    None => merged.push(GroupTotal {
+                        key,
+                        total: group.total,
+                    }),
+                }
+            }
+            totals.groups = merged;
+        }
+        Ok(totals)
     }
+}
 
-    async fn search_lengths(&self, request: &SearchRequest) -> Result<LengthTotals, SearchFailure> {
-        let mut shared = self.lock();
-        shared.searches.push(request.clone());
-        Ok(shared.search_lengths)
-    }
+/// Totals of groups with these counts and no sums, all of them the sum of the groups.
+pub(crate) fn counted(groups: Vec<(GroupKey, u64)>) -> Totals {
+    let groups: Vec<GroupTotal> = groups
+        .into_iter()
+        .map(|(key, issues)| GroupTotal {
+            key,
+            total: Total {
+                issues,
+                sums: Vec::new(),
+            },
+        })
+        .collect();
+    let all = groups
+        .iter()
+        .fold(Total::default(), |all, group| all.plus(&group.total));
+    Totals { groups, all }
 }

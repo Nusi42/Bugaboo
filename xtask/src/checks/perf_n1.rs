@@ -14,13 +14,21 @@ const NOTIFICATIONS: &str = "crates/bb-server/src/tests/sign_in/perf_notificatio
 const LIST_LABELS: &str = "crates/bb-server/src/tests/sign_in/list_labels_http.rs";
 const SAVED_SEARCHES: &str = "crates/bb-server/src/tests/sign_in/saved_searches_http.rs";
 const TIME_ENTRIES: &str = "crates/bb-server/src/tests/sign_in/time_perf_http.rs";
+const TOTALS: &str = "crates/bb-server/src/tests/sign_in/search_totals_more_http.rs";
 const WORK_TIMES: &str = "crates/bb-server/src/tests/sign_in/work_times_perf.rs";
 
 /// The reads that must not grow with the number of rows.
-pub(super) const REQUIRED: [Required; 16] = [
+pub(super) const REQUIRED: [Required; 18] = [
     // A stretch of work days reads its days, periods, breaks and changed days once each, however long.
     Required::both("perf_05_a_stretch_of_forty_work_days_runs_as_many_statements_as_one_of_five")
         .within("crates/bb-server/src/tests/sign_in/working_hours_perf.rs"),
+    // The totals of a search by people, named or merged by how they are shown, read the people,
+    // their roles and their names once, however many people the groups hold; the groups of a list
+    // by people are one statement of the search, like its count.
+    Required::both("perf_05_totals_grouped_by_people_run_as_many_statements_for_forty_as_for_five")
+        .within(TOTALS),
+    Required::both("perf_05_the_groups_of_a_list_by_assigned_to_are_one_statement_like_the_count")
+        .within(TOTALS),
     // The history names a type and a label group from one read, not one read for each row.
     Required::anywhere("sec_03_the_history_names_a_type_and_a_label_only_where_the_reader_may_know_them"),
     Required::anywhere("sec_06_the_history_names_a_tag_only_where_the_reader_may_know_it"),

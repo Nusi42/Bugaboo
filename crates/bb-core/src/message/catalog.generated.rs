@@ -1067,6 +1067,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "ai-tool.search-issues",
         "Search the issues you may read. Write a search in the search language, such as title contains \"brakes\" or status group is not Done and priority is High, or plain words, which are looked for in the title, the description and the comments.",
     ),
+    (
+        "ai-tool.search-totals",
+        "Add up the issues a search finds, as you may see them: how many there are and, if asked, the sums of estimated time, time left, time spent (in minutes) and own number fields (number:<field>), for all of them and for each group of one field (group_by). A value counts only where you may read the field, and valued says how many issues gave one. People are never ranked: groups of people stand in the order of their names.",
+    ),
     ("ai-tool.start-timer", "Start your timer on an issue."),
     ("ai-tool.stop-timer", "Stop your timer."),
     (

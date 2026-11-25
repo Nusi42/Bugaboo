@@ -257,10 +257,10 @@ pub(crate) struct Shared {
     pub(crate) searches: Vec<crate::search::SearchRequest>,
     /// What a search finds, in order (`fake_search.rs`).
     pub(crate) search_hits: Vec<crate::search::SearchHit>,
-    /// The groups a search finds.
-    pub(crate) search_groups: Vec<crate::search::GroupCount>,
-    /// The totals of the lengths of time a search finds.
-    pub(crate) search_lengths: crate::search::LengthTotals,
+    /// The totals a search finds: its groups and all of them.
+    pub(crate) search_totals: crate::search::Totals,
+    /// What the totals were asked for, in order.
+    pub(crate) totals_asked: Vec<crate::search::TotalsAsked>,
     /// How a search fails, instead of finding anything.
     pub(crate) search_fails: Option<crate::search::SearchFailure>,
 }

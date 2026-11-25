@@ -56,6 +56,23 @@ pub struct SearchIssuesInput {
     pub limit: Option<Number>,
 }
 
+/// Add up the issues a search finds, as the person would see them (QRY-08).
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub struct SearchTotalsInput {
+    /// The search, in the search language; empty for every issue the person may read.
+    pub query: String,
+    /// The word of the field to group by (`priority`, `status`, `assigned to`, …); left out, only
+    /// the total of all the issues.
+    pub group_by: Option<String>,
+    /// The sums wanted besides the count: `estimated`, `time_left`, `time_spent` and
+    /// `number:<field>` for an own field of numbers.
+    #[serde(default)]
+    pub sums: Vec<String>,
+    /// Where the page of groups after the last one starts (`next_cursor` of the answer before).
+    pub cursor: Option<String>,
+}
+
 /// Read one issue.
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]

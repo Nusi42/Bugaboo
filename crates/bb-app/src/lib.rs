@@ -40,6 +40,7 @@ pub mod relations;
 pub mod roles;
 pub mod runs;
 pub mod saved_searches;
+pub mod seal;
 pub mod search;
 pub mod server_log;
 pub mod settings;

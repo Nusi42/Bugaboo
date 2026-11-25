@@ -55,6 +55,22 @@ impl AccountStore for FakeStore {
         }))
     }
 
+    async fn people_named(
+        &self,
+        keys: &[String],
+        whom: PeopleOf,
+        after: Option<&PeoplePosition>,
+        limit: u64,
+    ) -> Result<Vec<KnownPerson>, FakeError> {
+        Ok(self
+            .people_page(None, SearchIn::Names, whom, after, u64::MAX)
+            .await?
+            .into_iter()
+            .filter(|known| keys.contains(&bb_core::names::name_key(&known.person.display_name)))
+            .take(usize::try_from(limit).unwrap_or(usize::MAX))
+            .collect())
+    }
+
     async fn people_page(
         &self,
         search: Option<&str>,

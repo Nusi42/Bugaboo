@@ -49,10 +49,16 @@ reason = "The payload of the job that answers a sign-up holds the address the pe
 # read, or a read in another function, is a finding. The reason says why the read is right.
 
 [[read]]
+file = "crates/bb-app/src/search/group_filter.rs"
+function = "people_named_at_once"
+reads = 2
+reason = "The names of the groups of people of a search are turned into IDs by people_matching, and each person found is put with its name by the same rule (same_name); the last name read says from which name on the names are read one by one when the pages ran out. No name is shown or kept, and who may be named is decided before (names_other_people)."
+
+[[read]]
 file = "crates/bb-app/src/search/names.rs"
 function = "people_matching"
-reads = 3
-reason = "A search compares the name typed in it with the name of a candidate by the one rule of the same name, to turn the name into an ID before the statement is made; no name is shown or kept. Who may be named is decided before (names_other_people)."
+reads = 2
+reason = "A search compares the names typed in it (one, or the names of the groups of a search at once) with the name of a candidate by the one rule of the same name, to turn the names into IDs before the statement is made; no name is shown or kept. Who may be named is decided before (names_other_people)."
 
 [[read]]
 file = "crates/bb-app/src/search/names/suggest.rs"

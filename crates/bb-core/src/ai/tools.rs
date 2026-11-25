@@ -55,6 +55,8 @@ words! {
     pub enum Tool {
         /// Search the issues the person may read.
         SearchIssues => "search_issues",
+        /// Add up the issues a search finds: counts and sums, grouped by one field (QRY-08).
+        SearchTotals => "search_totals",
         /// Read one issue.
         GetIssue => "get_issue",
         /// List the projects the person may see.

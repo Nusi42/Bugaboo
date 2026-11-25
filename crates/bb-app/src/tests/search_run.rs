@@ -486,7 +486,7 @@ async fn perf_n1_a_page_of_forty_reads_as_much_as_a_page_of_five() -> Outcome {
 
 #[tokio::test]
 async fn qry_05_a_group_of_people_is_shown_through_the_person_ref_of_the_viewer() -> Outcome {
-    use crate::search::{GroupCount, GroupKey, SearchGroupsQuery, search_groups};
+    use crate::search::{GroupKey, SearchGroupsQuery, search_groups};
 
     let world = World::new().await?;
     a_project(&world, "OPEN").await?;
@@ -494,16 +494,10 @@ async fn qry_05_a_group_of_people_is_shown_through_the_person_ref_of_the_viewer(
         .person("bob@example.test")
         .await
         .map_err(|e| format!("{e:?}"))?;
-    world.store.lock().search_groups = vec![
-        GroupCount {
-            key: GroupKey::Person(bob.person.id),
-            issues: 2,
-        },
-        GroupCount {
-            key: GroupKey::Empty,
-            issues: 1,
-        },
-    ];
+    world.store.lock().search_totals = super::fake_search::counted(vec![
+        (GroupKey::Person(bob.person.id), 2),
+        (GroupKey::Empty, 1),
+    ]);
     let groups = search_groups(
         &world.ctx(),
         SearchGroupsQuery {

@@ -181,8 +181,9 @@ use crate::saved_searches::{
 };
 use crate::search::{
     NameChoices, NameChoicesQuery, ReadableFieldsQuery, SearchCount, SearchCountQuery,
-    SearchFields, SearchGroups, SearchGroupsQuery, SearchPage, SearchQuery, SearcherQuery,
-    name_choices, readable_fields, search, search_count, search_groups, searcher,
+    SearchFields, SearchGroups, SearchGroupsQuery, SearchPage, SearchQuery, SearchTotals,
+    SearchTotalsQuery, SearcherQuery, name_choices, readable_fields, search, search_count,
+    search_groups, search_totals, searcher,
 };
 use crate::settings::{
     ChangeSetting, DocumentImagesQuery, ImageHosts, ImageHostsQuery, LockSetting, ResetSetting,

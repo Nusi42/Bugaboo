@@ -21,7 +21,9 @@ bb-core = { path = "../bb-core" }
 bb-markdown = { path = "../bb-markdown" }
 bb-policy = { path = "../bb-policy" }
 bb-searchlang = { path = "../bb-searchlang", features = ["round-trip-guard"] }
+base64ct = { workspace = true }
 getrandom = { workspace = true }
+hmac = { workspace = true }
 jiff = { workspace = true, features = ["tzdb-bundle-always"] }
 regex = { workspace = true }
 serde = { workspace = true }
@@ -33,7 +35,6 @@ zeroize = { workspace = true }
 zip = { workspace = true }
 
 [dev-dependencies]
-base64ct = { workspace = true }
 bb-dev-words = { path = "../bb-dev-words" }
 # Predictable IDs for the property tests (`SequentialIds`).
 bb-core = { path = "../bb-core", features = ["fake-ids"] }

@@ -4,7 +4,7 @@
 //! and the totals count the time of the issues the reader sees only.
 
 use bb_app::ports::ChangeStore;
-use bb_app::search::{FieldTarget, GroupKey, SearchStore as _, Searchable};
+use bb_app::search::{FieldTarget, GroupKey, Searchable};
 use bb_app::time::TimeStore as _;
 use bb_core::id::{IssueId, TimeEntryId};
 use bb_core::time::Minutes;

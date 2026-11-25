@@ -5199,6 +5199,27 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/search/totals": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * The totals of a search: the count and the sums asked for, of each group of one field and of all
+     *     the issues together. A total counts only the issues the person may read and a value only where
+     *     they may read its field; people stand in the order of their names, never of their size.
+     */
+    post: operations["totalSearchedIssues"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/settings": {
     parameters: {
       query?: never;
@@ -12471,6 +12492,86 @@ export interface components {
      * @enum {string}
      */
     SearchSet: "mine" | "shared";
+    /** @description One sum of a total. */
+    SearchSumBody: {
+      /**
+       * @description The sum: whole minutes for a length and the count for `count`; for an own field a value in
+       *     the form of the field (a decimal as text). Null when no issue gave a value the person may
+       *     read.
+       */
+      value: unknown;
+      /**
+       * Format: int64
+       * @description How many issues gave a value the person may read ("12 h over 9 of 14 issues").
+       */
+      valued: number;
+    };
+    /** @description The total of all the issues the search finds. */
+    SearchTotalBody: {
+      /**
+       * Format: int64
+       * @description How many issues the person may read the search finds; an issue in several groups counts
+       *     once.
+       */
+      issues: number;
+      /** @description The sums, in the order of `sums` of the answer. */
+      sums: components["schemas"]["SearchSumBody"][];
+    };
+    /** @description The total of one group. */
+    SearchTotalRowBody: {
+      /**
+       * @description The filter that selects the issues of the group, as search text; null when the group has
+       *     no name the person may use.
+       */
+      filter: string | null;
+      /**
+       * Format: int64
+       * @description How many issues the search finds in it.
+       */
+      issues: number;
+      /** @description What the group is; a person as the person asking may see them. */
+      key: components["schemas"]["SearchGroupKeyBody"];
+      /** @description The name the group is shown by; null when it has none the person may use. */
+      name: string | null;
+      /** @description The sums, in the order of `sums` of the answer. */
+      sums: components["schemas"]["SearchSumBody"][];
+    };
+    /** @description The totals of a search. */
+    SearchTotalsAnswer: {
+      /** @description All the issues together. */
+      all: components["schemas"]["SearchTotalBody"];
+      /** @description A page of the groups, in the order asked for; empty without `by`. */
+      groups: components["schemas"]["SearchTotalRowBody"][];
+      /** @description The cursor of the next page of groups; null on the last page. */
+      next_cursor: string | null;
+      /** @description The words of the sums, in the order of the sums of every row. */
+      sums: string[];
+    };
+    /** @description Ask for the totals of a search. */
+    SearchTotalsBody: {
+      /**
+       * @description The word of the field to group by (any field *Group by* takes); left out, only the total of
+       *     all the issues.
+       */
+      by?: string | null;
+      /** @description Where the next page of groups starts (`next_cursor` of the answer before). */
+      cursor?: string | null;
+      /** @description How the groups are ordered. */
+      order?: components["schemas"]["TotalsOrderBody"];
+      /**
+       * @description The search, as text of the search language; left out or empty, every issue the person may
+       *     read.
+       */
+      q?: string | null;
+      /**
+       * @description The sums wanted, in the order the answer gives them: `count`, `estimated`, `time_left`,
+       *     `time_spent` and `number:<field>` for an own field of numbers (at most eight besides
+       *     `count`). A field the person may read nowhere is refused like one that does not exist.
+       */
+      sums?: string[];
+      /** @description The ID of a project: the search looks in it and the projects inside it that the person sees. */
+      within?: string | null;
+    };
     /** @description Which ways there are to finish signing in. */
     SecondStepBody: {
       /** @description A backup code (only with a code app). */
@@ -13610,6 +13711,11 @@ export interface components {
        */
       worked: number;
     };
+    /**
+     * @description How the groups are ordered.
+     * @enum {string}
+     */
+    TotalsOrderBody: "key" | "count";
     /** @description What *Try it* found. */
     TriedBody: {
       /** @description The status changes from there, each with the answer for the person. */
@@ -24866,6 +24972,37 @@ export interface operations {
       304: components["responses"]["NotModified"];
       400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  totalSearchedIssues: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SearchTotalsBody"];
+      };
+    };
+    responses: {
+      /** @description The totals. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchTotalsAnswer"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];
       503: components["responses"]["Unavailable"];

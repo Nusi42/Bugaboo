@@ -5,20 +5,13 @@
 //! The worked-out *Time left* ([`time_left`]) is built on it: the second place of the rule of
 //! `bb_core::time::left`, the approved pair of coding-standards §1, held to it by the vectors of
 //! `tools/testdata/time-left.json` and the test `time_03_the_compiled_time_left_matches_the_vectors`.
-//! The totals of the lengths of a search ([`lengths_statement`]) sum the estimate, the time left and
-//! the time spent, reading each issue once.
+//! The totals of a search (`totals.rs`) sum the estimate, the time left and the time spent through
+//! the same expressions, reading each issue once.
 
-use bb_app::search::{FieldTarget, LengthTotals, SearchRequest};
-use bb_core::fields::Field;
-use bb_core::time::Minutes;
-use sea_query::{CaseStatement, Expr, ExprTrait as _, Func, Iden, Query};
+use sea_query::{CaseStatement, Expr, ExprTrait as _, Func, Query};
 
 use super::order::bigint;
-use super::source::Subject;
-use super::statements::{Built, finish, found};
-use super::{CompileError, Compiler, scalar};
-use crate::db::{Dialect, Row};
-use crate::error::StoreError;
+use super::scalar;
 use crate::schema::{IssueRow, TimeEntryRow};
 
 /// The sum of the lengths of the time entries a statement reads, in whole minutes (`NULL` when it
@@ -65,80 +58,4 @@ pub(crate) fn time_left() -> Expr {
             Expr::val(0_i64),
         ]))
         .into()
-}
-
-/// The names of the columns of the totals.
-#[derive(Clone, Copy)]
-enum Total {
-    Found,
-    Estimated,
-    Left,
-    Spent,
-}
-
-impl Iden for Total {
-    fn unquoted(&self) -> &'static str {
-        match self {
-            Self::Found => "found",
-            Self::Estimated => "estimated",
-            Self::Left => "time_left",
-            Self::Spent => "time_spent",
-        }
-    }
-}
-
-impl Compiler<'_> {
-    /// The sum of a length of the issues of the statement, by the word of its field; `NULL` for a
-    /// field that is not among the readable ones, which is never summed.
-    fn summed(&self, field: Field) -> Expr {
-        match self.target(&field.search_word()) {
-            Ok(
-                target @ (FieldTarget::EstimatedTime
-                | FieldTarget::TimeLeft
-                | FieldTarget::TimeSpent),
-            ) => match self.subject_of(target).0 {
-                Subject::Column(value) => bigint(Func::sum(value).into()),
-                Subject::Linked(..) => Expr::null(),
-            },
-            _ => Expr::null(),
-        }
-    }
-}
-
-/// Whether the search finds any issue, and the sums of *Estimated time*, *Time left* and *Time
-/// spent* of the issues it finds: one statement, from the same sight and filter as the page. The
-/// minutes spent are summed with the time left from the same row, so the totals of a big project
-/// read each of its issues once, not once for the lengths and again for the time entries.
-pub(crate) fn lengths_statement(
-    request: &SearchRequest,
-    dialect: Dialect,
-) -> Result<Built, CompileError> {
-    let compiler = Compiler::new(request, dialect);
-    let mut select = Query::select();
-    select
-        .expr_as(
-            Expr::case(Func::count(Expr::col(sea_query::Asterisk)).gt(0), 1_i64).finally(0_i64),
-            Total::Found,
-        )
-        .expr_as(compiler.summed(Field::EstimatedTime), Total::Estimated)
-        .expr_as(compiler.summed(Field::TimeLeft), Total::Left)
-        .expr_as(compiler.summed(Field::TimeSpent), Total::Spent)
-        .from(IssueRow::Table)
-        .cond_where(found(&compiler)?);
-    Ok(finish(&compiler, select))
-}
-
-/// The totals from the row of [`lengths_statement`].
-pub(crate) fn read_lengths(row: &Row) -> Result<LengthTotals, StoreError> {
-    let minutes = |column: Total| -> Result<Option<Minutes>, StoreError> {
-        row.get::<Option<i64>>(column)?
-            .map(|sum| Minutes::try_from(sum).map_err(|_| StoreError::Corrupt("a total")))
-            .transpose()
-    };
-    Ok(LengthTotals {
-        found_any: row.get::<i64>(Total::Found)? > 0,
-        estimated: minutes(Total::Estimated)?,
-        time_left: minutes(Total::Left)?,
-        time_spent: minutes(Total::Spent)?,
-    })
 }

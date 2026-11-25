@@ -5,7 +5,7 @@
 
 use bb_app::issues::IssueStore as _;
 use bb_app::ports::ChangeStore;
-use bb_app::search::{SearchRequest, SearchStore as _};
+use bb_app::search::SearchRequest;
 use bb_app::time::TimeStore as _;
 use bb_app::time::spent::TimeSpentStore as _;
 use bb_core::id::{IssueId, TimeEntryId, UserId};

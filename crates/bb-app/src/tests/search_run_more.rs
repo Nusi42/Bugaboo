@@ -147,22 +147,16 @@ async fn iss_13_a_hidden_long_text_field_never_finds_an_issue() -> Outcome {
 
 #[tokio::test]
 async fn qry_05_over_the_cap_the_groups_are_cut_but_the_group_without_a_value_stays() -> Outcome {
-    use crate::search::{GroupCount, GroupKey, SearchGroupsQuery, ShownKey, search_groups};
+    use crate::search::{GroupKey, SearchGroupsQuery, ShownKey, search_groups};
 
     let world = World::new().await?;
     a_project(&world, "OPEN").await?;
     // 205 values and the issues without one, which the store puts last.
-    let mut counted: Vec<GroupCount> = (0..205)
-        .map(|number| GroupCount {
-            key: GroupKey::Text(format!("value{number:03}")),
-            issues: 2,
-        })
+    let mut counted: Vec<(GroupKey, u64)> = (0..205)
+        .map(|number| (GroupKey::Text(format!("value{number:03}")), 2))
         .collect();
-    counted.push(GroupCount {
-        key: GroupKey::Empty,
-        issues: 7,
-    });
-    world.store.lock().search_groups = counted;
+    counted.push((GroupKey::Empty, 7));
+    world.store.lock().search_totals = super::fake_search::counted(counted);
     let asked = |by: &str| SearchGroupsQuery {
         session_token: token(&world),
         text: String::new(),
@@ -183,7 +177,7 @@ async fn qry_05_over_the_cap_the_groups_are_cut_but_the_group_without_a_value_st
         matches!(&cut.groups[198].key, ShownKey::Other(GroupKey::Text(text)) if text == "value198")
     );
     // Exactly at the cap nothing is cut.
-    world.store.lock().search_groups.truncate(200);
+    world.store.lock().search_totals.groups.truncate(200);
     let whole = search_groups(&world.ctx(), asked("title"))
         .await
         .map_err(|error| format!("{error:?}"))?

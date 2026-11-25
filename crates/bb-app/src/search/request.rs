@@ -11,14 +11,13 @@ use bb_core::issue::{Issue, Priority, StatusGroup};
 use bb_core::people_kinds::PeopleKind;
 use bb_core::project::ShortName;
 use bb_core::tags::IssueSight;
-use bb_core::time::Minutes;
 use bb_core::time::day::FirstDay;
 use bb_core::time::range::LengthRange;
 use bb_searchlang::CheckedSearch;
 use jiff::Timestamp;
 use jiff::tz::TimeZone;
 
-use super::target::Searchable;
+use super::target::{FieldTarget, Searchable};
 use crate::issues::IssueStore;
 
 /// The texts of an issue that a bare `contains` leaves out (AI-03): the title and the description
@@ -228,15 +227,75 @@ pub enum GroupKey {
     /// A range of lengths of time (*Estimated time*, *Time left*, *Time spent*): a length is
     /// grouped by its range, never by its own minutes.
     Length(LengthRange),
+    /// The people of the set of this place in [`GroupBy::people`], as one group: people the
+    /// reader sees alike (by the same role, or as *Someone*) are one group (ADR-0022).
+    People(u32),
 }
 
-/// How many issues a group of a search holds.
-#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
-pub struct GroupCount {
-    /// What the group is.
-    pub key: GroupKey,
-    /// How many issues the search finds in it.
-    pub issues: u64,
+/// The place of a group in the order of the groups, by its key: the one order of groups, for the
+/// store (its order, and where a page of groups starts) and for the pages of the totals.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+pub struct GroupPlace {
+    /// The group without a value comes last.
+    pub last: bool,
+    /// The text of the key: a text as written, an ID as the hex of its bytes (the order the
+    /// databases keep IDs in).
+    pub text: String,
+    /// The number of the key: a number, the start of a range of lengths, the place of a priority or
+    /// a status group in the order of a list.
+    pub number: i64,
+}
+
+impl GroupKey {
+    /// The place of a group in the order of the groups: the group without a value last, a
+    /// priority and a status group by the order of a list (`LIST_ORDER`, not the order that
+    /// sorting and comparing use), a text and an ID by their bytes, a number by its size.
+    #[must_use]
+    pub fn place(&self) -> GroupPlace {
+        /// The place of a word among all the words of its kind.
+        fn place_in<T: PartialEq>(all: &[T], one: &T) -> i64 {
+            all.iter()
+                .position(|each| each == one)
+                .and_then(|place| i64::try_from(place).ok())
+                .unwrap_or(0)
+        }
+        /// The hex of the bytes of an ID, which sorts as the bytes do.
+        fn hex(bytes: [u8; 16]) -> String {
+            use std::fmt::Write as _;
+            bytes.iter().fold(String::new(), |mut hex, byte| {
+                let _ = write!(hex, "{byte:02x}");
+                hex
+            })
+        }
+        let (text, number) = match self {
+            Self::Empty => {
+                return GroupPlace {
+                    last: true,
+                    text: String::new(),
+                    number: 0,
+                };
+            }
+            Self::Whole(number) => (String::new(), *number),
+            Self::Length(range) => (String::new(), i64::from(range.from)),
+            Self::People(place) => (String::new(), i64::from(*place)),
+            Self::Text(text) => (text.clone(), 0),
+            Self::Person(id) => (hex(id.to_bytes()), 0),
+            Self::Group(id) => (hex(id.to_bytes()), 0),
+            Self::Issue(id) => (hex(id.to_bytes()), 0),
+            Self::Project(id) => (hex(id.to_bytes()), 0),
+            Self::Tag(id) => (hex(id.to_bytes()), 0),
+            Self::Label(id) => (hex(id.to_bytes()), 0),
+            Self::IssueType(id) => (hex(id.to_bytes()), 0),
+            Self::Choice(id) => (hex(id.to_bytes()), 0),
+            Self::Priority(each) => (String::new(), place_in(&Priority::LIST_ORDER, each)),
+            Self::StatusGroup(each) => (String::new(), place_in(&StatusGroup::LIST_ORDER, each)),
+        };
+        GroupPlace {
+            last: false,
+            text,
+            number,
+        }
+    }
 }
 
 /// Why a search did not run.
@@ -292,34 +351,144 @@ pub trait SearchStore: IssueStore + 'static {
         request: &SearchRequest,
     ) -> impl Future<Output = Result<u64, SearchFailure>> + Send;
 
-    /// How many issues each group of the field `by` holds, for the same search.
-    fn search_groups(
+    /// The totals of the issues the search finds (QRY-08, ADR-0050 decision 7): the count and the
+    /// sums asked for, of each group of the field `asked.by` (none without it) and of all the
+    /// issues together, with a value counted only where `asked` says the reader may read it. Like
+    /// `search_count`, it ignores `after` and `limit`.
+    fn search_totals(
         &self,
         request: &SearchRequest,
-        by: &str,
-    ) -> impl Future<Output = Result<Vec<GroupCount>, SearchFailure>> + Send;
-
-    /// The totals of *Estimated time*, *Time left* and *Time spent* of the issues the search finds,
-    /// in one statement that reads each issue once (ADR-0035, decision 4, amendment M8): only of the
-    /// fields among the readable ones of the request, like a filter. Like `search_count`, it ignores
-    /// `after` and `limit`.
-    fn search_lengths(
-        &self,
-        request: &SearchRequest,
-    ) -> impl Future<Output = Result<LengthTotals, SearchFailure>> + Send;
+        asked: &TotalsAsked,
+    ) -> impl Future<Output = Result<Totals, SearchFailure>> + Send;
 }
 
-/// The totals of the lengths of time of the issues a search finds, for the use case of the totals:
-/// none for a field that is not readable or that no issue found has a value of.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct LengthTotals {
-    /// Whether the search found any issue: a total of nothing is not shown. Never given to a
-    /// person (PRIV-13).
-    pub found_any: bool,
-    /// The sum of *Estimated time*.
-    pub estimated: Option<Minutes>,
-    /// The sum of *Time left*, each issue's typed or worked out.
-    pub time_left: Option<Minutes>,
-    /// The sum of *Time spent*: the minutes booked on the issues found, 0 for none.
-    pub time_spent: Option<Minutes>,
+/// The most sums one total may ask for, `count` not counted: the one limit of the totals, which
+/// the store sizes its columns by.
+pub const SUMS_MAX: usize = 8;
+
+/// What the totals of a search are asked for: the field the issues are grouped by, if any, the
+/// sums of each group, and whether the total of all of them is wanted.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct TotalsAsked {
+    /// The field the issues are grouped by; none for the total of all of them only.
+    pub by: Option<GroupBy>,
+    /// The sums, in the order the answer gives them; at most [`SUMS_MAX`].
+    pub sums: Vec<SumAsked>,
+    /// Whether the total of all the issues is wanted. Without it no statement is spent on it and
+    /// [`Totals::all`] counts nothing.
+    pub all: bool,
+}
+
+/// The field the issues of a total are grouped by.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GroupBy {
+    /// The word of the field, among the fields of the request.
+    pub word: String,
+    /// The people that are one group each set ([`GroupKey::People`]); empty while every person is
+    /// a group of their own.
+    pub people: Vec<Vec<UserId>>,
+    /// A page of the groups in the order of their places; none for every group. The store cuts
+    /// the page in the statement where the order of its values is the order of the places (texts,
+    /// numbers, lengths, IDs), and answers every group otherwise, which the caller pages.
+    pub page: Option<GroupPage>,
+}
+
+/// A page of the groups of a total.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GroupPage {
+    /// The place of the last group of the page before; none for the first page.
+    pub after: Option<GroupPlace>,
+    /// How many groups at most.
+    pub limit: u64,
+}
+
+/// One sum of a total: the field it adds up, and where the reader may read its values.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SumAsked {
+    /// The field: *Estimated time*, *Time left*, *Time spent* or an own field of numbers.
+    pub target: FieldTarget,
+    /// Where a value of the field counts.
+    pub readable: ReadableWhere,
+}
+
+/// Where the values of a summed field count (PRIV-13, SEC-04): the one answer of the use case,
+/// which the statement adds to each value.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ReadableWhere {
+    /// On every issue the search finds: the field is among the fields of the request, which are
+    /// readable everywhere it looks.
+    Everywhere,
+    /// Only on the issues of these places; nowhere when there are none.
+    In(Vec<FieldPlace>),
+}
+
+/// A project where the reader may read a field, and on which issue types.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FieldPlace {
+    /// The project.
+    pub project: ProjectId,
+    /// The issue types the reader may read the field on there; `None` for all of them.
+    pub types: Option<Vec<IssueTypeId>>,
+}
+
+/// The totals of a search: one row for each group, and one for all the issues together.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Totals {
+    /// The groups, in the order of their keys (the group without a value last); empty when the
+    /// totals were not grouped.
+    pub groups: Vec<GroupTotal>,
+    /// All the issues the search finds: an issue in several groups counts once. Nothing when it
+    /// was not asked for (`TotalsAsked::all`).
+    pub all: Total,
+}
+
+/// The total of one group.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct GroupTotal {
+    /// What the group is.
+    pub key: GroupKey,
+    /// Its total.
+    pub total: Total,
+}
+
+/// The count and the sums of some issues.
+#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize)]
+pub struct Total {
+    /// How many issues the search finds there.
+    pub issues: u64,
+    /// The sums, in the order they were asked for.
+    pub sums: Vec<Sum>,
+}
+
+/// One sum of a total, over the values the reader may read.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, serde::Serialize)]
+pub struct Sum {
+    /// The sum, in the unit of the field (whole minutes for a length, the stored number of an own
+    /// field); none when no issue gave a value.
+    pub sum: Option<i64>,
+    /// How many issues gave a value the reader may read.
+    pub valued: u64,
+}
+
+impl Total {
+    /// The total of two parts with no issue in common: the counts and the sums added.
+    #[must_use]
+    pub fn plus(&self, other: &Self) -> Self {
+        Self {
+            issues: self.issues.saturating_add(other.issues),
+            sums: (0..self.sums.len().max(other.sums.len()))
+                .map(|at| {
+                    let one = self.sums.get(at).copied().unwrap_or_default();
+                    let two = other.sums.get(at).copied().unwrap_or_default();
+                    Sum {
+                        sum: match (one.sum, two.sum) {
+                            (Some(one), Some(two)) => Some(one.saturating_add(two)),
+                            (one, two) => one.or(two),
+                        },
+                        valued: one.valued.saturating_add(two.valued),
+                    }
+                })
+                .collect(),
+        }
+    }
 }

@@ -190,6 +190,15 @@ pub trait AccountStore: ChangeStore + 'static {
             after: Option<&PeoplePosition>,
             limit: u64
         ) -> Vec<KnownPerson>;
+        /// People of `whom` whose names have one of these keys (`bb_core::names::name_key`), with
+        /// their standing, by name (then by ID), after the position `after`, at most `limit`: what
+        /// the names of a search stand for, one name or many at once.
+        fn people_named(
+            keys: &[String],
+            whom: PeopleOf,
+            after: Option<&PeoplePosition>,
+            limit: u64
+        ) -> Vec<KnownPerson>;
     }
 
     writes! {

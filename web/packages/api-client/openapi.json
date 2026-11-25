@@ -18854,6 +18854,57 @@
         "x-permission": "signed-in"
       }
     },
+    "/api/v1/search/totals": {
+      "post": {
+        "tags": ["search"],
+        "summary": "The totals of a search: the count and the sums asked for, of each group of one field and of all\nthe issues together. A total counts only the issues the person may read and a value only where\nthey may read its field; people stand in the order of their names, never of their size.",
+        "operationId": "totalSearchedIssues",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchTotalsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The totals.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchTotalsAnswer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/settings": {
       "get": {
         "tags": ["settings"],
@@ -34332,6 +34383,137 @@
         "description": "Which set of saved searches a list shows: the person's own, or the ones shared with them.",
         "enum": ["mine", "shared"]
       },
+      "SearchSumBody": {
+        "type": "object",
+        "description": "One sum of a total.",
+        "required": ["value", "valued"],
+        "properties": {
+          "value": {
+            "description": "The sum: whole minutes for a length and the count for `count`; for an own field a value in\nthe form of the field (a decimal as text). Null when no issue gave a value the person may\nread."
+          },
+          "valued": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many issues gave a value the person may read (\"12 h over 9 of 14 issues\").",
+            "minimum": 0
+          }
+        }
+      },
+      "SearchTotalBody": {
+        "type": "object",
+        "description": "The total of all the issues the search finds.",
+        "required": ["issues", "sums"],
+        "properties": {
+          "issues": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many issues the person may read the search finds; an issue in several groups counts\nonce.",
+            "minimum": 0
+          },
+          "sums": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchSumBody"
+            },
+            "description": "The sums, in the order of `sums` of the answer."
+          }
+        }
+      },
+      "SearchTotalRowBody": {
+        "type": "object",
+        "description": "The total of one group.",
+        "required": ["key", "issues", "filter", "name", "sums"],
+        "properties": {
+          "filter": {
+            "type": ["string", "null"],
+            "description": "The filter that selects the issues of the group, as search text; null when the group has\nno name the person may use."
+          },
+          "issues": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many issues the search finds in it.",
+            "minimum": 0
+          },
+          "key": {
+            "$ref": "#/components/schemas/SearchGroupKeyBody",
+            "description": "What the group is; a person as the person asking may see them."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "The name the group is shown by; null when it has none the person may use."
+          },
+          "sums": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchSumBody"
+            },
+            "description": "The sums, in the order of `sums` of the answer."
+          }
+        }
+      },
+      "SearchTotalsAnswer": {
+        "type": "object",
+        "description": "The totals of a search.",
+        "required": ["sums", "groups", "all", "next_cursor"],
+        "properties": {
+          "all": {
+            "$ref": "#/components/schemas/SearchTotalBody",
+            "description": "All the issues together."
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchTotalRowBody"
+            },
+            "description": "A page of the groups, in the order asked for; empty without `by`."
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next page of groups; null on the last page."
+          },
+          "sums": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The words of the sums, in the order of the sums of every row."
+          }
+        }
+      },
+      "SearchTotalsBody": {
+        "type": "object",
+        "description": "Ask for the totals of a search.",
+        "properties": {
+          "by": {
+            "type": ["string", "null"],
+            "description": "The word of the field to group by (any field *Group by* takes); left out, only the total of\nall the issues."
+          },
+          "cursor": {
+            "type": ["string", "null"],
+            "description": "Where the next page of groups starts (`next_cursor` of the answer before)."
+          },
+          "order": {
+            "$ref": "#/components/schemas/TotalsOrderBody",
+            "description": "How the groups are ordered."
+          },
+          "q": {
+            "type": ["string", "null"],
+            "description": "The search, as text of the search language; left out or empty, every issue the person may\nread."
+          },
+          "sums": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The sums wanted, in the order the answer gives them: `count`, `estimated`, `time_left`,\n`time_spent` and `number:<field>` for an own field of numbers (at most eight besides\n`count`). A field the person may read nowhere is refused like one that does not exist."
+          },
+          "within": {
+            "type": ["string", "null"],
+            "description": "The ID of a project: the search looks in it and the projects inside it that the person sees."
+          }
+        },
+        "additionalProperties": false
+      },
       "SecondStepBody": {
         "type": "object",
         "description": "Which ways there are to finish signing in.",
@@ -36405,6 +36587,11 @@
             "minimum": 0
           }
         }
+      },
+      "TotalsOrderBody": {
+        "type": "string",
+        "description": "How the groups are ordered.",
+        "enum": ["key", "count"]
       },
       "TriedBody": {
         "type": "object",

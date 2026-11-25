@@ -8,6 +8,7 @@ mod readable;
 mod request;
 mod run;
 mod target;
+mod totals;
 
 pub use bb_searchlang::{MAX_STEPS, Mistake, ROUND_TRIP_GUARD};
 pub use name_choices::{
@@ -19,12 +20,18 @@ pub(crate) use names::NameCache;
 pub use readable::{FieldName, ReadableFieldsQuery, SearchFields, SearchScope, readable_fields};
 pub(crate) use readable::{Looked, lengths_readable_in, readable_of, word_is_taken};
 pub use request::{
-    GroupCount, GroupKey, KeyedChoice, LengthTotals, MapStep, Names, OwnReach, ProjectLink,
-    SearchFailure, SearchHit, SearchRequest, SearchStore, UnknownName, WithheldText, WorkOf,
+    FieldPlace, GroupBy, GroupKey, GroupPage, GroupPlace, GroupTotal, KeyedChoice, MapStep, Names,
+    OwnReach, ProjectLink, ReadableWhere, SUMS_MAX, SearchFailure, SearchHit, SearchRequest,
+    SearchStore, Sum, SumAsked, Total, Totals, TotalsAsked, UnknownName, WithheldText, WorkOf,
+};
+pub use run::{
+    GroupShown, SearchCount, SearchCountQuery, SearchGroups, SearchGroupsQuery, SearchPage,
+    SearchQuery, SearcherQuery, ShownKey, search, search_count, search_groups, searcher,
 };
 pub(crate) use run::{Prepared, blocking_kinds, search_page, search_page_within, stopped};
-pub use run::{
-    SearchCount, SearchCountQuery, SearchGroups, SearchGroupsQuery, SearchPage, SearchQuery,
-    SearcherQuery, ShownKey, search, search_count, search_groups, searcher,
-};
 pub use target::{FieldTarget, Searchable, TextPlace, target_of};
+pub(crate) use totals::search_totals_within;
+pub use totals::{
+    GROUPS_PAGE, GroupOrder, GroupTotalShown, SearchTotals, SearchTotalsQuery, SumShown, SumWord,
+    TotalShown, search_totals, totals_list,
+};

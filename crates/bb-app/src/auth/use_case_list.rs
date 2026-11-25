@@ -220,6 +220,8 @@ macro_rules! each_use_case {
             search_count(SearchCountQuery) -> Authorized<SearchCount>;
             /// How many issues a search finds in each group of a field.
             search_groups(SearchGroupsQuery) -> Authorized<SearchGroups>;
+            /// The totals of a search, grouped by one field (QRY-08).
+            search_totals(SearchTotalsQuery) -> Authorized<SearchTotals>;
             /// The person who searches, by a session or an access key.
             searcher(SearcherQuery) -> bb_core::id::UserId;
             /// The fields the person may search by, where a search looks.

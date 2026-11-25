@@ -4,7 +4,7 @@
 //! the statement itself (the sight of ADR-0004) and in the fields they may search by, so a route
 //! needs a signed-in person and nothing more.
 
-use super::{Answer, Declared, Route, route};
+use super::{Answer, Declared, Route, route, route_reading};
 
 /// The rows of the search routes, next to [`super::ROUTES`].
 pub(super) const ROUTES: &[Route] = &[
@@ -19,6 +19,9 @@ pub(super) const ROUTES: &[Route] = &[
         Declared::SignedIn,
         Answer::NeverStored,
     ),
+    // Posted because the search, the field and the sums do not fit an address; it only reads.
+    // A posted answer is never kept anyway, so it needs no mark of its own.
+    route_reading("totalSearchedIssues", Declared::SignedIn, Answer::Ordinary),
     route("listSearchFields", Declared::SignedIn, Answer::NeverStored),
     route("listSearchNames", Declared::SignedIn, Answer::NeverStored),
 ];

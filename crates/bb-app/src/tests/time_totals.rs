@@ -18,7 +18,7 @@ use super::search_run::{asked, hit, issue_of};
 use super::world::{Outcome, World};
 use crate::auth::AppError;
 use crate::issues::{ChangeIssue, ChangedIssue, change_issue};
-use crate::search::{GroupCount, GroupKey, LengthTotals, search};
+use crate::search::{GroupKey, Sum, Total, search};
 use crate::time::totals::{IssueTimeQuery, ProjectTimeQuery, issue_time, project_time};
 
 const fn minutes(count: u32) -> Minutes {
@@ -51,16 +51,16 @@ async fn an_issue_with_sub_issues(world: &World) -> Result<IssueId, String> {
     an_entry(world, sub.id, 100).await?;
     let mut shared = world.store.lock();
     // The compiled search finds the sub-issue in the project of the issue.
-    shared.search_groups = vec![GroupCount {
-        key: GroupKey::Project(project),
-        issues: 1,
-    }];
+    shared.search_totals = super::fake_search::counted(vec![(GroupKey::Project(project), 1)]);
     shared.search_hits = vec![hit(sub)];
-    shared.search_lengths = LengthTotals {
-        found_any: true,
-        estimated: Some(minutes(600)),
-        time_left: Some(minutes(300)),
-        time_spent: Some(minutes(100)),
+    shared.search_totals.all = Total {
+        issues: 1,
+        sums: [600, 300, 100]
+            .map(|sum| Sum {
+                sum: Some(sum),
+                valued: 1,
+            })
+            .to_vec(),
     };
     shared.searches.clear();
     Ok(issue.id)
@@ -102,7 +102,7 @@ async fn time_03_an_issue_shows_its_own_numbers_and_the_totals_with_its_sub_issu
 async fn time_03_an_issue_without_sub_issues_has_no_totals() -> Outcome {
     let world = World::new().await?;
     let issue = an_issue_with_sub_issues(&world).await?;
-    world.store.lock().search_lengths = LengthTotals::default();
+    world.store.lock().search_totals.all = Total::default();
     let time = issue_time(
         &world.ctx(),
         IssueTimeQuery {

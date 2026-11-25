@@ -34,7 +34,14 @@ impl<S: AuthStore> Ctx<'_, S> {
             .find(|kind| !names_other_people(&viewer, *kind))
             .unwrap_or(OFFERED_KINDS[0]);
         let matched = self
-            .people_matching(actor, &viewer, kind, starting_with, Matching::Start, limit)
+            .people_matching(
+                actor,
+                &viewer,
+                kind,
+                &[starting_with],
+                Matching::Start,
+                limit,
+            )
             .await?;
         let mut names: Vec<String> = Vec::new();
         for person in matched.people {

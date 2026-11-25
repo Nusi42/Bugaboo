@@ -614,8 +614,7 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 
     /// The people of this name whom the viewer may name: themselves, or anybody when they are
-    /// shown people by name for the kind of the field (`names_other_people`). The store gives the
-    /// candidates whose names hold the words; the one rule of the same name decides.
+    /// shown people by name for the kind of the field (`names_other_people`).
     async fn people_named(
         &self,
         actor: &Actor,
@@ -624,7 +623,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         text: &str,
     ) -> Result<Vec<UserId>, AppError> {
         Ok(self
-            .people_matching(actor, viewer, kind, text, Matching::Whole, usize::MAX)
+            .people_matching(actor, viewer, kind, &[text], Matching::Whole, usize::MAX)
             .await?
             .people
             .into_iter()
@@ -632,18 +631,24 @@ impl<S: AuthStore> Ctx<'_, S> {
             .collect())
     }
 
-    /// The people whose names match, among those the viewer may name for the kind of the field.
-    /// The one place that decides which people a search may name, for running and checking it
-    /// (`Matching::Whole`) and for the names a suggestion offers (`Matching::Start`).
-    async fn people_matching(
+    /// The people whose names match one of `typed`, among those the viewer may name for the kind
+    /// of the field. The one place that decides which people a search may name, for running and
+    /// checking it (`Matching::Whole`: one name, or the names of the groups of a search at once)
+    /// and for the names a suggestion offers (`Matching::Start`: the start of one name).
+    pub(super) async fn people_matching(
         &self,
         actor: &Actor,
         viewer: &bb_policy::Evaluation,
         kind: PeopleKind,
-        text: &str,
+        typed: &[&str],
         matching: Matching,
         want: usize,
     ) -> Result<Matched, AppError> {
+        let holds = |person: &bb_core::person::Person| {
+            typed
+                .iter()
+                .any(|text| matching.holds(&person.display_name, text))
+        };
         if !names_other_people(viewer, kind) {
             let own = self
                 .store()
@@ -651,54 +656,55 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .await
                 .map_err(|error| internal::<S>(&error))?;
             return Ok(Matched {
-                people: own
-                    .filter(|person| matching.holds(&person.display_name, text))
-                    .into_iter()
-                    .collect(),
+                people: own.filter(|person| holds(person)).into_iter().collect(),
                 cut: false,
             });
         }
         let mut found: Vec<bb_core::person::Person> = Vec::new();
         let mut cut = false;
         let mut after = None;
+        let keys: Vec<String> = typed.iter().map(|text| name_key(text)).collect();
         // A short name may fit very many people; the pages read for one name are bounded, as
         // the length of a search is. The names a suggestion offers are the first `want` different
         // names that start with the words: the store gives them in the order of the names, and the
         // pages go on only while people of one name keep the list short.
-        let (look_at, per_page) = match matching {
-            Matching::Whole => (SearchIn::Names, PEOPLE_PER_NAME),
-            Matching::Start => (SearchIn::NameStarts, want as u64),
+        let per_page = match matching {
+            Matching::Whole => PEOPLE_PER_NAME.saturating_mul(keys.len() as u64),
+            Matching::Start => want as u64,
         };
         for read in 0..PEOPLE_PAGES_PER_NAME {
             // A switched-off person's name still finds their issues; a removed person has none.
-            let page: Vec<bb_core::person::Person> = self
-                .store()
-                .people_page(
-                    Some(text),
-                    look_at,
-                    PeopleOf::NotRemoved,
-                    after.as_ref(),
-                    per_page,
-                )
-                .await
-                .map_err(|error| internal::<S>(&error))?
-                .into_iter()
-                .map(|known| known.person)
-                .collect();
-            found.extend(
-                page.iter()
-                    .filter(|person| matching.holds(&person.display_name, text))
-                    .cloned(),
-            );
+            let page = match matching {
+                Matching::Whole => {
+                    self.store()
+                        .people_named(&keys, PeopleOf::NotRemoved, after.as_ref(), per_page)
+                        .await
+                }
+                Matching::Start => {
+                    self.store()
+                        .people_page(
+                            typed.first().copied(),
+                            SearchIn::NameStarts,
+                            PeopleOf::NotRemoved,
+                            after.as_ref(),
+                            per_page,
+                        )
+                        .await
+                }
+            }
+            .map_err(|error| internal::<S>(&error))?;
+            let page: Vec<bb_core::person::Person> =
+                page.into_iter().map(|known| known.person).collect();
+            found.extend(page.iter().filter(|person| holds(person)).cloned());
             match page.last() {
                 Some(last) if page.len() as u64 == per_page => {
-                    let mut keys: Vec<String> = found
+                    let mut names: Vec<String> = found
                         .iter()
                         .map(|person| name_key(&person.display_name))
                         .collect();
-                    keys.sort();
-                    keys.dedup();
-                    if matching == Matching::Start && keys.len() >= want {
+                    names.sort();
+                    names.dedup();
+                    if matching == Matching::Start && names.len() >= want {
                         break;
                     }
                     // The last page that may be read was full: there are people past it.
@@ -714,9 +720,9 @@ impl<S: AuthStore> Ctx<'_, S> {
 
 /// The people whose names match, and whether the pages that may be read for one name ended before
 /// the people did.
-struct Matched {
-    people: Vec<bb_core::person::Person>,
-    cut: bool,
+pub(super) struct Matched {
+    pub(super) people: Vec<bb_core::person::Person>,
+    pub(super) cut: bool,
 }
 
 /// The groups of status keys by status group, in the order of the groups.

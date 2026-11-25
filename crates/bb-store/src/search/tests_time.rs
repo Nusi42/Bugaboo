@@ -2,7 +2,8 @@
 //! hours and minutes, sorted, grouped in ranges, and summed over the issues the reader sees only,
 //! every level below an issue counted.
 
-use bb_app::search::{FieldTarget, GroupKey, LengthTotals, SearchStore as _, Searchable};
+use super::tests_totals::LengthTotals;
+use bb_app::search::{FieldTarget, GroupKey, Searchable};
 use bb_core::time::Minutes;
 use bb_core::time::range::LengthRange;
 use bb_searchlang::{Field, FieldKind};

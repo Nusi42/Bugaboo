@@ -15,14 +15,13 @@ use bb_core::id::{IssueId, ProjectId, UserId};
 use bb_core::paging::{Cut, page_len, read_len};
 use bb_core::tags::IssueSight;
 use bb_core::wording::Region;
-use bb_policy::{Authorized, Masked, PeopleContext, PersonRef, Place as Where};
+use bb_policy::{Authorized, Masked, PersonRef, Place as Where};
 use bb_searchlang::{Expr, Mistake, check, parse_with};
 use serde::Serialize;
 
 use super::names::status_groups;
 use super::readable::{Looked, SearchScope, readable_of};
 use super::request::{GroupKey, SearchFailure, SearchRequest, SearchStore, WithheldText};
-use super::target::{FieldTarget, target_of};
 use crate::access::Actor;
 use crate::ai::Withheld;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
@@ -110,7 +109,7 @@ pub struct SearchGroups {
 }
 
 /// The most groups one answer holds; a field with more values is searched by narrowing the search.
-const MAX_GROUPS: usize = 200;
+const MAX_GROUPS: usize = super::totals::GROUPS_PAGE;
 
 /// One group of a search, the thing it stands for shown as the person may see it (ADR-0022): a
 /// person as a `PersonRef`, everything else by its identity or word.
@@ -474,117 +473,47 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
     query: SearchGroupsQuery,
 ) -> Result<Authorized<SearchGroups>, AppError> {
     let actor = ctx.actor(&query.session_token).await?;
-    let prepared = ctx.prepare_search(&actor, &query.text, query.scope).await?;
-    if target_of(&prepared.looked.fields, &query.by).is_none() {
+    let mut prepared = ctx.prepare_search(&actor, &query.text, query.scope).await?;
+    // The groups of a list are by a field the person may search by (ADR-0022): a field of people
+    // whose names are hidden somewhere is refused here like a field that does not exist; only the
+    // totals group people by how they are shown (ADR-0050, decision 7).
+    if super::target::target_of(&prepared.looked.fields, &query.by).is_none() {
         return Err(AppError::Refused(ErrorCode::InvalidRequest));
     }
-    let mut found = ctx
-        .store()
-        .search_groups(&prepared.request, &query.by)
-        .await
-        .map_err(stopped)?;
+    let grouping = ctx
+        .grouping_of(&actor, &mut prepared, &query.by, None)
+        .await?;
+    let mut found: Vec<(ShownKey, u64)> = ctx
+        .group_counts(&prepared, &grouping)
+        .await?
+        .into_iter()
+        .map(|(key, total)| (key, total.issues))
+        .collect();
     // Over the cap the groups are cut, but the one for the issues without a value stays: it is how
     // many issues the field does not reach, and the answer says it cut the rest (`truncated`).
     let truncated = found.len() > MAX_GROUPS;
     if truncated {
         let none = found
             .iter()
-            .position(|group| group.key == GroupKey::Empty)
+            .position(|(key, _)| *key == ShownKey::Other(GroupKey::Empty))
             .map(|at| found.remove(at));
         found.truncate(MAX_GROUPS - usize::from(none.is_some()));
         found.extend(none);
     }
-    let organization = ctx.evaluation_of(&actor, Where::Organization).await?;
-    // The store names a group by identity; a person is shown as the viewer may see them.
-    let target = target_of(&prepared.looked.fields, &query.by);
-    let kind = target.and_then(FieldTarget::people_kind);
-    // A tag or a label is shown by its name, among those the person may know.
-    let tags = if found
-        .iter()
-        .any(|group| matches!(group.key, GroupKey::Tag(_)))
-    {
-        let catalogue = ctx.tag_catalogue().await?;
-        ctx.tags_known(&catalogue, &prepared.looked.seen)
-            .await?
-            .into_iter()
-            .cloned()
-            .collect()
-    } else {
-        Vec::new()
-    };
-    let labels = if found
-        .iter()
-        .any(|group| matches!(group.key, GroupKey::Label(_)))
-    {
-        let mut catalogue = ctx.label_catalogue().await?;
-        ctx.labels_known(&prepared.looked.seen, &mut catalogue, None)
-            .await?
-            .into_iter()
-            .cloned()
-            .collect()
-    } else {
-        Vec::new()
-    };
-    ctx.preload_group_people(&found).await?;
-    let mut shown = Vec::with_capacity(found.len());
-    for group in found {
-        let key = match (group.key, kind) {
-            (GroupKey::Person(person), Some(kind)) => ShownKey::Person(
-                ctx.person_ref(&organization, kind, PeopleContext::Ordinary, person)
-                    .await?,
-            ),
-            // A person is never given out but through `PersonRef`.
-            (GroupKey::Person(_), None) => {
-                return Err(AppError::Internal(
-                    "a group of people without a kind".into(),
-                ));
-            }
-            (GroupKey::Tag(id), _) => ShownKey::Tag {
-                id,
-                name: tags
-                    .iter()
-                    .find(|tag| tag.id == id)
-                    .map(|tag| tag.name.clone()),
-            },
-            (GroupKey::Label(id), _) => ShownKey::Label {
-                id,
-                name: labels
-                    .iter()
-                    .find(|label| label.id == id)
-                    .map(|label| label.name.clone()),
-            },
-            (other, _) => ShownKey::Other(other),
-        };
-        shown.push((key, group.issues));
-    }
     let groups = ctx
         .groups_with_filters(
             &actor,
-            &organization,
+            &grouping.viewer,
             &prepared.looked,
-            (&query.by, target),
-            shown,
+            (&query.by, Some(grouping.target)),
+            found,
         )
         .await?;
+    let organization = ctx.evaluation_of(&actor, Where::Organization).await?;
     Ok(organization.authorize(SearchGroups { groups, truncated }))
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The people of the groups are read in one go, as the people of a page are.
-    async fn preload_group_people(
-        &self,
-        found: &[super::request::GroupCount],
-    ) -> Result<(), AppError> {
-        let people: Vec<_> = found
-            .iter()
-            .filter_map(|group| match group.key {
-                GroupKey::Person(person) => Some(person),
-                _ => None,
-            })
-            .collect();
-        self.preload_people(&people).await
-    }
-
     /// The kinds of relation that mean *blocks* (see [`blocking_kinds`]).
     async fn blocking_kinds(&self) -> Result<Vec<bb_core::id::RelationKindId>, AppError> {
         Ok(blocking_kinds(

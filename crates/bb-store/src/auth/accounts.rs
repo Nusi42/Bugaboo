@@ -33,7 +33,54 @@ pub(crate) fn read_person(row: &Row) -> Result<Person, StoreError> {
     })
 }
 
+/// The stored name key of a person: capitals and repeated spaces do not count, accents do, so a
+/// search, the order and the position of a page agree with each other on both databases.
+fn name_column() -> Expr {
+    Expr::col((PersonRow::Table, PersonRow::NameKey))
+}
+
 impl AuthStorage {
+    /// People of `whom` by the key of their name (then by ID), after the position `after`, at most
+    /// `limit`, of those `narrow` leaves: the one read of a page of people by name.
+    async fn people_by_name(
+        &self,
+        whom: PeopleOf,
+        after: Option<&PeoplePosition>,
+        limit: u64,
+        narrow: impl FnOnce(&mut sea_query::SelectStatement),
+    ) -> Result<Vec<KnownPerson>, StoreError> {
+        let mut select = Query::select();
+        select
+            .columns(person_columns().map(|column| (PersonRow::Table, column)))
+            .from(PersonRow::Table)
+            .order_by((PersonRow::Table, PersonRow::NameKey), Order::Asc)
+            .order_by((PersonRow::Table, PersonRow::Id), Order::Asc)
+            .limit(limit);
+        super::standing::join_standing(&mut select);
+        super::standing::only(&mut select, whom);
+        narrow(&mut select);
+        if let Some(position) = after {
+            select.cond_where(after_last(
+                name_column,
+                || Expr::val(name_key(&position.name)),
+                &Order::Asc,
+                PersonRow::Id,
+                position.id.stored(),
+            ));
+        }
+        self.database
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| {
+                Ok(KnownPerson {
+                    person: read_person(row)?,
+                    standing: super::standing::read_standing(row)?,
+                })
+            })
+            .collect()
+    }
+
     pub(super) async fn person_by_id(&self, id: UserId) -> Result<Option<Person>, StoreError> {
         let mut select = Query::select();
         select
@@ -125,27 +172,17 @@ impl AccountStore for AuthStorage {
         after: Option<&PeoplePosition>,
         limit: u64,
     ) -> Result<Vec<KnownPerson>, StoreError> {
-        // By the stored name key (capitals and repeated spaces do not count, accents do), so the
-        // search, the order and the position agree with each other on both databases.
-        let name = || Expr::col((PersonRow::Table, PersonRow::NameKey));
-        let mut select = Query::select();
-        select
-            .columns(person_columns().map(|column| (PersonRow::Table, column)))
-            .from(PersonRow::Table)
-            .order_by((PersonRow::Table, PersonRow::NameKey), Order::Asc)
-            .order_by((PersonRow::Table, PersonRow::Id), Order::Asc)
-            .limit(limit);
-        super::standing::join_standing(&mut select);
-        super::standing::only(&mut select, whom);
-        if look_at == SearchIn::NameStarts {
-            // The start as typed, by the one rule that made the keys.
-            let start = name_key(search.unwrap_or_default());
-            select.and_where(name().like(crate::like::starting_with(&start)));
-        } else {
+        self.people_by_name(whom, after, limit, |select| {
+            if look_at == SearchIn::NameStarts {
+                // The start as typed, by the one rule that made the keys.
+                let start = name_key(search.unwrap_or_default());
+                select.and_where(name_column().like(crate::like::starting_with(&start)));
+                return;
+            }
             // Every word of the search is held by the name (or, if asked for, by the address).
             for word in search.unwrap_or_default().split_whitespace() {
                 let mut any =
-                    Cond::any().add(name().like(crate::like::containing(&name_key(word))));
+                    Cond::any().add(name_column().like(crate::like::containing(&name_key(word))));
                 if look_at == SearchIn::NamesAndAddresses {
                     any = any.add(crate::like::containing_any_case(
                         Expr::col((PersonRow::Table, PersonRow::Email)),
@@ -154,27 +191,24 @@ impl AccountStore for AuthStorage {
                 }
                 select.cond_where(any);
             }
+        })
+        .await
+    }
+
+    async fn people_named(
+        &self,
+        keys: &[String],
+        whom: PeopleOf,
+        after: Option<&PeoplePosition>,
+        limit: u64,
+    ) -> Result<Vec<KnownPerson>, StoreError> {
+        if keys.is_empty() {
+            return Ok(Vec::new());
         }
-        if let Some(position) = after {
-            select.cond_where(after_last(
-                name,
-                || Expr::val(name_key(&position.name)),
-                &Order::Asc,
-                PersonRow::Id,
-                position.id.stored(),
-            ));
-        }
-        self.database
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(|row| {
-                Ok(KnownPerson {
-                    person: read_person(row)?,
-                    standing: super::standing::read_standing(row)?,
-                })
-            })
-            .collect()
+        self.people_by_name(whom, after, limit, |select| {
+            select.and_where(name_column().is_in(keys.iter().cloned()));
+        })
+        .await
     }
 
     async fn insert_person(

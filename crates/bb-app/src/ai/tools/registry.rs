@@ -23,8 +23,8 @@ use super::inputs::{
     AddCommentInput, AskForAgentsInput, AskInput, AttachInput, ChangeStatusInput,
     ChangesSinceInput, CollectAgentKeysInput, CreateIssueInput, GetIssueInput, GetMyWorkInput,
     GiveUpInput, HandOverInput, ListProjectsInput, LogTimeInput, ProposeInput, RelationMapInput,
-    ReportInput, SearchIssuesInput, StartTimerInput, StopTimerInput, SubmitInput, TakeInput,
-    UndoMyRunInput, UpdateIssueInput, WaitForWorkInput,
+    ReportInput, SearchIssuesInput, SearchTotalsInput, StartTimerInput, StopTimerInput,
+    SubmitInput, TakeInput, UndoMyRunInput, UpdateIssueInput, WaitForWorkInput,
 };
 use super::{agents, apply, handing, map, preview, programs, read};
 use crate::access::Actor;
@@ -237,13 +237,20 @@ fn tools_of_programs<S: AuthStore>() -> [ToolSpec<S>; 2] {
 }
 
 /// The tools every caller may be offered.
-fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 12] {
+fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 13] {
     [
         reads(
             Tool::SearchIssues,
             "search_page_within",
             schema_of::<SearchIssuesInput>,
             read::search_issues::<S>,
+            Need::SeesAProject,
+        ),
+        reads(
+            Tool::SearchTotals,
+            "search_totals_within",
+            schema_of::<SearchTotalsInput>,
+            read::search_totals::<S>,
             Need::SeesAProject,
         ),
         reads(
