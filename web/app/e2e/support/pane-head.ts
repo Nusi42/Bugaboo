@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 import { part } from "../../../packages/ui/src/tokens.ts";
+import { expectAllRead } from "./checks.ts";
 import { expect } from "./fixtures.ts";
 import { gapUnder } from "./geometry.ts";
 import { layoutOf } from "./layout.ts";
@@ -108,7 +109,9 @@ function foldedOf(page: Page): Promise<{ first: boolean; second: boolean; scroll
 export async function foldsWith(page: Page, box: Locator): Promise<void> {
   const head = headOf(page);
   await expect(head).toBeVisible();
-  // Once the box holds more than it shows: before that, there is nothing to scroll.
+  // Once every part has its first reads and the box holds more than it shows: before that, there is nothing to scroll,
+  // or what the box holds grows under the scroll when the rows come (UX §6.4).
+  await expectAllRead(page);
   await expect
     .poll(() => box.evaluate((node) => node.scrollHeight - node.clientHeight))
     .toBeGreaterThan(STEP);

@@ -46,13 +46,19 @@ export async function holdAndRead<Read>(page: Page, read: () => Promise<Read>): 
  * hand, never `dragTo`, so the browser drags as it does for a person.
  */
 export async function carryOverHead(page: Page, handle: Locator): Promise<void> {
+  const from = await takeUp(page, handle);
+  const over = await middleOf(page.locator(PANE_HEAD));
+  await carryTo(page, { x: from.x, y: over.y });
+}
+
+/** Takes `handle` with the mouse and starts the drag; where the hand took it. */
+export async function takeUp(page: Page, handle: Locator): Promise<{ x: number; y: number }> {
   const from = await middleOf(handle);
   await page.mouse.move(from.x, from.y);
   await page.mouse.down();
   // A drag starts once the pointer has moved a little with the button down.
   await page.mouse.move(from.x, from.y - CARRY, { steps: CARRY });
-  const over = await middleOf(page.locator(PANE_HEAD));
-  await carryTo(page, { x: from.x, y: over.y });
+  return from;
 }
 
 /** Carries what the mouse holds to the middle of `target` and lets it go there. */

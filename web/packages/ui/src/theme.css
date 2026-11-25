@@ -1616,6 +1616,7 @@ textarea,
 
 [data-part="field.input"][data-variant~="inline"] {
   width: auto;
+  field-sizing: content;
   padding-inline: var(--space-1);
   border-color: transparent;
   background: transparent;

@@ -1770,6 +1770,9 @@ part "field[variant=inline]" {
 
 part "field.input[variant=inline]" {
     width auto
+    // As wide as the choice it shows, not as the longest of its list: a long name further down the list does not push
+    // the words beside it onto a second line.
+    field-sizing content
     padding-inline "$space-1"
     border-color transparent
     background transparent

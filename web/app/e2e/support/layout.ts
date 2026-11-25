@@ -3,6 +3,7 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { layoutForWidth, type LayoutMode } from "../../../packages/ui/src/layout.ts";
 import { viewports } from "../../../tooling/viewports.ts";
+import { letGoOn, takeUp } from "./hand-drag.ts";
 
 export { nothing } from "./sequence.ts";
 
@@ -95,4 +96,16 @@ export async function inSightUnderHead(target: Locator): Promise<void> {
   await target.evaluate((node) => {
     node.scrollIntoView({ block: "start" });
   });
+}
+
+/**
+ * Drags `handle` onto `slot` with the moves of a hand, also when the two stand further apart than a window shows: the
+ * handle is taken where it is in sight, the box is scrolled with it held until the slot stands in sight under the head,
+ * and it is let go there, as a person drags.
+ */
+export async function carryOnto(page: Page, handle: Locator, slot: Locator): Promise<void> {
+  await handle.scrollIntoViewIfNeeded();
+  await takeUp(page, handle);
+  await inSightUnderHead(slot);
+  await letGoOn(page, slot);
 }
