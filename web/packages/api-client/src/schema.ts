@@ -12267,6 +12267,47 @@ export interface components {
        */
       truncated: boolean;
     };
+    /** @description A release: the fields that can be asked for. */
+    ReleaseItem: {
+      /** @description The ID of the release. */
+      id?: string | null;
+      /** @description Whether the person who asks may make, change, mark and delete releases of its project. */
+      may_manage?: boolean | null;
+      /** @description What it is called. */
+      name?: string | null;
+      project?: components["schemas"]["ProjectRef"] | null;
+      /** @description *Release date* (`2026-11-14`); left out while it has none. */
+      release_date?: string | null;
+      /** @description *Released on* (`2026-11-14`): the day it was marked *Released*; left out while it has none. */
+      released_on?: string | null;
+      state?: components["schemas"]["ReleaseState"] | null;
+      /**
+       * Format: int64
+       * @description Counts up with every change. A change is made on the version that was looked at.
+       */
+      version?: number | null;
+    };
+    /** @description A release an issue names, as a small reference. */
+    ReleaseRefBody: {
+      /** @description The ID of the release. */
+      id: string;
+      /** @description What it is called. */
+      name: string;
+      /**
+       * @description Whether it is offered where the issue is now: `false` for an issue that moved out of the
+       *     tree of the release's project, which keeps it.
+       */
+      offered: boolean;
+      /** @description *Release date* (`2026-11-14`); left out while it has none. */
+      release_date?: string | null;
+      /** @description *Planned*, *Released* or *Retired*. */
+      state: components["schemas"]["ReleaseState"];
+    };
+    /**
+     * @description The state of a release.
+     * @enum {string}
+     */
+    ReleaseState: "planned" | "released" | "retired";
     /** @description The plan of the removal of a person. */
     RemovalPlanBody: {
       /** @description What the window offers first for the person's comments. */

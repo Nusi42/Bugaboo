@@ -16,7 +16,7 @@ use bb_core::fields::FieldKey;
 use bb_core::id::{IssueId, IssueTypeId, ProjectId};
 use bb_core::issue::Issue;
 use bb_core::readable_id::ReadableId;
-use bb_core::saved_search::BoardOptions;
+use bb_core::saved_search::{BoardOptions, SavedSearch};
 use bb_policy::{Authorized, Place as Where};
 
 use super::cells::{
@@ -259,6 +259,16 @@ fn row_place(
     }
 }
 
+/// The options of a board: a saved board shows the options it keeps unless the request names
+/// others.
+fn options_of(query: &BoardQuery, saved: Option<&SavedSearch>) -> BoardOptions {
+    query
+        .options
+        .clone()
+        .or_else(|| saved.map(|saved| saved.board.clone()))
+        .unwrap_or_default()
+}
+
 /// A board: the columns of the search with their counts and limits, its rows, and the first cards
 /// of each cell; or, with `more`, the next cards of one cell.
 ///
@@ -277,19 +287,21 @@ pub async fn board<S: AuthStore + SearchStore>(
     if !(1..=CARDS_MAX).contains(&query.limit) {
         return Err(invalid());
     }
+    // The columns and the rows are fields the issues are counted in the groups of.
     let view = ctx
         .prepare_view(
             &actor,
             &query.search,
             (query.project.as_deref(), query.only_this_project),
+            |saved| {
+                let options = options_of(&query, saved);
+                std::iter::once(columns_word(&options))
+                    .chain(options.rows)
+                    .collect()
+            },
         )
         .await?;
-    // A saved board shows the options it keeps unless the request names others.
-    let options: BoardOptions = query
-        .options
-        .clone()
-        .or_else(|| view.saved.as_ref().map(|saved| saved.board.clone()))
-        .unwrap_or_default();
+    let options = options_of(&query, view.saved.as_ref());
     if !options.is_valid() {
         return Err(invalid());
     }

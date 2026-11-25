@@ -32,7 +32,7 @@ use self::count::sums_of;
 use self::page::{Place, page_after};
 use super::readable::SearchScope;
 use super::request::{GroupKey, GroupPage, SearchStore, Total, TotalsAsked};
-use super::run::{Prepared, ShownKey};
+use super::run::{Prepared, Shape, ShownKey};
 use crate::access::Actor;
 use crate::ai::Withheld;
 use crate::auth::{AppError, AuthStore, Ctx};
@@ -163,7 +163,16 @@ pub async fn search_totals<S: AuthStore + SearchStore>(
     query: SearchTotalsQuery,
 ) -> Result<Authorized<SearchTotals>, AppError> {
     let actor = ctx.actor(&query.session_token).await?;
-    let prepared = ctx.prepare_search(&actor, &query.text, query.scope).await?;
+    let words: Vec<String> = query.by.iter().cloned().collect();
+    let prepared = ctx
+        .prepare(
+            &actor,
+            &query.text,
+            query.scope,
+            Shape::grouped(&words),
+            |_| None,
+        )
+        .await?;
     totals_page(ctx, &actor, prepared, &query, None).await
 }
 
@@ -178,8 +187,13 @@ pub(crate) async fn search_totals_within<S: AuthStore + SearchStore>(
     query: &SearchTotalsQuery,
     withheld: &Withheld,
 ) -> Result<Authorized<SearchTotals>, AppError> {
+    let words: Vec<String> = query.by.iter().cloned().collect();
+    let shape = Shape {
+        withheld: Some(withheld),
+        ..Shape::grouped(&words)
+    };
     let prepared = ctx
-        .prepare_search_within(actor, &query.text, query.scope, withheld)
+        .prepare(actor, &query.text, query.scope, shape, |_| None)
         .await?;
     totals_page(ctx, actor, prepared, query, Some(withheld)).await
 }

@@ -34190,6 +34190,91 @@
           }
         }
       },
+      "ReleaseItem": {
+        "type": "object",
+        "description": "A release: the fields that can be asked for.",
+        "properties": {
+          "id": {
+            "type": ["string", "null"],
+            "description": "The ID of the release."
+          },
+          "may_manage": {
+            "type": ["boolean", "null"],
+            "description": "Whether the person who asks may make, change, mark and delete releases of its project."
+          },
+          "name": {
+            "type": ["string", "null"],
+            "description": "What it is called."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectRef",
+                "description": "The project it was made in: offered there and in its sub-projects."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "release_date": {
+            "type": ["string", "null"],
+            "description": "*Release date* (`2026-11-14`); left out while it has none."
+          },
+          "released_on": {
+            "type": ["string", "null"],
+            "description": "*Released on* (`2026-11-14`): the day it was marked *Released*; left out while it has none."
+          },
+          "state": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReleaseState",
+                "description": "*Planned*, *Released* or *Retired*."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "version": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "description": "Counts up with every change. A change is made on the version that was looked at."
+          }
+        }
+      },
+      "ReleaseRefBody": {
+        "type": "object",
+        "description": "A release an issue names, as a small reference.",
+        "required": ["id", "name", "state", "offered"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the release."
+          },
+          "name": {
+            "type": "string",
+            "description": "What it is called."
+          },
+          "offered": {
+            "type": "boolean",
+            "description": "Whether it is offered where the issue is now: `false` for an issue that moved out of the\ntree of the release's project, which keeps it."
+          },
+          "release_date": {
+            "type": ["string", "null"],
+            "description": "*Release date* (`2026-11-14`); left out while it has none."
+          },
+          "state": {
+            "$ref": "#/components/schemas/ReleaseState",
+            "description": "*Planned*, *Released* or *Retired*."
+          }
+        }
+      },
+      "ReleaseState": {
+        "type": "string",
+        "description": "The state of a release.",
+        "enum": ["planned", "released", "retired"]
+      },
       "RemovalPlanBody": {
         "type": "object",
         "description": "The plan of the removal of a person.",

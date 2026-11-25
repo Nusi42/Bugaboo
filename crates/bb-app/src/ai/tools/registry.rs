@@ -207,7 +207,8 @@ fn changes<S: AuthStore>(
 /// Every tool, in the order AI apps are shown them.
 #[must_use]
 pub fn registry<S: AuthStore>() -> Vec<ToolSpec<S>> {
-    let mut all = Vec::from(tools_of_people::<S>());
+    let mut all = Vec::from(reads_of_people::<S>());
+    all.extend(changes_of_people::<S>());
     all.extend(tools_of_agents::<S>());
     all.extend(tools_of_programs::<S>());
     all
@@ -236,8 +237,8 @@ fn tools_of_programs<S: AuthStore>() -> [ToolSpec<S>; 2] {
     ]
 }
 
-/// The tools every caller may be offered.
-fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 14] {
+/// The tools every caller may be offered that read.
+fn reads_of_people<S: AuthStore>() -> [ToolSpec<S>; 7] {
     [
         reads(
             Tool::SearchIssues,
@@ -288,6 +289,12 @@ fn tools_of_people<S: AuthStore>() -> [ToolSpec<S>; 14] {
             map::relation_map::<S>,
             Need::SeesAProject,
         ),
+    ]
+}
+
+/// The tools every caller may be offered that change something.
+fn changes_of_people<S: AuthStore>() -> [ToolSpec<S>; 7] {
+    [
         changes(
             Tool::CreateIssue,
             "create_issue",

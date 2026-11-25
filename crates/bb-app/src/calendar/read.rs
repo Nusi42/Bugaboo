@@ -184,6 +184,7 @@ pub async fn calendar<S: AuthStore + SearchStore>(
             &actor,
             &query.search,
             (query.project.as_deref(), query.only_this_project),
+            |_| Vec::new(),
         )
         .await?;
     let mut prepared = view.prepared;

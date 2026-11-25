@@ -168,7 +168,17 @@ pub(crate) struct Shape<'a> {
     pub(crate) withheld: Option<&'a Withheld>,
     /// The words of the fields whose groups the issues are counted in (the groups of a list, the
     /// rows and the columns of a board).
-    pub(crate) grouped_by: &'a [&'a str],
+    pub(crate) grouped_by: &'a [String],
+}
+
+impl<'a> Shape<'a> {
+    /// For a person, counted in the groups of the fields of `words`.
+    pub(crate) const fn grouped(words: &'a [String]) -> Self {
+        Self {
+            withheld: None,
+            grouped_by: words,
+        }
+    }
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
@@ -192,11 +202,9 @@ impl<S: AuthStore> Ctx<'_, S> {
         scope: SearchScope,
         by: &str,
     ) -> Result<Prepared, AppError> {
-        let shape = Shape {
-            grouped_by: std::slice::from_ref(&by),
-            ..Shape::default()
-        };
-        self.prepare(actor, text, scope, shape, |_| None).await
+        let words = [by.to_owned()];
+        self.prepare(actor, text, scope, Shape::grouped(&words), |_| None)
+            .await
     }
 
     /// The same for the AI (AI-03): what is kept from AI is not among the fields, the projects or
@@ -345,7 +353,7 @@ pub(crate) fn narrow_by(search: &mut bb_searchlang::Search, extra: Expr) {
 fn names_a_release(
     checked: &bb_searchlang::CheckedSearch,
     looked: &Looked,
-    grouped_by: &[&str],
+    grouped_by: &[String],
 ) -> bool {
     fn in_filter(node: &Expr, looked: &Looked) -> bool {
         match node {

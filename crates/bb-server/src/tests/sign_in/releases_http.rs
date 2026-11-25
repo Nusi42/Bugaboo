@@ -230,3 +230,55 @@ async fn perf_05_a_list_of_releases_and_a_page_of_issues_with_both_columns_run_a
     })
     .await
 }
+
+#[tokio::test]
+async fn iss_08_totals_by_planned_for_release_show_only_the_releases_the_reader_may_know()
+-> TestResult {
+    each_database("iss_08_totals_by_release", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let web = project(&mut ada, "WEB", Some(&site.acme)).await?;
+        let top = release(&mut ada, &site.acme, "Moonbeam").await?;
+        let part = release(&mut ada, &web, "2.4").await?;
+        for (title, planned) in [
+            ("Hidden", Some(&top)),
+            ("Seen", Some(&part)),
+            ("None", None),
+        ] {
+            let issue = issue_in(&site, &mut ada, &web, title).await?;
+            if let Some(planned) = planned {
+                ok(&plan_for(&mut ada, &issue, planned).await?)?;
+            }
+        }
+        // Tim sees WEB only: the release of ACME is no value for him.
+        let (mut tim, _) = site
+            .person_in(bb_app::access::StartingRole::TeamMember, "tim", &web)
+            .await?;
+        let asked = json!({"by": "planned for release", "sums": ["count"]});
+        let answer = super::search_totals_http::totals(&mut tim, asked.clone()).await?;
+        let answer = ok(&answer)?;
+        assert!(!answer.to_string().contains("Moonbeam"), "{answer}");
+        let issues_where = |answer: &Value, part: &str| -> Option<Value> {
+            answer["groups"].as_array()?.iter().find_map(|group| {
+                group["filter"]
+                    .as_str()
+                    .is_some_and(|filter| filter.contains(part))
+                    .then(|| group["issues"].clone())
+            })
+        };
+        assert_eq!(
+            answer["groups"].as_array().map(Vec::len),
+            Some(2),
+            "{answer}"
+        );
+        assert_eq!(issues_where(answer, "2.4"), Some(json!(1)), "{answer}");
+        assert_eq!(issues_where(answer, "is empty"), Some(json!(2)), "{answer}");
+        // Ada knows both releases: a group each, and one issue without.
+        let all = super::search_totals_http::totals(&mut ada, asked).await?;
+        let all = ok(&all)?;
+        assert_eq!(issues_where(all, "Moonbeam"), Some(json!(1)), "{all}");
+        assert_eq!(issues_where(all, "is empty"), Some(json!(1)), "{all}");
+        Ok(())
+    })
+    .await
+}

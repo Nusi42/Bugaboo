@@ -158,6 +158,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The search of a board or a calendar, prepared: what the person may search by is read once,
     /// and for a project's view the project is written into the text by [`scoped_to`], so the
     /// answer can say which text it ran. A saved search comes with what it keeps of its views.
+    /// `grouped_by` names the fields the issues are counted in the groups of (the columns and the
+    /// rows of a board), from the saved search the view shows.
     ///
     /// # Errors
     /// As [`Ctx::view_search_text`] and [`Ctx::view_scope`]; the mistakes of the text.
@@ -166,8 +168,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         actor: &Actor,
         search: &ViewSearch,
         (project, only_this_project): (Option<&str>, bool),
+        grouped_by: impl FnOnce(Option<&SavedSearch>) -> Vec<String>,
     ) -> Result<ViewPrepared, AppError> {
         let (text, saved) = self.view_search(actor, search).await?;
+        let words = grouped_by(saved.as_ref());
         let (scope, key) = self.view_scope(project).await?;
         let looked = self.looked_at(actor, scope, None).await?;
         let text = match key {
@@ -190,7 +194,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             }
         };
         let prepared = self
-            .prepare_in(actor, looked, &text, Shape::default(), |_| None)
+            .prepare_in(actor, looked, &text, Shape::grouped(&words), |_| None)
             .await?;
         Ok(ViewPrepared {
             text,
