@@ -19,7 +19,7 @@ reason = "A saved search is made, or put into the trash and taken out, by its ma
 
 [[exempt]]
 routes = ["PUT /api/v1/saved-searches/{search}/mail", "DELETE /api/v1/saved-searches/{search}/mail"]
-reason = "An e-mailed search belongs to one person and holds no text: setting it writes the whole choice (weekdays, hour, Only when something is new or changed) and can be set again, and stopping it a second time answers resource.not-found; no other person changes it. The jobs write only what they keep (when the next e-mail is due, when the last one went, why it waits), and setting reads those inside its change, so a job that wrote meanwhile is not undone (QRY-07)."
+reason = "An e-mailed search belongs to one person and holds no text: setting it writes the whole choice (weekdays, hour, Only when something is new or changed) and can be set again, and stopping it a second time answers resource.not-found; no other person changes it. The jobs write only what they keep (when the next e-mail is due, the due time they claimed, when the last one went, why it waits), and setting reads those inside its change, so a job that wrote meanwhile is not undone (QRY-07)."
 
 [[exempt]]
 routes = [

@@ -1206,6 +1206,37 @@ mixin "fieldset-reset" {
     border 0
 }
 
+// The body of a window that stands its parts under each other, on the edge of the window's title.
+mixin "window-column" {
+    display flex
+    flex-direction column
+    gap "$space-5"
+    margin-inline "calc(($pad-dialog - $pad-box) * -1)"
+}
+
+// A group of fields under its name, without the browser's frame.
+mixin "fieldset-column" {
+    use "fieldset-reset"
+    display flex
+    flex-direction column
+    gap "$space-2"
+}
+
+// The name over a group of fields inside a window: a heading of a section, drawn bold in the display
+// face by the rule that uses it (the bold list names each, and its check reads the rule).
+mixin "group-name" {
+    margin 0
+    padding 0
+    font-size "$fs-md"
+}
+
+// Small choices side by side, on as many lines as they need.
+mixin "wrap-row" {
+    display flex
+    flex-wrap wrap
+    gap "$space-2"
+}
+
 // A list without bullets and without the browser's indent.
 mixin "list-reset" {
     margin 0
@@ -2058,9 +2089,7 @@ part "choice-group.legend" {
 }
 
 part "choice-group.choices" {
-    display flex
-    flex-wrap wrap
-    gap "$space-2"
+    use "wrap-row"
 }
 
 part "choice-group.choice" {
@@ -16884,10 +16913,7 @@ part "share-choice" {
 // the body by pad-dialog), and a row of it has no padding of its own: title, groups and tick boxes
 // stand on one edge (S31).
 part "share-body" {
-    display flex
-    flex-direction column
-    gap "$space-5"
-    margin-inline "calc(($pad-dialog - $pad-box) * -1)"
+    use "window-column"
 }
 
 part "share-row" {
@@ -16898,10 +16924,8 @@ part "share-row" {
 }
 
 part "search-help.title" {
-    margin 0
+    use "group-name"
     margin-block-end "$space-2"
-    padding 0
-    font-size "$fs-md"
     font-family "$font-display"
     font-weight "$weight-bold"
 }
@@ -16946,40 +16970,27 @@ part "search-help" {
 }
 
 part "search-help.group" {
-    use "fieldset-reset"
-    display flex
-    flex-direction column
-    gap "$space-2"
+    use "fieldset-column"
 }
 
 // The window *E-mail me this search* (QRY-07): its form under the title, on the edge of the title,
 // and the weekdays as one group of boxes with its name, side by side while they fit.
 part "search-mail" {
-    display flex
-    flex-direction column
-    gap "$space-5"
-    margin-inline "calc(($pad-dialog - $pad-box) * -1)"
+    use "window-column"
 }
 
 part "search-mail.days" {
-    use "fieldset-reset"
-    display flex
-    flex-direction column
-    gap "$space-2"
+    use "fieldset-column"
 }
 
 part "search-mail.legend" {
-    margin 0
-    padding 0
-    font-size "$fs-md"
+    use "group-name"
     font-family "$font-display"
     font-weight "$weight-bold"
 }
 
 part "search-mail.day-boxes" {
-    display flex
-    flex-wrap wrap
-    gap "$space-2"
+    use "wrap-row"
 }
 
 // ───────────── Boxes in the Details ─────────────

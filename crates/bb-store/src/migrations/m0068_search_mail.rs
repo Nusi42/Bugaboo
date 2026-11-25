@@ -2,8 +2,8 @@
 //!
 //! One row for each saved search a person gets by e-mail: the weekdays (one bit each, Monday the
 //! lowest), the whole hour in the person's time zone, *Only when something is new or changed*, why
-//! it waits for its person (none while it sends), when its next e-mail is due and when its last one
-//! went. The issues of an e-mail are never kept. A person has one row at most for each saved
+//! it waits for its person (none while it sends), when its next e-mail is due, the due time whose
+//! e-mail was last claimed (each goes once) and when its last one went. The issues of an e-mail are never kept. A person has one row at most for each saved
 //! search. Nothing is written into the table.
 
 use sea_query::{ColumnDef, ForeignKey, Index, Table};
@@ -37,6 +37,7 @@ pub(super) fn steps() -> Vec<Step> {
                         .big_integer()
                         .not_null(),
                 )
+                .col(ColumnDef::new(SearchMailRow::LastDue).big_integer())
                 .col(ColumnDef::new(SearchMailRow::LastSentAt).big_integer())
                 .col(
                     ColumnDef::new(SearchMailRow::CreatedAt)

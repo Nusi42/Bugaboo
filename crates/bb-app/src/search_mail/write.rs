@@ -99,6 +99,7 @@ pub async fn set_search_mail<S: AuthStore>(
         only_when_changed: input.only_when_changed,
         paused: None,
         next_at,
+        last_due: None,
         last_sent_at: before.as_ref().and_then(|found| found.last_sent_at),
         created_at: before.as_ref().map_or(now, |found| found.created_at),
         updated_at: now,
@@ -123,6 +124,7 @@ pub async fn set_search_mail<S: AuthStore>(
                     // What the jobs keep (when the last e-mail went) is read inside the change, so
                     // a job that wrote meanwhile is not undone.
                     Some(found) if found.id == chosen.id => SearchMail {
+                        last_due: found.last_due,
                         last_sent_at: found.last_sent_at,
                         created_at: found.created_at,
                         ..chosen

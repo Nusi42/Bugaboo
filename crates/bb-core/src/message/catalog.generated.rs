@@ -5931,6 +5931,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-field.search-mail.holder", "Sent to"),
     ("personal-field.search-mail.hour", "Hour"),
     ("personal-field.search-mail.id", "Reference"),
+    ("personal-field.search-mail.last-due", "Last e-mail due"),
     (
         "personal-field.search-mail.last-sent-at",
         "Last e-mail sent",

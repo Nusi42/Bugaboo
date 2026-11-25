@@ -69,6 +69,7 @@ fn mail(
         only_when_changed: true,
         paused: None,
         next_at: at(next),
+        last_due: None,
         last_sent_at: None,
         created_at: at(1),
         updated_at: at(1),
@@ -185,6 +186,40 @@ async fn qry_07_switch_off_makes_every_e_mailed_search_of_the_person_wait() -> T
 }
 
 #[tokio::test]
+async fn qry_07_each_due_time_is_claimed_once_and_a_claim_can_be_given_back() -> TestResult {
+    each_database("qry_07_store_claim", async |db| {
+        let fixture = fixture(db).await?;
+        let storage = &fixture.storage;
+        let mut source = ids();
+        let holder = UserId::generate(&mut source);
+        let search = a_search(storage, &mut source, holder).await?;
+        let made = mail(&mut source, holder, search, 100);
+        put(storage, &mut source, &made).await?;
+        assert!(storage.claim_search_mail(made.id, at(100)).await?);
+        // A second job of the same due time, or a try after the e-mail went, gets nothing.
+        assert!(!storage.claim_search_mail(made.id, at(100)).await?);
+        // An earlier due time is never sent after a later one.
+        assert!(!storage.claim_search_mail(made.id, at(50)).await?);
+        // The e-mail did not go: the claim goes back, and the next try gets it.
+        storage
+            .give_back_search_mail(made.id, at(100), None)
+            .await?;
+        assert!(storage.claim_search_mail(made.id, at(100)).await?);
+        // The next day is claimed once too.
+        assert!(storage.claim_search_mail(made.id, at(200)).await?);
+        assert_eq!(
+            storage
+                .search_mail(made.id)
+                .await?
+                .and_then(|row| row.last_due),
+            Some(at(200))
+        );
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
 async fn priv_04_the_e_mailed_searches_of_a_private_search_go_with_it() -> TestResult {
     each_database("qry_07_store_removal", async |db| {
         let fixture = fixture(db).await?;
@@ -194,6 +229,10 @@ async fn priv_04_the_e_mailed_searches_of_a_private_search_go_with_it() -> TestR
         let search = a_search(storage, &mut source, holder).await?;
         let made = mail(&mut source, holder, search, 100);
         put(storage, &mut source, &made).await?;
+        // Another person's e-mailed search of the same private search goes with it.
+        let visitor = UserId::generate(&mut source);
+        let of_the_same = mail(&mut source, visitor, search, 100);
+        put(storage, &mut source, &of_the_same).await?;
         // Another person's e-mailed search of another saved search stays.
         let other = UserId::generate(&mut source);
         let theirs_search = a_search(storage, &mut source, other).await?;
@@ -205,6 +244,7 @@ async fn priv_04_the_e_mailed_searches_of_a_private_search_go_with_it() -> TestR
         .await?;
         assert_eq!(gone, [search]);
         assert_eq!(storage.search_mail(made.id).await?, None);
+        assert_eq!(storage.search_mail(of_the_same.id).await?, None);
         assert_eq!(storage.search_mail(theirs.id).await?, Some(theirs));
         // Stopping one that is gone says so.
         let deleted = changed(storage, &mut source, move |tx| {

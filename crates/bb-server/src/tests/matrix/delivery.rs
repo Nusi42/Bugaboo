@@ -12,9 +12,7 @@
 
 use bb_api_words::sec_matrix as words;
 use bb_app::access::{Permission, StartingRole};
-use bb_app::mailer::MailMessage;
 use bb_core::access::{FieldLevel, PeopleLevel};
-use bb_core::app_paths;
 use bb_core::fields::Field;
 use bb_core::message::{Message, STATUS_DONE};
 use bb_core::people_kinds::PeopleKind;
@@ -22,8 +20,9 @@ use bb_testing::{Failure, TestDatabase};
 use serde_json::{Value, json};
 
 use crate::sign_in_tests::http::{Browser, rig_and_app};
-use crate::sign_in_tests::issues_site::{ISSUES, Site, key_of, version_of};
+use crate::sign_in_tests::issues_site::{ISSUES, Site, key_of, ok, version_of};
 use crate::sign_in_tests::rig::Rig;
+use crate::sign_in_tests::search_mail_http::{EVERY_DAY, is_search_mail, save, set};
 
 /// The name of the administrator who makes the change.
 pub(super) const CHANGER: &str = "Ada Admin";
@@ -172,14 +171,19 @@ pub(super) async fn run(db: &TestDatabase) -> Result<Vec<Delivered>, Failure> {
         everyone.push(by_mail(&rig, role));
     }
     send_the_search_mails(&rig).await?;
-    for (role, issue) in issues {
-        everyone.push(by_search_mail(&rig, role, issue.as_deref()));
+    let scene: Vec<String> = issues
+        .iter()
+        .filter_map(|(_, issue)| issue.clone())
+        .collect();
+    for (role, issue) in &issues {
+        everyone.push(by_search_mail(&rig, (*role, issue.as_deref()), &scene));
     }
     Ok(everyone)
 }
 
-/// The hour the e-mailed searches of the scene go at: the clock of the tests starts at 8:00 UTC.
-const SEARCH_MAIL_HOUR: i64 = 9;
+/// How the title of an issue of the scene stands in the e-mail of an e-mailed search: quoted, with
+/// the name of the starting role after it.
+const TITLE_LINE: &str = "> Printer of the ";
 
 /// The address of the person of the role who is switched off.
 fn switched_off_address(role: StartingRole) -> String {
@@ -188,25 +192,8 @@ fn switched_off_address(role: StartingRole) -> String {
 
 /// The person saves a search for everything they may see and gets it by e-mail every day.
 async fn mail_me_my_search(person: &mut Browser) -> Result<(), Failure> {
-    let saved = person
-        .send(
-            "POST",
-            "/api/v1/saved-searches",
-            Some(json!({"name": "Everything I see", "search_text": ""})),
-        )
-        .await?;
-    assert!(saved.status.is_success(), "{}", saved.body);
-    let search = saved.body["id"]
-        .as_str()
-        .ok_or("a saved search without ID")?;
-    let set = person
-        .send(
-            "PUT",
-            &format!("/api/v1/saved-searches/{search}/mail"),
-            Some(json!({"days": [true, true, true, true, true, true, true], "hour": SEARCH_MAIL_HOUR, "only_when_changed": false})),
-        )
-        .await?;
-    assert!(set.status.is_success(), "{}", set.body);
+    let search = save(person, "Everything I see", "").await?;
+    ok(&set(person, &search, EVERY_DAY, false).await?)?;
     Ok(())
 }
 
@@ -240,14 +227,15 @@ async fn send_the_search_mails(rig: &Rig) -> Result<(), Failure> {
     Ok(())
 }
 
-/// Whether an e-mail is the e-mail of an e-mailed search: it links to the list of them.
-fn is_search_mail(mail: &MailMessage) -> bool {
-    mail.text.contains(app_paths::NOTIFICATION_SETTINGS)
-}
-
 /// The e-mail of the recipient's e-mailed search: the entry point `search-mail`. `issue` is the
-/// issue of the scene the recipient may see, if any.
-fn by_search_mail(rig: &Rig, role: StartingRole, issue: Option<&str>) -> Delivered {
+/// issue of the scene the recipient may see, if any. A recipient with none (*HR*) is heard when any
+/// issue of the scene is in their e-mail, and shown a title when any title of the scene is, so the
+/// line catches what leaks to them.
+fn by_search_mail(
+    rig: &Rig,
+    (role, issue): (StartingRole, Option<&str>),
+    scene: &[String],
+) -> Delivered {
     let address = format!("{}@example.test", role.code());
     let mails = rig.mailer.messages();
     let text = mails
@@ -263,14 +251,23 @@ fn by_search_mail(rig: &Rig, role: StartingRole, issue: Option<&str>) -> Deliver
         entry: words::ENTRY_SEARCH_MAIL,
         role,
         said: vec![
-            ("heard", yes_no(issue.is_some_and(|key| text.contains(key)))),
+            (
+                "heard",
+                yes_no(match issue {
+                    Some(key) => text.contains(key),
+                    None => scene.iter().any(|key| text.contains(key.as_str())),
+                }),
+            ),
             (
                 "status",
                 shown(text.contains(&Message::from(STATUS_DONE).render())),
             ),
             (
                 "title",
-                shown(text.contains(&format!("> Printer of the {}", role.code()))),
+                shown(match issue {
+                    Some(_) => text.contains(&format!("{TITLE_LINE}{}", role.code())),
+                    None => text.contains(TITLE_LINE),
+                }),
             ),
             ("switched-off", yes_no(off_heard)),
         ],

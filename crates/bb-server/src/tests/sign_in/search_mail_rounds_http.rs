@@ -4,15 +4,17 @@
 //! switched on again before the next one is due, and what the person loses between setting it and
 //! its e-mail, or may not read, is not in the e-mail.
 
+use bb_app::context::Clock as _;
 use bb_core::fields::Field;
-use bb_core::search_mail::MailPause;
+use bb_core::search_mail::{MailPause, place_in_hour};
 use bb_policy::StartingRole;
-use bb_testing::{TestResult, each_database};
+use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 
 use super::http::{ADA_EMAIL, Browser, rig_and_app};
 use super::issues_site::{ISSUES, Site, key_of, ok, version_of};
 use super::removal_http::switch_off;
+use super::rig::Rig;
 use super::search_mail_http::{
     EVERY_DAY, HOUR, SEARCHES, bob_mails_his_search, mails_to, pass_hours, reader_seeing, save,
     set, set_at, start, stored,
@@ -21,6 +23,88 @@ use super::search_mail_http::{
 /// A few minutes, less than a session waits without a request.
 const MINUTES_20: i64 = 20 * 60;
 const BOB: &str = "bob@example.test";
+
+/// What a person does with their e-mailed search after its hour began and before its e-mail goes.
+#[derive(Clone, Copy)]
+enum InTheHour {
+    /// Saves it again as it is.
+    SavesItAgain,
+    /// Changes only *Only when something is new or changed*.
+    ChangesTheFlag,
+    /// Stops it and takes that back with *Undo* (it is set again as it was).
+    StopsAndUndoes,
+}
+
+/// Ada's e-mailed search of every day at 9:00; the 8:00 round queues its e-mail; the clock goes to
+/// inside the hour, before the e-mail goes, where Ada does `what`. Then the day passes: how many
+/// e-mails came.
+async fn inside_the_hour(db: &bb_testing::TestDatabase, what: InTheHour) -> Result<usize, Failure> {
+    let (rig, app) = rig_and_app(db).await?;
+    let (site, mut ada) = Site::start(&rig, &app).await?;
+    key_of(&site.create(&mut ada, "Printer jams").await?)?;
+    let search = save(&mut ada, "Open bugs", "").await?;
+    ok(&set(&mut ada, &search, EVERY_DAY, false).await?)?;
+    let mail = stored(&rig, site.org.admin.id, &search).await?;
+    start(&rig).await?;
+    // Half way between 9:00 and the minute this e-mailed search goes at.
+    let goes = mail.next_at.checked_add(place_in_hour(mail.id))?;
+    let inside = mail
+        .next_at
+        .checked_add(goes.duration_since(mail.next_at) / 2)?;
+    advance_to(&rig, inside);
+    let mut ada = Browser::signed_in_as(&app, ADA_EMAIL).await?;
+    match what {
+        InTheHour::SavesItAgain => {
+            ok(&set(&mut ada, &search, EVERY_DAY, false).await?)?;
+        }
+        InTheHour::ChangesTheFlag => {
+            ok(&set(&mut ada, &search, EVERY_DAY, true).await?)?;
+        }
+        InTheHour::StopsAndUndoes => {
+            let stopped = ada
+                .send("DELETE", &format!("{SEARCHES}/{search}/mail"), None)
+                .await?;
+            assert!(stopped.status.is_success(), "{}", stopped.body);
+            ok(&set(&mut ada, &search, EVERY_DAY, false).await?)?;
+        }
+    }
+    pass_hours(&rig, 3).await?;
+    Ok(mails_to(&rig, ADA_EMAIL).len())
+}
+
+/// Moves the clock of the tests to `at`, without running a job.
+fn advance_to(rig: &Rig, at: jiff::Timestamp) {
+    rig.clock
+        .advance(at.as_second() - rig.clock.now().as_second());
+}
+
+#[tokio::test]
+async fn qry_07_saving_again_after_the_hour_began_keeps_the_e_mail_of_the_day() -> TestResult {
+    each_database("qry_07_saved_in_the_hour", async |db| {
+        assert_eq!(inside_the_hour(db, InTheHour::SavesItAgain).await?, 1);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_07_changing_only_the_flag_after_the_hour_began_keeps_the_e_mail_of_the_day()
+-> TestResult {
+    each_database("qry_07_flag_in_the_hour", async |db| {
+        assert_eq!(inside_the_hour(db, InTheHour::ChangesTheFlag).await?, 1);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn qry_07_stop_and_undo_after_the_hour_began_sends_one_e_mail() -> TestResult {
+    each_database("qry_07_undo_in_the_hour", async |db| {
+        assert_eq!(inside_the_hour(db, InTheHour::StopsAndUndoes).await?, 1);
+        Ok(())
+    })
+    .await
+}
 
 #[tokio::test]
 async fn qry_07_saving_again_while_the_e_mail_waits_sends_one_e_mail() -> TestResult {

@@ -13,7 +13,7 @@
 use bb_core::ErrorCode;
 use bb_core::app_paths;
 use bb_core::fields::Field;
-use bb_core::id::{JobId, SearchMailId};
+use bb_core::id::{JobId, SavedSearchId, UserId};
 use bb_core::job::Job;
 use bb_core::saved_search::SavedSearch;
 use bb_core::search_mail::{
@@ -22,7 +22,7 @@ use bb_core::search_mail::{
 use bb_core::settings::MAIL_SHORT;
 use bb_core::wording::Region;
 use bb_searchlang::{Direction, FieldRef, SortKey, Span, check};
-use jiff::Timestamp;
+use jiff::{SignedDuration, Timestamp};
 use serde::{Deserialize, Serialize};
 
 use super::sending;
@@ -37,11 +37,14 @@ use crate::search::{FieldTarget, Prepared, SearchScope, readable_of, stopped};
 /// How many due e-mailed searches one read of the hourly round takes.
 const DUE_PAGE: u64 = 200;
 
-/// The payload of a `search-mail.send` job: the e-mailed search and the moment its e-mail was due,
-/// never a word of its person.
+/// The payload of a `search-mail.send` job: whose e-mailed search of which saved search, and the
+/// moment its e-mail was due; IDs only, never a word of the person. It names the e-mailed search by
+/// its person and its saved search, so one stopped and set again (*Undo*) still gets the e-mail its
+/// job was queued for.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 struct SendPayload {
-    mail: SearchMailId,
+    holder: UserId,
+    search: SavedSearchId,
     due: Timestamp,
 }
 
@@ -110,7 +113,8 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .map_err(|error| AppError::Internal(error.to_string()))?,
             kind: kind.clone(),
             payload: serde_json::to_value(SendPayload {
-                mail: mail.id,
+                holder: mail.holder,
+                search: mail.search,
                 due: mail.next_at,
             })
             .map_err(|error| AppError::Internal(error.to_string()))?,
@@ -129,16 +133,22 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// A refusal for a payload that names nothing or an address the mail server turns away for
     /// good; an internal error when another try may work.
     pub(crate) async fn run_search_mail(&self, job: &Job) -> Result<(), AppError> {
-        let SendPayload { mail: id, due } = serde_json::from_value(job.payload.clone())
+        let SendPayload {
+            holder,
+            search,
+            due,
+        } = serde_json::from_value(job.payload.clone())
             .map_err(|_| AppError::Refused(ErrorCode::InvalidRequest))?;
-        let failed = |error| internal::<S>(&error);
-        let Some(mail) = self.store().search_mail(id).await.map_err(failed)? else {
+        let Some(mail) = self
+            .store()
+            .search_mail_of(holder, search)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+        else {
             // Stopped since it was queued.
             return Ok(());
         };
-        // Changed since this job was queued, or due again at this hour or before: the e-mail that
-        // is queued for the choice as it is now goes instead, so one hour never brings two.
-        if mail.paused.is_some() || mail.updated_at > job.created_at || mail.next_at <= due {
+        if mail.paused.is_some() || !self.still_due(&mail, due).await? {
             return Ok(());
         }
         let layers = self.setting_layers_of(None).await?;
@@ -194,17 +204,58 @@ impl<S: AuthStore> Ctx<'_, S> {
             subject: composed.subject,
             text: composed.text,
         };
-        match self.services.mailer.send(&server, &message).await {
+        self.send_claimed(&mail, (due, ran_at), &server, &message)
+            .await
+    }
+
+    /// Whether `due` is still a time the e-mailed search goes at, by the choice as it is now in the
+    /// person's time zone: a job queued for an hour the person moved away from sends nothing.
+    async fn still_due(&self, mail: &SearchMail, due: Timestamp) -> Result<bool, AppError> {
+        let zone = Region::of(&self.setting_layers_of(Some(mail.holder)).await?)
+            .zone()
+            .clone();
+        let just_before = due
+            .checked_sub(SignedDuration::from_secs(1))
+            .map_err(|error| AppError::Internal(error.to_string()))?;
+        Ok(next_due(mail.days, mail.hour, &zone, just_before) == Some(due))
+    }
+
+    /// Sends the e-mail of the due time `due` when this job claims it: each due time goes at most
+    /// once, however many jobs were queued for it (saved again, stopped and set again). A claim
+    /// whose e-mail did not go is given back, so another try of the job may send it.
+    async fn send_claimed(
+        &self,
+        mail: &SearchMail,
+        (due, ran_at): (Timestamp, Timestamp),
+        server: &crate::mailer::MailServer,
+        message: &MailMessage,
+    ) -> Result<(), AppError> {
+        let failed = |error| internal::<S>(&error);
+        let store = self.store();
+        if !store
+            .claim_search_mail(mail.id, due)
+            .await
+            .map_err(failed)?
+        {
+            return Ok(());
+        }
+        match self.services.mailer.send(server, message).await {
             Ok(()) => {
                 let schedule = mail.id;
-                tracing::info!(%schedule, issues = found.issues.len(), "an e-mailed search went");
-                self.store()
+                tracing::info!(%schedule, "an e-mailed search went");
+                store
                     .search_mail_sent(mail.id, ran_at)
                     .await
                     .map_err(failed)
             }
-            // A refusal for good ends the job; another try may work for the rest.
-            Err(failure) => Err(send_failure_for_job(failure)),
+            Err(failure) => {
+                store
+                    .give_back_search_mail(mail.id, due, mail.last_due)
+                    .await
+                    .map_err(failed)?;
+                // A refusal for good ends the job; another try may work for the rest.
+                Err(send_failure_for_job(failure))
+            }
         }
     }
 

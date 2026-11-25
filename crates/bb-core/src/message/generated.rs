@@ -7372,6 +7372,10 @@ pub const PERSONAL_FIELD_SEARCH_MAIL_HOUR: MessageKey =
 pub const PERSONAL_FIELD_SEARCH_MAIL_ID: MessageKey =
     MessageKey::new("personal-field.search-mail.id");
 
+/// The message `personal-field.search-mail.last-due`.
+pub const PERSONAL_FIELD_SEARCH_MAIL_LAST_DUE: MessageKey =
+    MessageKey::new("personal-field.search-mail.last-due");
+
 /// The message `personal-field.search-mail.last-sent-at`.
 pub const PERSONAL_FIELD_SEARCH_MAIL_LAST_SENT_AT: MessageKey =
     MessageKey::new("personal-field.search-mail.last-sent-at");

@@ -4769,6 +4769,7 @@
   "personal-field.search-mail.only-when-changed": "Only when something is new or changed",
   "personal-field.search-mail.paused": "Sends nothing because",
   "personal-field.search-mail.next-at": "Next e-mail due",
+  "personal-field.search-mail.last-due": "Last e-mail due",
   "personal-field.search-mail.last-sent-at": "Last e-mail sent",
   "personal-field.search-mail.created-at": "Created on",
   "personal-field.search-mail.updated-at": "Last changed on",

@@ -148,6 +148,10 @@ pub struct SearchMail {
     /// When its next e-mail is due: the hour it was chosen for, before its place in the hour.
     #[personal(category = "activity", basis = "contract")]
     pub next_at: Timestamp,
+    /// The due time whose e-mail was last claimed by a job: each due time goes at most once, whatever
+    /// jobs were queued for it.
+    #[personal(category = "activity", basis = "contract")]
+    pub last_due: Option<Timestamp>,
     /// When its last e-mail went; the issues of it are never kept.
     #[personal(category = "activity", basis = "contract")]
     pub last_sent_at: Option<Timestamp>,

@@ -5,7 +5,7 @@ use bb_app::search_mail::SearchMailStore;
 use bb_core::id::{SavedSearchId, SearchMailId, UserId};
 use bb_core::search_mail::{MailDays, MailHour, MailPause, SearchMail};
 use jiff::Timestamp;
-use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
+use sea_query::{Cond, Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
 use crate::db::{Row, StoredId, Transaction, to_micros};
@@ -13,7 +13,7 @@ use crate::error::StoreError;
 use crate::jobs::{enqueue, new_job};
 use crate::schema::{Computed, SearchMailRow};
 
-const COLUMNS: [SearchMailRow; 11] = [
+const COLUMNS: [SearchMailRow; 12] = [
     SearchMailRow::Id,
     SearchMailRow::Holder,
     SearchMailRow::Search,
@@ -22,6 +22,7 @@ const COLUMNS: [SearchMailRow; 11] = [
     SearchMailRow::OnlyWhenChanged,
     SearchMailRow::Paused,
     SearchMailRow::NextAt,
+    SearchMailRow::LastDue,
     SearchMailRow::LastSentAt,
     SearchMailRow::CreatedAt,
     SearchMailRow::UpdatedAt,
@@ -55,6 +56,7 @@ fn read_mail(row: &Row) -> Result<SearchMail, StoreError> {
         only_when_changed: row.get::<bool>(SearchMailRow::OnlyWhenChanged)?,
         paused,
         next_at: row.time(SearchMailRow::NextAt)?,
+        last_due: row.optional_time(SearchMailRow::LastDue)?,
         last_sent_at: row.optional_time(SearchMailRow::LastSentAt)?,
         created_at: row.time(SearchMailRow::CreatedAt)?,
         updated_at: row.time(SearchMailRow::UpdatedAt)?,
@@ -190,6 +192,40 @@ impl SearchMailStore for AuthStorage {
         Ok(true)
     }
 
+    async fn claim_search_mail(
+        &self,
+        id: SearchMailId,
+        due: Timestamp,
+    ) -> Result<bool, StoreError> {
+        let mut update = Query::update();
+        update
+            .table(SearchMailRow::Table)
+            .value(SearchMailRow::LastDue, to_micros(due))
+            .and_where(Expr::col(SearchMailRow::Id).eq(id.stored()))
+            .cond_where(
+                Cond::any()
+                    .add(Expr::col(SearchMailRow::LastDue).is_null())
+                    .add(Expr::col(SearchMailRow::LastDue).lt(to_micros(due))),
+            );
+        Ok(self.database().execute(&update).await? == 1)
+    }
+
+    async fn give_back_search_mail(
+        &self,
+        id: SearchMailId,
+        due: Timestamp,
+        before: Option<Timestamp>,
+    ) -> Result<(), StoreError> {
+        let mut update = Query::update();
+        update
+            .table(SearchMailRow::Table)
+            .value(SearchMailRow::LastDue, Expr::val(before.map(to_micros)))
+            .and_where(Expr::col(SearchMailRow::Id).eq(id.stored()))
+            .and_where(Expr::col(SearchMailRow::LastDue).eq(to_micros(due)));
+        self.database().execute(&update).await?;
+        Ok(())
+    }
+
     async fn search_mail_sent(&self, id: SearchMailId, at: Timestamp) -> Result<(), StoreError> {
         let mut update = Query::update();
         update
@@ -236,6 +272,7 @@ impl SearchMailStore for AuthStorage {
                 Expr::val(mail.only_when_changed),
                 Expr::val(mail.paused.map(MailPause::code)),
                 Expr::val(to_micros(mail.next_at)),
+                Expr::val(mail.last_due.map(to_micros)),
                 Expr::val(mail.last_sent_at.map(to_micros)),
                 Expr::val(to_micros(mail.created_at)),
                 Expr::val(to_micros(mail.updated_at)),

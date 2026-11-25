@@ -104,6 +104,41 @@ impl SearchMailStore for FakeStore {
         Ok(true)
     }
 
+    async fn claim_search_mail(&self, id: SearchMailId, due: Timestamp) -> Result<bool, FakeError> {
+        let mut shared = self.lock();
+        let Some(mail) = shared
+            .state
+            .search_mails
+            .iter_mut()
+            .find(|mail| mail.id == id)
+        else {
+            return Ok(false);
+        };
+        if mail.last_due.is_some_and(|last| last >= due) {
+            return Ok(false);
+        }
+        mail.last_due = Some(due);
+        Ok(true)
+    }
+
+    async fn give_back_search_mail(
+        &self,
+        id: SearchMailId,
+        due: Timestamp,
+        before: Option<Timestamp>,
+    ) -> Result<(), FakeError> {
+        let mut shared = self.lock();
+        if let Some(mail) = shared
+            .state
+            .search_mails
+            .iter_mut()
+            .find(|mail| mail.id == id && mail.last_due == Some(due))
+        {
+            mail.last_due = before;
+        }
+        Ok(())
+    }
+
     async fn search_mail_sent(&self, id: SearchMailId, at: Timestamp) -> Result<(), FakeError> {
         let mut shared = self.lock();
         if let Some(mail) = shared

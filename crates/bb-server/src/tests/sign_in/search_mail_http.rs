@@ -11,6 +11,7 @@ use bb_app::context::Clock as _;
 use bb_app::mailer::MailMessage;
 use bb_app::search_mail::SearchMailStore as _;
 use bb_core::access::FieldLevel;
+use bb_core::app_paths;
 use bb_core::fields::{Field, FieldKey};
 use bb_core::id::{SavedSearchId, UserId};
 use bb_core::search_mail::{MailPause, SEARCH_MAIL_ISSUES_MAX, SEARCH_MAILS_MAX};
@@ -100,8 +101,13 @@ pub(super) fn mails_to(rig: &Rig, to: &str) -> Vec<MailMessage> {
     rig.mailer
         .messages()
         .into_iter()
-        .filter(|mail| mail.to == to && mail.text.contains("/me/notifications"))
+        .filter(|mail| mail.to == to && is_search_mail(mail))
         .collect()
+}
+
+/// Whether an e-mail is the e-mail of an e-mailed search: it links to the list of them.
+pub(super) fn is_search_mail(mail: &MailMessage) -> bool {
+    mail.text.contains(app_paths::NOTIFICATION_SETTINGS)
 }
 
 /// The e-mailed search of `search` for `holder`, as stored.
