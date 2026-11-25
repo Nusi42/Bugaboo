@@ -7,7 +7,7 @@ use bb_core::dashboard::{
     BoxSource, BoxSpec, DASHBOARDS_MAX, Dashboard, DashboardBox, boxes_are_valid, pack,
 };
 use bb_core::event::{DomainEvent, RecordKind};
-use bb_core::id::{DashboardBoxId, DashboardId};
+use bb_core::id::{DashboardBoxId, DashboardId, UserId};
 use bb_core::version::{FIRST_VERSION, next};
 use bb_policy::{Authorized, Permission, Place};
 
@@ -32,6 +32,22 @@ pub(super) struct NewDashboard {
     pub(super) event: DomainEvent,
 }
 
+/// Whether the maker may have one dashboard more outside the trash; it stops with
+/// `limit.reached` (in `why`) when not. Taken under the lock of the maker and counted in the change
+/// that writes, so two changes at once cannot both pass: the one rule of the limit.
+async fn within_limit<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    maker: UserId,
+    why: &Why,
+) -> Result<(), S::Error> {
+    S::lock_dashboards_of(transaction, maker).await?;
+    let have = S::count_dashboards_of_in(transaction, maker).await?;
+    if have >= u64::try_from(DASHBOARDS_MAX).unwrap_or(u64::MAX) {
+        return Err(why.stop::<S>(ErrorCode::LimitReached));
+    }
+    Ok(())
+}
+
 /// The change that writes a new dashboard with its boxes. It stops with `limit.reached` (in
 /// `why`) when the person has as many dashboards as they may have, and with `edit.version-changed`
 /// when it is a *Home* and the person got one meanwhile: both judged in the same change, under the
@@ -44,11 +60,7 @@ pub(super) fn inserting<S: AuthStore>(
     let (dashboard, boxes) = (new.dashboard.clone(), new.boxes.clone());
     move |transaction: &mut S::Transaction| {
         Box::pin(async move {
-            S::lock_dashboards_of(transaction, dashboard.maker).await?;
-            let have = S::count_dashboards_of_in(transaction, dashboard.maker).await?;
-            if have >= u64::try_from(DASHBOARDS_MAX).unwrap_or(u64::MAX) {
-                return Err(why.stop::<S>(ErrorCode::LimitReached));
-            }
+            within_limit::<S>(transaction, dashboard.maker, &why).await?;
             if dashboard.home && S::home_of_in(transaction, dashboard.maker).await?.is_some() {
                 return Err(why.stop::<S>(ErrorCode::VersionChanged));
             }
@@ -70,11 +82,7 @@ fn restoring<S: AuthStore>(
     let taken_out = trashing::<S>(dashboard, version, why.clone());
     move |transaction: &mut S::Transaction| {
         Box::pin(async move {
-            S::lock_dashboards_of(transaction, maker).await?;
-            let have = S::count_dashboards_of_in(transaction, maker).await?;
-            if have >= u64::try_from(DASHBOARDS_MAX).unwrap_or(u64::MAX) {
-                return Err(why.stop::<S>(ErrorCode::LimitReached));
-            }
+            within_limit::<S>(transaction, maker, &why).await?;
             taken_out(transaction).await
         })
     }
@@ -101,8 +109,10 @@ fn trashing<S: AuthStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
-    /// The boxes as they are written on `dashboard`, in the order given: at most twenty that do
-    /// not overlap, each ID named once, the places packed. A box keeps its ID when it is one of
+    /// The boxes as they are written on `dashboard`, in the order given: each ID named once, the
+    /// places packed, and then at most twenty that fit the grid and do not overlap (judged on the
+    /// packed places, so boxes kept below others that packing moves up are never refused for the
+    /// row they were given). A box keeps its ID when it is one of
     /// `known`; the others get new ones. Nothing is judged for a person here.
     ///
     /// # Errors
@@ -118,12 +128,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             .iter()
             .enumerate()
             .any(|(at, id)| named[..at].contains(id));
-        let specs: Vec<BoxSpec> = given.iter().map(|each| each.spec.clone()).collect();
-        if repeated || !boxes_are_valid(&specs) {
-            return Err(ErrorCode::InvalidRequest.into());
-        }
-        let places: Vec<_> = specs.iter().map(|spec| spec.place).collect();
-        Ok(given
+        let places: Vec<_> = given.iter().map(|each| each.spec.place).collect();
+        let boxes: Vec<DashboardBox> = given
             .into_iter()
             .zip(pack(&places).into_iter().zip(0_i64..))
             .map(|(each, (place, position))| DashboardBox {
@@ -135,7 +141,12 @@ impl<S: AuthStore> Ctx<'_, S> {
                 position,
                 spec: BoxSpec { place, ..each.spec },
             })
-            .collect())
+            .collect();
+        let specs: Vec<BoxSpec> = boxes.iter().map(|each| each.spec.clone()).collect();
+        if repeated || !boxes_are_valid(&specs) {
+            return Err(ErrorCode::InvalidRequest.into());
+        }
+        Ok(boxes)
     }
 
     /// The boxes as the actor keeps them on `dashboard`: each title a name, each text trimmed and

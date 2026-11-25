@@ -46,8 +46,9 @@ async fn cfg_03_home_opens_for_a_guest_hr_and_a_person_whose_priority_is_hidden(
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let home = format!("{DASHBOARDS}/home");
-        // A guest reads no *Due date* and no *Priority* at the start: *Due soon* and "My open
-        // issues" are kept and left out of what they see; their *Home* opens with the timer.
+        // A guest reads no *Due date*, and sees people of *Assigned to* by their role only, so
+        // `assigned to is me` is no name of theirs: *Due soon* and "My open issues" are kept and
+        // left out of what they see; their *Home* opens with the timer.
         let (mut guest, _) = site.person_in_acme(StartingRole::Guest, "gus").await?;
         let guests = guest.send("GET", &home, None).await?;
         assert_eq!(box_titles(ok(&guests)?), ["My timer"], "{}", guests.body);
@@ -256,6 +257,71 @@ async fn cfg_03_two_changes_at_once_pass_the_limits_only_once() -> TestResult {
         let mut answers = [one?.status, other?.status];
         answers.sort();
         assert_eq!(answers, [StatusCode::OK, StatusCode::CONFLICT]);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn cfg_03_unseen_boxes_kept_below_a_full_column_still_fit_the_grid() -> TestResult {
+    each_database("cfg_03_unseen_rows", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
+        // Ten boxes 8 high stacked in the first column, and two charts by *Priority*: one under
+        // them, one beside them at the top.
+        let mut boxes: Vec<Value> = (0..10)
+            .map(|at| results(&format!("Box {at}"), "", (0, at * 8, 6, 8)))
+            .collect();
+        for (title, column, row) in [("Under", 0, 80), ("Beside", 6, 0)] {
+            let mut each = chart("", Some("priority"));
+            each["title"] = json!(title);
+            each["column"] = json!(column);
+            each["row"] = json!(row);
+            each["height"] = json!(2);
+            boxes.push(each);
+        }
+        let made = create(&mut bob, "Tall", boxes).await?;
+        assert_eq!(ok(&made)?["boxes"].as_array().map(Vec::len), Some(12));
+        let path = format!("{DASHBOARDS}/{}", id_of(&made)?);
+        field_level(
+            &site,
+            &mut ada,
+            (StartingRole::TeamMember, "priority", "hidden"),
+        )
+        .await?;
+        let frame = bob.send("GET", &path, None).await?;
+        let seen = ok(&frame)?.clone();
+        let named: Vec<Value> = seen["boxes"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .map(|each| {
+                let mut each = each.clone();
+                if let Some(fields) = each.as_object_mut() {
+                    fields.retain(|_, value| !value.is_null());
+                }
+                each
+            })
+            .collect();
+        assert_eq!(named.len(), 10);
+        // Saving the ten keeps the two charts, packed into the grid, and the save is not refused.
+        let changed = bob
+            .send(
+                "PATCH",
+                &path,
+                Some(json!({"version": seen["version"], "name": "Tall too", "boxes": named})),
+            )
+            .await?;
+        assert_eq!(changed.status, StatusCode::OK, "{}", changed.body);
+        field_level(
+            &site,
+            &mut ada,
+            (StartingRole::TeamMember, "priority", "can-see"),
+        )
+        .await?;
+        let again = bob.send("GET", &path, None).await?;
+        assert_eq!(ok(&again)?["boxes"].as_array().map(Vec::len), Some(12));
         Ok(())
     })
     .await
