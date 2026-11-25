@@ -8,6 +8,7 @@ use bb_core::dashboard::{
 };
 use bb_core::event::{DomainEvent, RecordKind};
 use bb_core::id::{DashboardBoxId, DashboardId, UserId};
+use bb_core::pin::PinTarget;
 use bb_core::version::{FIRST_VERSION, next};
 use bb_policy::{Authorized, Permission, Place};
 
@@ -100,6 +101,10 @@ fn trashing<S: AuthStore>(
     move |transaction: &mut S::Transaction| {
         Box::pin(async move {
             if S::set_dashboard_deleted(transaction, id, deleted_at, version).await? {
+                // A pin goes with its target; taking the dashboard out of the trash brings none back.
+                if deleted_at.is_some() {
+                    S::delete_pins_to(transaction, &[PinTarget::Dashboard(id)]).await?;
+                }
                 Ok(())
             } else {
                 Err(why.stop::<S>(ErrorCode::NotFound))

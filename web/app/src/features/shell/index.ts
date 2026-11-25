@@ -14,7 +14,7 @@ export {
 export { addQuickAction, type QuickAction } from "./quick-search-actions.ts";
 export { mayOpen } from "../../shared/places.ts";
 export { useQuickResults } from "./use-quick-results.ts";
-export { NavLink, type NavLinkProps } from "./NavItem.tsx";
+export { NavButton, NavLink, type NavButtonProps, type NavLinkProps } from "./NavItem.tsx";
 export { startOf } from "./screen-start.ts";
 export { useItemTrail, usePageTrail, type TrailStep } from "./page-trail.ts";
 export { SectionFrame, type SectionFrameProps } from "./SectionFrame.tsx";

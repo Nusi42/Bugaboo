@@ -7127,6 +7127,18 @@ pub const PERSONAL_FIELD_PERSON_EMAIL: MessageKey = MessageKey::new("personal-fi
 /// The message `personal-field.person.id`.
 pub const PERSONAL_FIELD_PERSON_ID: MessageKey = MessageKey::new("personal-field.person.id");
 
+/// The message `personal-field.pin.kind`.
+pub const PERSONAL_FIELD_PIN_KIND: MessageKey = MessageKey::new("personal-field.pin.kind");
+
+/// The message `personal-field.pin.person`.
+pub const PERSONAL_FIELD_PIN_PERSON: MessageKey = MessageKey::new("personal-field.pin.person");
+
+/// The message `personal-field.pin.place`.
+pub const PERSONAL_FIELD_PIN_PLACE: MessageKey = MessageKey::new("personal-field.pin.place");
+
+/// The message `personal-field.pin.target`.
+pub const PERSONAL_FIELD_PIN_TARGET: MessageKey = MessageKey::new("personal-field.pin.target");
+
 /// The message `personal-field.project-share.percent`.
 pub const PERSONAL_FIELD_PROJECT_SHARE_PERCENT: MessageKey =
     MessageKey::new("personal-field.project-share.percent");
@@ -7986,6 +7998,9 @@ pub const PERSONAL_KIND_PERSON_SETTING_COUNTER: MessageKey =
 pub const PERSONAL_KIND_PERSON_STANDING: MessageKey =
     MessageKey::new("personal-kind.person-standing");
 
+/// The message `personal-kind.pin`.
+pub const PERSONAL_KIND_PIN: MessageKey = MessageKey::new("personal-kind.pin");
+
 /// The message `personal-kind.project-share`.
 pub const PERSONAL_KIND_PROJECT_SHARE: MessageKey = MessageKey::new("personal-kind.project-share");
 
@@ -8090,6 +8105,27 @@ pub const PERSONAL_PURPOSE_ORGANIZATION: MessageKey =
 
 /// The message `personal-purpose.technical`.
 pub const PERSONAL_PURPOSE_TECHNICAL: MessageKey = MessageKey::new("personal-purpose.technical");
+
+/// The message `pins.down`.
+pub const PINS_DOWN: MessageKey = MessageKey::new("pins.down");
+
+/// The message `pins.heading`.
+pub const PINS_HEADING: MessageKey = MessageKey::new("pins.heading");
+
+/// The message `pins.pin`.
+pub const PINS_PIN: MessageKey = MessageKey::new("pins.pin");
+
+/// The message `pins.show-all`.
+pub const PINS_SHOW_ALL: MessageKey = MessageKey::new("pins.show-all");
+
+/// The message `pins.show-fewer`.
+pub const PINS_SHOW_FEWER: MessageKey = MessageKey::new("pins.show-fewer");
+
+/// The message `pins.unpin`.
+pub const PINS_UNPIN: MessageKey = MessageKey::new("pins.unpin");
+
+/// The message `pins.up`.
+pub const PINS_UP: MessageKey = MessageKey::new("pins.up");
 
 /// The message `plan-way-out.give-to-someone-else`.
 pub const PLAN_WAY_OUT_GIVE_TO_SOMEONE_ELSE: MessageKey =
@@ -20024,6 +20060,39 @@ pub fn person_work_times_intro(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("person.work-times-intro"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `pins.menu`.
+#[must_use]
+pub fn pins_menu(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("pins.menu"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The values of the message `pins.moved`, by name.
+#[derive(Clone, Copy)]
+pub struct PinsMoved<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{place}`.
+    pub place: i64,
+    /// The value of `{total}`.
+    pub total: i64,
+}
+
+/// The message `pins.moved`.
+#[must_use]
+pub fn pins_moved(values: PinsMoved<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("pins.moved"),
+        vec![
+            ("name", Value::Text(values.name.to_string())),
+            ("place", Value::Number(values.place)),
+            ("total", Value::Number(values.total)),
+        ],
     )
 }
 

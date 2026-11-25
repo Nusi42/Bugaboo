@@ -147,6 +147,9 @@ use super::{
     workflows,
 };
 
+use crate::pins::{
+    OrderPins, PinList, PinRequest, PinsQuery, my_pins, order_pins, pin_to_sidebar, unpin,
+};
 use crate::relations::{IssueMapQuery, RelationMap, SearchMapQuery, issue_map, search_map};
 
 use crate::boards::{BoardPage, BoardQuery, board};

@@ -5,6 +5,7 @@ import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "../../shared/api.ts";
 import { pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
+import { refreshPins } from "../../shared/refresh-pins.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
 /** A saved search as the person sees it. */
@@ -25,6 +26,8 @@ export type Presentation = Schema<"PresentationRef">;
 /** Something about saved searches changed: every list and every search is read again. */
 export function refreshSavedSearches(): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.search.savedAll() });
+  // A pin shows the name of its search, and a trashed or unshared search leaves the pins.
+  refreshPins();
 }
 
 /** One saved search by its ID; `404` (not found) for one the person may not open. */

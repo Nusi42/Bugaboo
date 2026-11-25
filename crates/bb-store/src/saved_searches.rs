@@ -211,7 +211,11 @@ impl SavedSearchStore for AuthStorage {
     ) -> Result<Option<SavedSearch>, StoreError> {
         let mut select = search_select();
         select.and_where(Expr::col(SavedSearchRow::Id).eq(id.stored()));
-        Ok(limits::limited(transaction, &select).await?.pop())
+        let found = limits::limited(transaction, &select).await?.pop();
+        if found.is_none() {
+            limits::read_for_missing(transaction, id).await?;
+        }
+        Ok(found)
     }
 
     async fn search_columns_in(

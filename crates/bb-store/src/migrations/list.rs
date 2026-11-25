@@ -346,6 +346,11 @@ pub(super) const ALL: &[Definition] = &[
         steps: || Ok(super::m0068_search_mail::steps()),
     },
     Definition {
+        version: 69,
+        name: "pins",
+        steps: || Ok(super::m0069_pins::steps()),
+    },
+    Definition {
         version: 70,
         name: "deadline_drivers",
         steps: || Ok(super::m0070_deadline_drivers::steps()),

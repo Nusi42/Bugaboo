@@ -190,6 +190,8 @@ words! {
         Passkey => "passkey",
         /// A person.
         Person => "person",
+        /// The pins of a person; the record is the person (CFG-05).
+        Pin => "pin",
         /// A project.
         Project => "project",
         /// One relation between two issues.

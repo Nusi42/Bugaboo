@@ -102,6 +102,7 @@ mod m0065_releases;
 mod m0066_board_calendar_card;
 mod m0067_dashboards;
 mod m0068_search_mail;
+mod m0069_pins;
 mod m0070_deadline_drivers;
 mod release_layouts;
 

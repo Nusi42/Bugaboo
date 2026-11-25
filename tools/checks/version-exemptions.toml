@@ -380,3 +380,7 @@ reason = "A request is answered once: the change moves it only from the state wa
 [[exempt]]
 routes = ["POST /api/v1/board", "POST /api/v1/calendar"]
 reason = "A board and a calendar read and save nothing: they are posted because the options of the view do not fit an address. A card or an issue is moved by PATCH /api/v1/issues/{issue}, which takes the version of the issue (ADR-0019, ADR-0034 amendment 2026-11-24)."
+
+[[exempt]]
+routes = ["POST /api/v1/me/pins", "DELETE /api/v1/me/pins", "PUT /api/v1/me/pins/order"]
+reason = "The pins are the person's own list and have no version to read before: pinning and unpinning say what they want and change nothing when it is so already, and the order names the pins it sees, which take the places the same pins held, under the lock of the person's pins, so two changes at the same moment are judged one after the other (ADR-0050, decision 12)."

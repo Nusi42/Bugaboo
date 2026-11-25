@@ -40,6 +40,7 @@ use crate::layouts::LayoutStore;
 use crate::many_changes::ManyChangeStore;
 use crate::notifications::{HandleStore, NotificationStore};
 use crate::offers::OfferStore;
+use crate::pins::PinStore;
 use crate::ports::ChangeStore;
 use crate::projects::ProjectStore;
 use crate::relations::RelationStore;
@@ -403,6 +404,7 @@ pub trait AuthStore:
     + SavedSearchStore
     + crate::dashboards::DashboardStore
     + crate::search_mail::SearchMailStore
+    + PinStore
     + crate::themes::ThemeStore
     + crate::backups::BackupStore
     + SearchStore

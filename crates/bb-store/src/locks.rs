@@ -56,7 +56,9 @@ pub(crate) enum LockClass {
     TextIndex = 11,
     /// Making saved searches and sharing them, and making e-mailed searches (key: four bytes of the
     /// person's ID): two changes of one person at the same moment cannot both pass the limits of
-    /// searches, of shares and of e-mailed searches.
+    /// searches, of shares and of e-mailed searches. The pins of the same person (`pins`) take this
+    /// lock too: all are the person's own lists and never change in one transaction, so one class
+    /// serves.
     SavedSearches = 12,
     /// Making dashboards and sharing them (key: four bytes of the maker's ID): two changes of one
     /// person at the same moment cannot both pass the limits of dashboards and of shares, or both

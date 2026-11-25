@@ -4,6 +4,7 @@ import { keepPreviousData, skipToken, useMutation, useQuery } from "@tanstack/re
 import { api } from "../../shared/api.ts";
 import { fieldList, linesFrom, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
+import { refreshPins } from "../../shared/refresh-pins.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 
 /** A project in a list, as the server sends it: the fields can be missing. */
@@ -119,6 +120,8 @@ export function useMovePreview(project: string, target: MoveTarget | null) {
 /** A project was made, changed or moved: every list and every project is read again. */
 export function refreshProjects(): void {
   void queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+  // A pin shows the name of its project.
+  refreshPins();
 }
 
 /** What is needed to make a project. */

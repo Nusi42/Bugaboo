@@ -69,6 +69,17 @@ pub(super) async fn limited(
     Ok(searches)
 }
 
+/// Reads the card limits of a search that is not there and drops them: a search that is missing runs the
+/// statements of one that is found, so the number of statements tells nothing of whether it exists (ADR-0034,
+/// decision 4).
+pub(super) async fn read_for_missing(
+    reader: &mut impl Reader,
+    id: SavedSearchId,
+) -> Result<(), StoreError> {
+    reader.fetch_all(&limits_select(&[id])).await?;
+    Ok(())
+}
+
 /// Writes the card limits of a saved search in place of the ones it had.
 pub(super) async fn put_limits(
     transaction: &mut Transaction,

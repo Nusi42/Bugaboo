@@ -644,6 +644,7 @@ mod lookup;
 mod mail;
 mod oauth;
 mod people_state;
+mod pins;
 mod relations;
 mod releases;
 mod saved_searches;

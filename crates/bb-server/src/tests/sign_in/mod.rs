@@ -103,6 +103,7 @@ mod perf_notifications;
 mod perf_queries;
 mod perf_timeline_http;
 mod permissions_http;
+mod pins_http;
 mod plan_card_http;
 mod plan_dates_http;
 mod plan_dependencies_http;

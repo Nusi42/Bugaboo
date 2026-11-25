@@ -23,6 +23,7 @@ import type { messages as manyChanges } from "./many-changes.ts";
 import type { messages as mySettings } from "./my-settings.ts";
 import type { messages as notifications } from "./notifications.ts";
 import type { messages as people } from "./people.ts";
+import type { messages as pins } from "./pins.ts";
 import type { messages as projects } from "./projects.ts";
 import type { messages as relationKinds } from "./relation-kinds.ts";
 import type { messages as relations } from "./relations.ts";
@@ -65,6 +66,7 @@ export type MessageKey =
   | keyof typeof mySettings
   | keyof typeof notifications
   | keyof typeof people
+  | keyof typeof pins
   | keyof typeof projects
   | keyof typeof relationKinds
   | keyof typeof relations
@@ -648,6 +650,8 @@ export interface MessageArguments {
   "person.switched-off": { name: string | number };
   "person.via-app": { app: string | number; who: string | number };
   "person.work-times-intro": { name: string | number };
+  "pins.menu": { name: string | number };
+  "pins.moved": { name: string | number; place: number; total: number };
   "plan-warning.away": { days: string | number; issue: string | number; person: string | number };
   "plan-warning.cannot-fit": {
     due: string | number;

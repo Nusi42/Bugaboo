@@ -74,6 +74,7 @@ const DELETED: &[(EntityMarks, &[Link])] = &[
     deleted::<crate::edit::EditNotice>(RECIPIENT),
     deleted::<crate::notification::Notification>(RECIPIENT),
     deleted::<crate::follow::Follower>(SUBJECT),
+    deleted::<crate::pin::Pin>(HOLDER),
     deleted::<crate::work_times::record::UsualWorkDay>(SUBJECT),
     deleted::<crate::work_times::record::AwayTime>(SUBJECT),
     deleted::<crate::work_times::record::ProjectShare>(SUBJECT),

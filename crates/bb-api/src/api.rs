@@ -91,6 +91,7 @@ mod own_access;
 mod people;
 mod people_state;
 mod people_visibility;
+mod pins;
 mod previews;
 mod projects;
 mod projects_move;
@@ -230,6 +231,7 @@ where
         .merge(files::routes())
         .merge(history::routes())
         .merge(follow::routes())
+        .merge(pins::routes())
         .merge(saved_searches::routes())
         .merge(dashboards::routes(limits))
         .merge(search_mail::routes())

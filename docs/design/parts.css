@@ -6499,6 +6499,35 @@ textarea,
   font-weight: var(--weight-regular);
 }
 
+[data-part="pinned.row"] {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+[data-part="pinned.row"] [data-part="nav-item"] {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+}
+
+[data-part="pinned.more"] {
+  flex: none;
+}
+
+[data-part="pin-label"] {
+  display: inline-grid;
+  justify-items: start;
+}
+
+[data-part="pin-label.word"] {
+  grid-area: 1 / 1;
+}
+
+[data-part="pin-label.word"][data-state~="spare"] {
+  visibility: hidden;
+}
+
 [data-part="bottom-bar"] {
   border-top: var(--border-width) solid var(--divider);
   background: var(--bg-surface);

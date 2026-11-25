@@ -95,6 +95,7 @@ areas! {
     files,
     notify,
     oauth,
+    pins,
     plan,
     releases,
     search_mail,

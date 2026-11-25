@@ -64,7 +64,7 @@ const fn owner<E: Entity>(owner: &'static str) -> Whose {
 pub const fn whose(kind: RecordKind) -> Whose {
     use RecordKind as K;
     match kind {
-        K::Person | K::Timer | K::WorkTimes | K::Share => Whose::ThePerson,
+        K::Person | K::Pin | K::Timer | K::WorkTimes | K::Share => Whose::ThePerson,
         K::AccessKey => owner::<crate::access_key::AccessKey>("owner"),
         K::Agent => owner::<crate::agent::Agent>("person"),
         K::AgentWork => owner::<crate::agent_records::IssueWork>("person"),
@@ -121,6 +121,7 @@ pub const MADE_ONLY_BY_THEIR_OWNER: &[RecordKind] = &[
     RecordKind::Passkey,
     RecordKind::ConnectedApp,
     RecordKind::Session,
+    RecordKind::Pin,
 ];
 
 /// The names of the members of the changes that hold a person, as the events store them. The use

@@ -5,6 +5,7 @@
 use bb_core::ErrorCode;
 use bb_core::event::{DomainEvent, FieldChange, RecordKind};
 use bb_core::id::SavedSearchId;
+use bb_core::pin::PinTarget;
 use bb_core::saved_search::{
     BoardOptions, CalendarOptions, Presentation, SAVED_SEARCHES_MAX, SavedSearch, SearchColumn,
     TimelineOptions,
@@ -87,6 +88,10 @@ fn trashing<S: AuthStore>(
     move |transaction: &mut S::Transaction| {
         Box::pin(async move {
             if S::set_saved_search_deleted(transaction, id, deleted_at, version).await? {
+                // A pin goes with its target; taking the search out of the trash brings none back.
+                if deleted_at.is_some() {
+                    S::delete_pins_to(transaction, &[PinTarget::SavedSearch(id)]).await?;
+                }
                 Ok(())
             } else {
                 Err(why.stop::<S>(ErrorCode::NotFound))

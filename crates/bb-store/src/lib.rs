@@ -48,6 +48,7 @@ mod oauth;
 mod offers;
 mod paging;
 mod person_data;
+mod pins;
 mod plan;
 mod policy;
 mod projects;

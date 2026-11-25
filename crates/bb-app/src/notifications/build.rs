@@ -295,8 +295,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let Some(kind) = RecordKind::from_code(event.entity.kind.as_str()) else {
             return Ok(());
         };
-        // Every kind of record is either read here or listed as one that tells nobody anything:
-        // a new kind does not compile until it is one or the other.
+        // Every kind is read here or listed as one that tells nobody: a new kind must be one or the other.
         match kind {
             RecordKind::Issue => self.issue_event(round, event).await,
             RecordKind::Comment => self.comment_event(round, event).await,
@@ -331,6 +330,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             | RecordKind::Label
             | RecordKind::LabelGroup
             | RecordKind::Passkey
+            | RecordKind::Pin
             | RecordKind::Relation
             | RecordKind::Layout
             | RecordKind::RelationKind

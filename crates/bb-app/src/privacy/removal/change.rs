@@ -22,6 +22,7 @@ use bb_core::id::{IdError, IdSource, JobId, UserId};
 use bb_core::keeping::{KeepKind, KeptUntil};
 use bb_core::oauth::GrantEnd;
 use bb_core::person::{HoldReason, PersonStanding, Standing, cleared_address};
+use bb_core::pin::PinTarget;
 use bb_core::removal::{AtRemoval, at_removal, deleted_kinds, kept_when_shared};
 use bb_core::secret::StoredSecret;
 use bb_core::settings::privacy::{PRIVACY_REMOVED_TEXTS, RemovedTexts};
@@ -234,20 +235,47 @@ pub async fn prepare_removal<S: AuthStore>(
 }
 
 /// Deletes the person's private dashboards and their *Home*, with their names and box titles in
-/// the changes (ADR-0050, decision 11); a shared one stays, made by *Former user*.
+/// the changes (ADR-0050, decision 11), with the pins to them; a shared one stays, made by *Former user*.
 async fn delete_private_dashboards_in<S: AuthStore>(
     transaction: &mut S::Transaction,
     person: UserId,
 ) -> Result<(), S::Error> {
+    let gone = S::delete_private_dashboards_of(transaction, person).await?;
+    let pinned: Vec<PinTarget> = gone.iter().copied().map(PinTarget::Dashboard).collect();
+    S::delete_pins_to(transaction, &pinned).await?;
     let dashboards = Scrub {
-        records: S::delete_private_dashboards_of(transaction, person)
-            .await?
+        records: gone
             .into_iter()
             .map(|dashboard| entity(RecordKind::Dashboard, dashboard))
             .collect(),
         ..Scrub::default()
     };
     S::scrub_records(transaction, person, &dashboards)
+        .await
+        .map(|_| ())
+}
+
+/// Private searches go with their names and texts in the changes (M5-F62, M5-F63), and the pins to them,
+/// whoever pinned them, go with them.
+async fn delete_private_searches_in<S: AuthStore>(
+    transaction: &mut S::Transaction,
+    person: UserId,
+) -> Result<(), S::Error> {
+    let searches = S::delete_private_searches_of(transaction, person).await?;
+    let pinned: Vec<PinTarget> = searches
+        .iter()
+        .copied()
+        .map(PinTarget::SavedSearch)
+        .collect();
+    S::delete_pins_to(transaction, &pinned).await?;
+    let searches = Scrub {
+        records: searches
+            .into_iter()
+            .map(|search| entity(RecordKind::SavedSearch, search))
+            .collect(),
+        ..Scrub::default()
+    };
+    S::scrub_records(transaction, person, &searches)
         .await
         .map(|_| ())
 }
@@ -302,16 +330,7 @@ pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
     delete_work_times_in::<S>(transaction, person).await?;
     // A change of the address that waits for its link goes with the account.
     S::drop_e_mail_change(transaction, person).await?;
-    // Private searches go with their names and texts in the changes (M5-F62, M5-F63).
-    let searches = S::delete_private_searches_of(transaction, person).await?;
-    let searches = Scrub {
-        records: searches
-            .into_iter()
-            .map(|search| entity(RecordKind::SavedSearch, search))
-            .collect(),
-        ..Scrub::default()
-    };
-    S::scrub_records(transaction, person, &searches).await?;
+    delete_private_searches_in::<S>(transaction, person).await?;
     delete_private_dashboards_in::<S>(transaction, person).await?;
     S::delete_two_step(transaction, person).await?;
     S::delete_grants_of(transaction, person).await?;

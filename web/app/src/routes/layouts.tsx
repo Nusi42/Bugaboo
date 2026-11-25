@@ -63,11 +63,16 @@ async function joinProjects(): Promise<void> {
   if (projectsJoined) {
     return;
   }
-  const projects = await import("../features/projects/index.ts");
+  const [projects, pins] = await Promise.all([
+    import("../features/projects/index.ts"),
+    import("../features/pins/index.ts"),
+  ]);
   // Marked only now: when the import fails, the next page tries again. Two pages that waited
   // together join once.
   if (!projectsJoined) {
     projectsJoined = true;
+    // *Pinned* stands above the project tree, so it joins first.
+    pins.registerPins();
     projects.registerProjects();
   }
 }

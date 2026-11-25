@@ -5,6 +5,7 @@ import { projectIssuesAddress } from "../../shared/paths.ts";
 
 import { projectPages } from "../../shared/project-pages.ts";
 import { OwnFieldsOfProject } from "../fields/index.ts";
+import { PinButton, pinKind } from "../pins/index.ts";
 import { ProjectFacts } from "./ProjectFacts.tsx";
 import { ProjectGate } from "./ProjectGate.tsx";
 import { SubProjects } from "./SubProjects.tsx";
@@ -19,6 +20,7 @@ function Overview({ project }: { readonly project: OneProject }) {
         <Link href={projectIssuesAddress(project.project.short_name)}>
           {t("issues.of-project")}
         </Link>
+        <PinButton kind={pinKind.project} target={project.project.id} />
       </Card>
       <OwnFieldsOfProject project={project} />
       <SubProjects project={project} />

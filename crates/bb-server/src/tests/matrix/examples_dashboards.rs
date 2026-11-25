@@ -29,7 +29,10 @@ fn a_timer() -> Value {
 }
 
 /// A dashboard of the actor with one box: its ID and the ID of the box.
-async fn theirs(fixture: &Fixture<'_>, browser: &mut Browser) -> Result<(String, String), Failure> {
+pub(super) async fn theirs(
+    fixture: &Fixture<'_>,
+    browser: &mut Browser,
+) -> Result<(String, String), Failure> {
     let made = browser
         .send(
             "POST",

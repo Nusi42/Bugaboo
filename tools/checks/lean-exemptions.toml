@@ -563,3 +563,9 @@ route = "GET /api/v1/dashboards/ready-made-boxes"
 property = "boxes"
 whole_value = true
 reason = "The ready-made boxes are the rows of one list of the code (READY_MADE_BOXES, ten): bounded by the code, not by data, and Add box shows them all at once (ADR-0050, decision 4; a hard cap, M1-F44)."
+
+[[exempt]]
+route = "GET /api/v1/me/pins"
+property = "items"
+whole_value = true
+reason = "The pins of one person are at most PINS_MAX (30, ADR-0050, decision 12), counted in the change that makes one, so the list is bounded when it is written and never grows with the data; the sidebar needs all of it at once, and a pin the person may not open is left out without a word and without a count (M10-F83)."

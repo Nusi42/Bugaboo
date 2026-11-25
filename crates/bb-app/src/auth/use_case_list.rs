@@ -368,6 +368,14 @@ macro_rules! each_use_case {
             follow_issue(FollowIssue) -> Done;
             /// Stops following an issue.
             unfollow_issue(UnfollowIssue) -> Done;
+            /// Lists the pins of the person that they may open.
+            my_pins(PinsQuery) -> Authorized<PinList>;
+            /// Pins a project or a saved search to the sidebar.
+            pin_to_sidebar(PinRequest) -> Done;
+            /// Takes a pin away.
+            unpin(PinRequest) -> Done;
+            /// Puts the pins of the person in a new order.
+            order_pins(OrderPins) -> Done;
             /// Lists who follows an issue.
             followers(FollowersQuery) -> Authorized<Followers>;
             /// Whether the person follows an issue.

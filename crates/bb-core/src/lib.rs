@@ -60,6 +60,7 @@ pub mod paging;
 pub mod people_kinds;
 pub mod person;
 pub mod personal;
+pub mod pin;
 pub mod plain;
 pub mod plan;
 pub mod project;

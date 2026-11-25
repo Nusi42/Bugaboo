@@ -3559,6 +3559,45 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/me/pins": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The pins of the person that they may open, in their order. */
+    get: operations["listPins"];
+    put?: never;
+    /**
+     * Pins a project or a saved search that the person may open to the end of their pins. Pinning
+     *     what is pinned changes nothing.
+     */
+    post: operations["createPin"];
+    /** Takes a pin away. Taking away what is not pinned changes nothing. */
+    delete: operations["deletePin"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/me/pins/order": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Puts the pins named in the order given. The pins the person does not see keep their places. */
+    put: operations["orderPins"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me/settings": {
     parameters: {
       query?: never;
@@ -11302,6 +11341,11 @@ export interface components {
     OptionalSavedSearchBody: {
       search: components["schemas"]["SavedSearchItem"] | null;
     };
+    /** @description The pins in the order the person wants them. */
+    OrderBody: {
+      /** @description The pins the person sees, in the new order. */
+      pins: components["schemas"]["PinBody"][];
+    };
     /** @description The change that is about to be made. */
     OwnChangeBody:
       | {
@@ -11972,6 +12016,34 @@ export interface components {
           /** @enum {string} */
           shown: "former";
         };
+    /** @description What a pin points to. */
+    PinBody: {
+      /** @description A project or a saved search. */
+      kind: components["schemas"]["PinKind"];
+      /** @description The ID of the project or the saved search. */
+      target: string;
+    };
+    /** @description One pin of the person. */
+    PinItem: {
+      /** @description The ID of the project or the saved search. */
+      id: string;
+      /** @description A project or a saved search. */
+      kind: components["schemas"]["PinKind"];
+      /** @description Its name. */
+      name: string;
+      /** @description The short name of a project, which is in its address; none for a saved search. */
+      short_name?: string | null;
+    };
+    /**
+     * @description What a pin points to: a project, a saved search or a dashboard.
+     * @enum {string}
+     */
+    PinKind: "project" | "saved-search" | "dashboard";
+    /** @description The pins of the person that they may open, in their order. */
+    PinListBody: {
+      /** @description The pins. */
+      items: components["schemas"]["PinItem"][];
+    };
     /**
      * @description Where a row of *Who has which role* is: the whole organization, a project, or a project the
      *     person cannot see (which is not named).
@@ -12676,6 +12748,7 @@ export interface components {
       | "connected-app"
       | "passkey"
       | "person"
+      | "pin"
       | "project"
       | "relation"
       | "release"
@@ -22616,6 +22689,118 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["NameBody"];
         };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  listPins: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The pins. */
+      200: {
+        headers: {
+          etag: components["headers"]["ETag"];
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PinListBody"];
+        };
+      };
+      304: components["responses"]["NotModified"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  createPin: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PinBody"];
+      };
+    };
+    responses: {
+      /** @description The pin is there. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  deletePin: {
+    parameters: {
+      query: {
+        /** @description A project or a saved search. */
+        kind: components["schemas"]["PinKind"];
+        /** @description The ID of the project or the saved search. */
+        target: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The pin is not there. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  orderPins: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["OrderBody"];
+      };
+    };
+    responses: {
+      /** @description The pins are in the new order. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];

@@ -24,6 +24,7 @@ export { messages as manyChanges } from "./many-changes.ts";
 export { messages as mySettings } from "./my-settings.ts";
 export { messages as notifications } from "./notifications.ts";
 export { messages as people } from "./people.ts";
+export { messages as pins } from "./pins.ts";
 export { messages as projects } from "./projects.ts";
 export { messages as relationKinds } from "./relation-kinds.ts";
 export { messages as relations } from "./relations.ts";

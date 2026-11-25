@@ -128,6 +128,14 @@ pub(crate) mod agent {
     pub(crate) const PERSON: &str = bb_core::whose::members::PERSON;
 }
 
+/// The members of the event of the pins of a person (CFG-05).
+pub(crate) mod pin {
+    /// A pin that was made or taken away.
+    pub(crate) const PIN: &str = "pin";
+    /// The order of the pins after a move.
+    pub(crate) const ORDER: &str = "order";
+}
+
 /// The member of the event of someone following an issue or leaving it.
 pub(crate) mod follower {
     pub(crate) const PERSON: &str = bb_core::whose::members::FOLLOWER;

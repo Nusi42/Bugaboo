@@ -12482,6 +12482,179 @@
         "x-permission": "own-account"
       }
     },
+    "/api/v1/me/pins": {
+      "get": {
+        "tags": ["pins"],
+        "summary": "The pins of the person that they may open, in their order.",
+        "operationId": "listPins",
+        "responses": {
+          "200": {
+            "description": "The pins.",
+            "headers": {
+              "etag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PinListBody"
+                }
+              }
+            }
+          },
+          "304": {
+            "$ref": "#/components/responses/NotModified"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-never-stored": true,
+        "x-permission": "signed-in"
+      },
+      "post": {
+        "tags": ["pins"],
+        "summary": "Pins a project or a saved search that the person may open to the end of their pins. Pinning\nwhat is pinned changes nothing.",
+        "operationId": "createPin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PinBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The pin is there."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      },
+      "delete": {
+        "tags": ["pins"],
+        "summary": "Takes a pin away. Taking away what is not pinned changes nothing.",
+        "operationId": "deletePin",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "description": "A project or a saved search.",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PinKind"
+            }
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "description": "The ID of the project or the saved search.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "The pin is not there."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/me/pins/order": {
+      "put": {
+        "tags": ["pins"],
+        "summary": "Puts the pins named in the order given. The pins the person does not see keep their places.",
+        "operationId": "orderPins",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "The pins are in the new order."
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/me/settings": {
       "get": {
         "tags": ["settings"],
@@ -32691,6 +32864,20 @@
           }
         }
       },
+      "OrderBody": {
+        "type": "object",
+        "description": "The pins in the order the person wants them.",
+        "required": ["pins"],
+        "properties": {
+          "pins": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PinBody"
+            },
+            "description": "The pins the person sees, in the new order."
+          }
+        }
+      },
       "OwnChangeBody": {
         "oneOf": [
           {
@@ -34174,6 +34361,63 @@
         ],
         "description": "How a person is shown to one viewer."
       },
+      "PinBody": {
+        "type": "object",
+        "description": "What a pin points to.",
+        "required": ["kind", "target"],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/PinKind",
+            "description": "A project or a saved search."
+          },
+          "target": {
+            "type": "string",
+            "description": "The ID of the project or the saved search."
+          }
+        }
+      },
+      "PinItem": {
+        "type": "object",
+        "description": "One pin of the person.",
+        "required": ["kind", "id", "name"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The ID of the project or the saved search."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PinKind",
+            "description": "A project or a saved search."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          },
+          "short_name": {
+            "type": ["string", "null"],
+            "description": "The short name of a project, which is in its address; none for a saved search."
+          }
+        }
+      },
+      "PinKind": {
+        "type": "string",
+        "description": "What a pin points to: a project, a saved search or a dashboard.",
+        "enum": ["project", "saved-search", "dashboard"]
+      },
+      "PinListBody": {
+        "type": "object",
+        "description": "The pins of the person that they may open, in their order.",
+        "required": ["items"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PinItem"
+            },
+            "description": "The pins."
+          }
+        }
+      },
       "PlaceRef": {
         "oneOf": [
           {
@@ -35485,6 +35729,7 @@
           "connected-app",
           "passkey",
           "person",
+          "pin",
           "project",
           "relation",
           "release",

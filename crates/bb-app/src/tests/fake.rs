@@ -148,6 +148,7 @@ pub(crate) struct State {
     pub(crate) comment_versions: Vec<CommentVersion>,
     pub(crate) mentions: Vec<Mention>,
     pub(crate) followers: Vec<Follower>,
+    pub(crate) pins: Vec<bb_core::pin::Pin>,
     pub(crate) history: Vec<HistoryEntry>,
     /// How many events the history has finished (their place in the outbox).
     pub(crate) history_position: i64,

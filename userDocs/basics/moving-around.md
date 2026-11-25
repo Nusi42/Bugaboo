@@ -6,6 +6,8 @@ Bugaboo looks a little different on a computer, a tablet and a phone, but it has
 
 A **menu** stands on the left. It has a search button, the start page, *My settings* and, for administrators, *Organization settings*. Press "Narrow the menu" to keep only the icons and give the page more room; press "Widen the menu" to bring the words back. Bugaboo remembers your choice on this device.
 
+Under the menu entries comes **Pinned**: the projects and saved searches you pinned, in your order. Pin one with "Pin to sidebar" on its page and take it off with "Unpin". The button beside each pinned item opens its menu: "Move up", "Move down" and "Unpin". You can pin 30 things at most. When more than 8 are pinned the menu shows 8 and "Show all pinned". With the narrow menu only the icons show; the name is read aloud and shows when you point at it. Something you can no longer open is not shown; it comes back when you can open it again, and it is gone for good when it is deleted.
+
 The bar at the top says where you are, for example "My settings › Appearance". Every part except the last one can be pressed to take you one step up.
 
 ## On a tablet
@@ -14,7 +16,7 @@ The menu is hidden to give the page the whole width. Press "Menu" at the top to 
 
 ## On a phone
 
-Bugaboo shows one page at a time. A bar with labelled buttons sits at the bottom: "Home", "Search" and "More". "More" opens a sheet with *My settings*, *Organization settings* (for administrators), "Keyboard shortcuts" and "Sign out".
+Bugaboo shows one page at a time. A bar with labelled buttons sits at the bottom: "Home", "Search" and "More". "More" opens a sheet that starts with **Pinned** and has *My settings*, *Organization settings* (for administrators), "Keyboard shortcuts" and "Sign out".
 
 On a page that is part of another one, "Back" at the top takes you one step back. The back gesture of your phone does the same.
 

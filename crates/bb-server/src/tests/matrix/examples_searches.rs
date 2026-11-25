@@ -25,7 +25,10 @@ fn nobodys_search() -> Result<String, Failure> {
 const SEARCHES: &str = "/api/v1/saved-searches";
 
 /// A saved search of the actor: its ID.
-async fn their_search(fixture: &Fixture<'_>, browser: &mut Browser) -> Result<String, Failure> {
+pub(super) async fn their_search(
+    fixture: &Fixture<'_>,
+    browser: &mut Browser,
+) -> Result<String, Failure> {
     let made = browser
         .send(
             "POST",
@@ -124,8 +127,13 @@ pub(super) async fn search_request(
             format!("/api/v1/projects/{target}/list"),
             Some(json!({"search": null})),
         ),
-        // The dashboards are the actor's own records like saved searches, made the same way.
+        // The pins and the dashboards are the actor's own records like saved searches, made the same way.
         _ => {
+            if let Some(found) =
+                super::examples_pins::pin_request(fixture, operation, browser).await?
+            {
+                return Ok(Some(found));
+            }
             return super::examples_dashboards::dashboard_request(fixture, operation, browser)
                 .await;
         }

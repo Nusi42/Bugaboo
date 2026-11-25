@@ -7685,6 +7685,40 @@ part "nav-item.tooltip" {
     font-weight "$weight-regular"
 }
 
+// ───────────── Pinned (sidebar) ─────────────
+
+// A pinned item: its link takes the room and the button of its menu stands at its end.
+part "pinned.row" {
+    display flex
+    align-items center
+    gap "$space-1"
+}
+
+part "pinned.row nav-item" {
+    flex 1
+    width auto
+    min-width 0
+}
+
+part "pinned.more" {
+    flex none
+}
+
+// The label of *Pin to sidebar* and *Unpin*: both words stand in one place and the one that is not meant is unseen, so
+// the button keeps its width when it turns round and nothing moves under the pointer (UX §6.4).
+part "pin-label" {
+    display inline-grid
+    justify-items start
+}
+
+part "pin-label.word" {
+    grid-area "1 / 1"
+}
+
+part "pin-label.word[state=spare]" {
+    visibility hidden
+}
+
 part "bottom-bar" {
     border-top "$border-width solid $divider"
     background "$bg-surface"

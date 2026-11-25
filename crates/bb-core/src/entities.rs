@@ -78,6 +78,7 @@ crate::entities! {
     crate::dashboard::Dashboard,
     crate::dashboard::DashboardBox,
     crate::dashboard::DashboardShare,
+    crate::pin::Pin,
     crate::saved_search::ProjectDefaultList,
     crate::saved_search::SavedSearch,
     crate::saved_search::SearchColumn,

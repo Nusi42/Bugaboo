@@ -24,6 +24,7 @@ use super::scenarios_issues as si;
 use super::scenarios_layouts as sl;
 use super::scenarios_never_sent as snv;
 use super::scenarios_notifications as sn;
+use super::scenarios_pins as spn;
 use super::scenarios_plan as spl;
 use super::scenarios_relations as sr;
 use super::scenarios_search_mail as ssm;
@@ -241,6 +242,9 @@ table! {
     "set_search_mail" => ssm::set_search_mail_scenario,
     "stop_search_mail" => ssm::stop_search_mail_scenario,
     "restore_search" => ss::restore_search_scenario,
+    "pin_to_sidebar" => spn::pin_to_sidebar_scenario,
+    "unpin" => spn::unpin_scenario,
+    "order_pins" => spn::order_pins_scenario,
     "create_release" => srl::create_release_scenario,
     "change_release" => srl::change_release_scenario,
     "delete_release" => srl::delete_release_scenario,
