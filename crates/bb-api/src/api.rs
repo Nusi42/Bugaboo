@@ -58,7 +58,9 @@ mod auth_factors;
 mod auth_people;
 mod auth_sign_in;
 mod backups;
+mod board;
 mod bodies;
+mod calendar;
 mod check_access;
 mod comments;
 mod data_exports;
@@ -212,6 +214,8 @@ where
         .merge(issue_dates::routes())
         .merge(search::routes(limits))
         .merge(timeline::routes(limits))
+        .merge(board::routes(limits))
+        .merge(calendar::routes(limits))
         .merge(timeline_factor::routes())
         .merge(relations::routes())
         .merge(relation_map::routes(limits))

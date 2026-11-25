@@ -4443,6 +4443,108 @@
         "x-permission": "signed-in"
       }
     },
+    "/api/v1/board": {
+      "post": {
+        "tags": ["board"],
+        "summary": "A board of a search: a column for each status (statuses of the same name merged across the\nworkflows of the issues found), status group or choice, with how many issues the reader sees in\neach and its card limit (`over` when the count is above it, nothing refused); the rows; and the\nfirst cards of each cell, in the order of the search, each with the fields of its layout *Card*\nand where it may go (`moves`, from what its own workflow allows the reader). Restricted issues\nare in no column and no count. With `more`, the next cards of one cell. It reads and counts\nagainst the searches of the person; an access key reads it as its person may.",
+        "operationId": "getBoard",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BoardBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "A board.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BoardPageBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
+    "/api/v1/calendar": {
+      "post": {
+        "tags": ["calendar"],
+        "summary": "The issues of a search whose date field (*Dates from*: *Due date* unless the options name\n*Start date* or an own date field) lies in a window of at most six weeks, each on its day, at\nmost 200 (`more` says when there are more), and the due dates of their goals as marks. Restricted\nissues and dates the reader may not read are on no day. It reads and counts against the\nsearches of the person; an access key reads it as its person may.",
+        "operationId": "getCalendar",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The issues of a window of days.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarPageBody"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "x-permission": "signed-in"
+      }
+    },
     "/api/v1/check-access/people": {
       "get": {
         "tags": ["access"],
@@ -23059,6 +23161,223 @@
           }
         }
       },
+      "BoardBody": {
+        "type": "object",
+        "description": "Ask for a board: a saved search or a search text, and the options of the view.",
+        "properties": {
+          "board": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardOptionsBody",
+                "description": "The options of the view: the columns, the rows and the card limits. Left out, a saved\nsearch shows the ones it keeps, and a search text a column for each status."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "description": "How many cards a cell holds at most, from 1 to 50; any other number is refused with `request.invalid`.",
+            "maximum": 50,
+            "minimum": 1
+          },
+          "more": {
+            "type": ["string", "null"],
+            "description": "The `next_cursor` of one cell, for its next cards (*Show more*); left out, the whole board."
+          },
+          "only_this_project": {
+            "type": "boolean",
+            "description": "*Only this project*: `project is KEY` in place of `project within KEY`."
+          },
+          "project": {
+            "type": ["string", "null"],
+            "description": "The project whose board it is, by ID or short name: `project within KEY` is written into\nthe text, the project and everything below it; left out, everywhere the person sees."
+          },
+          "saved_search": {
+            "type": ["string", "null"],
+            "description": "The saved search the board is a view of, by its ID; or else `search_text`."
+          },
+          "search_text": {
+            "type": ["string", "null"],
+            "description": "The search text, which need not be saved; used when `saved_search` is left out."
+          }
+        },
+        "additionalProperties": false
+      },
+      "BoardCardBody": {
+        "type": "object",
+        "description": "A card.",
+        "required": ["issue", "fields", "moves"],
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldKey"
+            },
+            "description": "The fields the card shows, in order (the layout *Card* of its type, as the reader may read\nit); the Issue ID and the title always show."
+          },
+          "issue": {
+            "$ref": "#/components/schemas/IssueItem",
+            "description": "The issue, with what the reader may see of it in its project."
+          },
+          "moves": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CardMoveBody"
+            },
+            "description": "Where it may go and why not, one for each column it is not in."
+          }
+        }
+      },
+      "BoardCellBody": {
+        "type": "object",
+        "description": "The cards of one column in one row.",
+        "required": ["column", "row", "count", "cards", "next_cursor"],
+        "properties": {
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardCardBody"
+            },
+            "description": "The first cards, in the order of the search (at the start: priority, then last changed)."
+          },
+          "column": {
+            "type": "integer",
+            "description": "The column, by its place.",
+            "minimum": 0
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many issues the reader sees in the cell.",
+            "minimum": 0
+          },
+          "next_cursor": {
+            "type": ["string", "null"],
+            "description": "The cursor of the next cards of the cell (give it as `more`); `null` when there are none."
+          },
+          "row": {
+            "type": ["integer", "null"],
+            "description": "The row, by its place; `null` on a board without rows.",
+            "minimum": 0
+          }
+        }
+      },
+      "BoardColumnBody": {
+        "type": "object",
+        "description": "A column.",
+        "required": ["key", "status_group", "count", "limit", "over"],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many issues the reader sees in it.",
+            "minimum": 0
+          },
+          "key": {
+            "type": ["string", "null"],
+            "description": "What the column stands for as the search language writes it: the name of a status, the\nword of a status group, the name of a choice; `null` for the issues without a value."
+          },
+          "limit": {
+            "type": ["integer", "null"],
+            "format": "int32",
+            "description": "Its card limit; `null` for none.",
+            "minimum": 0
+          },
+          "over": {
+            "type": "boolean",
+            "description": "Whether more cards than the limit are in it: nothing is refused."
+          },
+          "status_group": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/StatusGroup",
+                "description": "The status group of a column of a status group."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "BoardOptionsBody": {
+        "type": "object",
+        "description": "The options of a board view (ADR-0034, amendment of 2026-11-24). Left out, a saved search keeps\na column for each status, no rows and no card limits.",
+        "required": ["columns", "rows"],
+        "properties": {
+          "card_limits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CardLimitBody"
+            },
+            "description": "The card limits of the columns that have one, each column once."
+          },
+          "columns": {
+            "type": ["string", "null"],
+            "description": "The field the columns come from, by its search word: `status group` or an own field that\nholds one choice; `null` for *Status*, statuses of the same name being one column."
+          },
+          "rows": {
+            "type": ["string", "null"],
+            "description": "The field the rows come from, by its search word (one the readable fields mark\n`timeline_group`); `null` for no rows."
+          }
+        },
+        "additionalProperties": false
+      },
+      "BoardPageBody": {
+        "type": "object",
+        "description": "A board.",
+        "required": ["search_text", "columns", "rows", "rows_truncated", "cells"],
+        "properties": {
+          "cells": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardCellBody"
+            },
+            "description": "The cells that hold issues."
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardColumnBody"
+            },
+            "description": "The columns, in order; empty columns stay."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BoardRowBody"
+            },
+            "description": "The rows, in order, at most 20; empty without rows."
+          },
+          "rows_truncated": {
+            "type": "boolean",
+            "description": "Whether the search found more rows than the board shows."
+          },
+          "search_text": {
+            "type": "string",
+            "description": "The search text that was run: a project's board has its project written in."
+          }
+        }
+      },
+      "BoardRowBody": {
+        "type": "object",
+        "description": "A row of a board.",
+        "required": ["key", "issues"],
+        "properties": {
+          "issues": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many issues the reader sees in it.",
+            "minimum": 0
+          },
+          "key": {
+            "$ref": "#/components/schemas/SearchGroupKeyBody",
+            "description": "What the row is, as the reader may see it (people shown alike are one row)."
+          }
+        }
+      },
       "BookedDayBody": {
         "type": "object",
         "description": "One day of one's own week compared with the time booked on issues, in whole minutes.",
@@ -23152,6 +23471,190 @@
         "type": "string",
         "description": "A part of a brief taken from the issue.",
         "enum": ["description", "steps-to-reproduce", "done-when"]
+      },
+      "CalendarBody": {
+        "type": "object",
+        "description": "Ask for the issues of a window of days.",
+        "required": ["calendar", "first", "last"],
+        "properties": {
+          "calendar": {
+            "$ref": "#/components/schemas/CalendarOptionsBody",
+            "description": "The options of the view: the date field (*Dates from*)."
+          },
+          "first": {
+            "type": "string",
+            "format": "date",
+            "description": "The first day of the window (`2026-11-30`)."
+          },
+          "last": {
+            "type": "string",
+            "format": "date",
+            "description": "The last day of the window; a window is six weeks at most."
+          },
+          "only_this_project": {
+            "type": "boolean",
+            "description": "*Only this project*: `project is KEY` in place of `project within KEY`."
+          },
+          "project": {
+            "type": ["string", "null"],
+            "description": "The project whose calendar it is, by ID or short name: `project within KEY` is written into\nthe text; left out, everywhere the person sees."
+          },
+          "saved_search": {
+            "type": ["string", "null"],
+            "description": "The saved search the calendar is a view of, by its ID; or else `search_text`."
+          },
+          "search_text": {
+            "type": ["string", "null"],
+            "description": "The search text, which need not be saved; used when `saved_search` is left out."
+          }
+        },
+        "additionalProperties": false
+      },
+      "CalendarEntryBody": {
+        "type": "object",
+        "description": "An issue on its day.",
+        "required": ["day", "issue", "may_move"],
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "description": "The day of its date field."
+          },
+          "issue": {
+            "$ref": "#/components/schemas/IssueItem",
+            "description": "The issue, with what the reader may see of it in its project."
+          },
+          "may_move": {
+            "type": "boolean",
+            "description": "Whether the reader may change the date field on this issue: only then can it be dragged."
+          }
+        }
+      },
+      "CalendarMarkBody": {
+        "type": "object",
+        "description": "The due date of a goal, a mark that is not dragged.",
+        "required": ["issue", "readable_id", "title", "day"],
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "description": "Its *Due date*."
+          },
+          "issue": {
+            "type": "string",
+            "description": "The goal, by its internal ID."
+          },
+          "readable_id": {
+            "type": "string",
+            "description": "Its readable ID."
+          },
+          "title": {
+            "type": ["string", "null"],
+            "description": "Its title; `null` when the reader may not read it."
+          }
+        }
+      },
+      "CalendarOptionsBody": {
+        "type": "object",
+        "description": "The options of a calendar view (ADR-0034, amendment of 2026-11-24). Left out, a saved search\nkeeps *Due date* and a month.",
+        "required": ["dates_field", "span"],
+        "properties": {
+          "dates_field": {
+            "type": ["string", "null"],
+            "description": "The date field the issues stand on (*Dates from*), by its search word; `null` for *Due\ndate*."
+          },
+          "span": {
+            "$ref": "#/components/schemas/CalendarSpan",
+            "description": "What the calendar shows first."
+          }
+        },
+        "additionalProperties": false
+      },
+      "CalendarPageBody": {
+        "type": "object",
+        "description": "The issues of a window of days.",
+        "required": ["search_text", "entries", "more", "marks"],
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarEntryBody"
+            },
+            "description": "The issues, by day, then in the order of the search."
+          },
+          "marks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalendarMarkBody"
+            },
+            "description": "The due dates of the goals of the issues shown that lie in the window."
+          },
+          "more": {
+            "type": "boolean",
+            "description": "Whether the window holds more than the 200 issues answered."
+          },
+          "search_text": {
+            "type": "string",
+            "description": "The search text that was run: a project's calendar has its project written in."
+          }
+        }
+      },
+      "CalendarSpan": {
+        "type": "string",
+        "description": "What a calendar shows first: a month or a week.",
+        "enum": ["month", "week"]
+      },
+      "CardLimitBody": {
+        "type": "object",
+        "description": "The soft limit of one column of a board: the column's title says \"4 of 3\" when more cards are in\nit, and nothing is refused (ADR-0034, amendment of 2026-11-24).",
+        "required": ["column", "limit"],
+        "properties": {
+          "column": {
+            "type": ["string", "null"],
+            "description": "The column, by the `key` of a column of the board: the name of a status or a choice, or the\nword of a status group; `null` for the column of the issues without a value."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "The card limit of the column, from 1 to 999: above it the column's title turns orange.",
+            "maximum": 999,
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "CardMoveBody": {
+        "type": "object",
+        "description": "Where a card may go, or why not.",
+        "required": ["column", "to", "needs", "refused"],
+        "properties": {
+          "column": {
+            "type": "integer",
+            "description": "The column, by its place among the columns.",
+            "minimum": 0
+          },
+          "needs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldKey"
+            },
+            "description": "The fields the change asks for first; empty when it needs none."
+          },
+          "refused": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MoveRefusedBody",
+                "description": "Why the card may not go there; `null` when it may."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to": {
+            "type": ["string", "null"],
+            "description": "The status the card enters there (the `to` of the status change); `null` for a column of\nchoices, whose move is the change of the field."
+          }
+        }
       },
       "CertificateBody": {
         "type": "object",
@@ -27952,8 +28455,8 @@
       },
       "LayoutKind": {
         "type": "string",
-        "description": "What a layout is for: the issue page or the new-issue form.",
-        "enum": ["new-issue", "issue-page"]
+        "description": "What a layout is for: the issue page, the new-issue form or the card of a board.",
+        "enum": ["new-issue", "issue-page", "card"]
       },
       "LengthBody": {
         "type": "object",
@@ -29134,6 +29637,11 @@
             "description": "The list was cut: it names the first people it found."
           }
         }
+      },
+      "MoveRefusedBody": {
+        "type": "string",
+        "description": "Why a card may not go to a column.",
+        "enum": ["no-such-status", "no-such-change", "cannot-change"]
       },
       "MoveRightKind": {
         "type": "string",
@@ -32041,6 +32549,28 @@
         "description": "How the results of a saved search are shown. How close together the rows are is not part of\nit: every list follows the person's setting `appearance.spacing` (ADR-0034, amendment), and a\n`spacing` an older client still sends is not read.",
         "required": ["view", "columns", "group_by"],
         "properties": {
+          "board": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BoardOptionsBody",
+                "description": "The options of the board, kept for every view; left out of a change, the search keeps the\nones it has."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "calendar": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CalendarOptionsBody",
+                "description": "The options of the calendar, kept for every view; left out of a change, the search keeps\nthe ones it has."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "columns": {
             "type": "array",
             "items": {
@@ -32065,7 +32595,7 @@
           },
           "view": {
             "$ref": "#/components/schemas/ViewKind",
-            "description": "The kind of view. M5 shows the kind `list`."
+            "description": "The kind of view."
           }
         }
       },
@@ -36990,8 +37520,8 @@
       },
       "ViewKind": {
         "type": "string",
-        "description": "The kind of view a saved search is shown as: a list, the timeline or the relation map. Other kinds come with their views.",
-        "enum": ["list", "timeline", "map"]
+        "description": "The kind of view a saved search is shown as: a list, the timeline, the relation map, a board or a calendar.",
+        "enum": ["list", "timeline", "map", "board", "calendar"]
       },
       "WaitsFor": {
         "type": "string",

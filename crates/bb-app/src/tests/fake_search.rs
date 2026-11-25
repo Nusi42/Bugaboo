@@ -87,6 +87,16 @@ impl SearchStore for FakeStore {
         Ok(found)
     }
 
+    async fn search_cell_pages(
+        &self,
+        request: &SearchRequest,
+        _cells: &crate::search::Cells,
+        _window: &crate::search::CellWindow,
+    ) -> Result<Vec<crate::search::CellHit>, SearchFailure> {
+        self.lock().searches.push(request.clone());
+        Ok(Vec::new())
+    }
+
     async fn search_page(&self, request: &SearchRequest) -> Result<Vec<SearchHit>, SearchFailure> {
         let mut shared = self.lock();
         shared.searches.push(request.clone());
@@ -129,6 +139,7 @@ impl SearchStore for FakeStore {
                     Some(each) => each.total = each.total.plus(&group.total),
                     None => merged.push(GroupTotal {
                         key,
+                        then: None,
                         total: group.total,
                     }),
                 }
@@ -145,6 +156,7 @@ pub(crate) fn counted(groups: Vec<(GroupKey, u64)>) -> Totals {
         .into_iter()
         .map(|(key, issues)| GroupTotal {
             key,
+            then: None,
             total: Total {
                 issues,
                 sums: Vec::new(),

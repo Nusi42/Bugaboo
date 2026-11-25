@@ -5,7 +5,9 @@
 use bb_core::ErrorCode;
 use bb_core::event::RecordKind;
 use bb_core::id::{GroupId, ProjectId, SavedSearchId};
-use bb_core::saved_search::{Presentation, SearchSet, ShareKind, ShareTarget, TimelineOptions};
+use bb_core::saved_search::{
+    BoardOptions, CalendarOptions, Presentation, SearchSet, ShareKind, ShareTarget, TimelineOptions,
+};
 use bb_policy::StartingRole;
 
 use super::scenarios::{a_project, text, token};
@@ -187,6 +189,8 @@ async fn qry_06_only_the_maker_changes_a_saved_search() -> Outcome {
         renamed.presentation,
         Presentation {
             timeline: Some(TimelineOptions::default()),
+            board: Some(BoardOptions::default()),
+            calendar: Some(CalendarOptions::default()),
             ..Presentation::default()
         }
     );

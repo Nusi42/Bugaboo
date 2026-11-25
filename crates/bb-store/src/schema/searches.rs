@@ -17,6 +17,10 @@ pub(crate) enum SavedSearchRow {
     TimelineEnd,
     PlanByEffort,
     Zoom,
+    BoardColumns,
+    BoardRows,
+    CalendarDates,
+    CalendarSpan,
     CreatedAt,
     UpdatedAt,
     DeletedAt,
@@ -32,6 +36,17 @@ pub(crate) enum SearchColumnRow {
     Position,
     Field,
     Width,
+}
+
+/// The card limits of the board of a saved search, in order.
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum SearchCardLimitRow {
+    #[iden = "saved_search_card_limit"]
+    Table,
+    Search,
+    Position,
+    ColumnValue,
+    CardLimit,
 }
 
 /// The groups and projects a saved search is shared with. The target has **no reference**: it holds
@@ -68,6 +83,10 @@ stored_tables! {
         TimelineEnd => timeline,
         PlanByEffort => timeline,
         Zoom => timeline,
+        BoardColumns => board,
+        BoardRows => board,
+        CalendarDates => calendar,
+        CalendarSpan => calendar,
         CreatedAt => created_at,
         UpdatedAt => updated_at,
         DeletedAt => deleted_at,
@@ -78,6 +97,12 @@ stored_tables! {
         Position => position,
         Field => field,
         Width => width,
+    },
+    SearchCardLimitRow => bb_core::saved_search::SearchCardLimit {
+        Search => search,
+        Position => position,
+        ColumnValue => column,
+        CardLimit => limit,
     },
     SearchShareRow => bb_core::saved_search::SearchShare {
         Search => search,

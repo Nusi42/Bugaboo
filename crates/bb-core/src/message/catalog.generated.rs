@@ -4136,6 +4136,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("labels.take-off", "Take off {name}"),
     ("labels.take-off-short", "Take off"),
     ("labels.take-project-off", "Take off {name}"),
+    ("layout-kind.card", "Card"),
     ("layout-kind.issue-page", "Issue page"),
     ("layout-kind.new-issue", "New-issue form"),
     ("layout.section-details", "Details"),
@@ -5816,6 +5817,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     (
         "personal-field.row-naming-person.row",
         "Record that names them",
+    ),
+    ("personal-field.saved-search.board", "Options of the board"),
+    (
+        "personal-field.saved-search.calendar",
+        "Options of the calendar",
     ),
     ("personal-field.saved-search.created-at", "Created on"),
     (

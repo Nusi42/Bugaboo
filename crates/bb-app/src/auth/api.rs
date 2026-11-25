@@ -146,6 +146,8 @@ use super::{
 
 use crate::relations::{IssueMapQuery, RelationMap, SearchMapQuery, issue_map, search_map};
 
+use crate::boards::{BoardPage, BoardQuery, board};
+use crate::calendar::{CalendarPage, CalendarQuery, calendar};
 use crate::plan::{
     AcceptWarning, AcceptedWarningView, MoveAfterQuery, MovePreviewPage, SetTimeFactor,
     TimeFactorQuery, TimeFactorView, TimelinePage, TimelineQuery, accept_warning,

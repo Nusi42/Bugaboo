@@ -98,6 +98,7 @@ mod m0061_agent_requests;
 mod m0062_agent_switches;
 mod m0063_timer_by_issue;
 mod m0064_walk_index;
+mod m0066_board_calendar_card;
 
 pub(crate) use m0057_person_standing::VERSION as REPLAY_WAITING_FROM;
 #[cfg(test)]

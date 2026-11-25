@@ -4563,6 +4563,9 @@ pub const LABELS_TAGS_TITLE: MessageKey = MessageKey::new("labels.tags-title");
 /// The message `labels.take-off-short`.
 pub const LABELS_TAKE_OFF_SHORT: MessageKey = MessageKey::new("labels.take-off-short");
 
+/// The message `layout-kind.card`.
+pub const LAYOUT_KIND_CARD: MessageKey = MessageKey::new("layout-kind.card");
+
 /// The message `layout-kind.issue-page`.
 pub const LAYOUT_KIND_ISSUE_PAGE: MessageKey = MessageKey::new("layout-kind.issue-page");
 
@@ -7182,6 +7185,14 @@ pub const PERSONAL_FIELD_ROW_NAMING_PERSON_PERSON: MessageKey =
 /// The message `personal-field.row-naming-person.row`.
 pub const PERSONAL_FIELD_ROW_NAMING_PERSON_ROW: MessageKey =
     MessageKey::new("personal-field.row-naming-person.row");
+
+/// The message `personal-field.saved-search.board`.
+pub const PERSONAL_FIELD_SAVED_SEARCH_BOARD: MessageKey =
+    MessageKey::new("personal-field.saved-search.board");
+
+/// The message `personal-field.saved-search.calendar`.
+pub const PERSONAL_FIELD_SAVED_SEARCH_CALENDAR: MessageKey =
+    MessageKey::new("personal-field.saved-search.calendar");
 
 /// The message `personal-field.saved-search.created-at`.
 pub const PERSONAL_FIELD_SAVED_SEARCH_CREATED_AT: MessageKey =

@@ -1,7 +1,7 @@
 //! What the timeline is asked and what it answers (PLAN-01, PLAN-08, PLAN-10, PLAN-13).
 
 use bb_core::holidays::Holiday;
-use bb_core::id::{IssueId, SavedSearchId};
+use bb_core::id::IssueId;
 use bb_core::plan::Days;
 use bb_core::plan::bar::WorkedOut;
 use bb_core::plan::warning::{Warning, WarningKind, WayOut};
@@ -14,16 +14,7 @@ use jiff::civil::Date;
 use serde::Serialize;
 
 use crate::issues::IssueView;
-use crate::search::ShownKey;
-
-/// The search a timeline shows: a saved search the reader may open, or a text.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum TimelineSearch {
-    /// A saved search, by its ID.
-    Saved(SavedSearchId),
-    /// A search text, which need not be saved.
-    Text(String),
-}
+use crate::search::{ShownKey, ViewSearch};
 
 /// Which part of the timeline a page is of.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -39,7 +30,7 @@ pub struct TimelineQuery {
     /// The secret of the session of the request.
     pub session_token: String,
     /// The search.
-    pub search: TimelineSearch,
+    pub search: ViewSearch,
     /// The project whose timeline it is (the project and the projects inside it), by ID or short
     /// name; none for everywhere the reader sees.
     pub project: Option<String>,

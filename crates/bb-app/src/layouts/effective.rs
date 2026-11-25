@@ -28,15 +28,13 @@ pub(super) struct Viewer<'a> {
     pub(super) required: &'a [FieldKey],
 }
 
-/// Whether the level of the field lets the person see it, or fill it in on the new-issue form.
+/// Whether the level of the field lets the person see it, or fill it in on the new-issue form
+/// ([`LayoutKind::level_needed`]).
 pub(super) fn level_allows(kind: LayoutKind, field: FieldKey, viewer: &Viewer<'_>) -> bool {
     match field {
         FieldKey::BuiltIn(built_in) => {
             built_in_fields(kind).contains(&built_in)
-                && match kind {
-                    LayoutKind::IssuePage => viewer.mask.can_see(field),
-                    LayoutKind::NewIssue => viewer.mask.can_change(field),
-                }
+                && viewer.mask.level(field) >= kind.level_needed()
         }
         FieldKey::Own(_) => viewer.own.contains(&field),
     }
@@ -237,45 +235,49 @@ mod tests {
         /// CFG-01: whatever the layout lists, a person is shown a field only when one of their
         /// roles is ticked for it and their own level (the highest of their roles, read from the
         /// levels the world was made from and not from the engine) lets them see it, or fill it
-        /// in on the new-issue form. And the other way round: nothing that passes both halves is
-        /// lost.
+        /// in on the new-issue form; the card of a board is held to the rule of the issue page
+        /// (ADR-0027, amendment of 2026-11-24). And the other way round: nothing that passes both
+        /// halves is lost.
         #[test]
         fn cfg_01_a_layout_never_shows_a_field_the_role_cannot_see(world in world()) {
             let roles = role_ids();
-            let kind = if world.new_issue { LayoutKind::NewIssue } else { LayoutKind::IssuePage };
+            let kinds = if world.new_issue {
+                vec![LayoutKind::NewIssue]
+            } else {
+                vec![LayoutKind::IssuePage, LayoutKind::Card]
+            };
             let held = evaluation_of(&world, &roles);
-            let content = content_of(&world, &roles, kind);
             let mine: Vec<RoleId> = held.roles().iter().map(|role| role.id).collect();
             let mask = held.field_mask_for(None);
             let own = BTreeSet::new();
             let viewer = Viewer { roles: &mine, mask: &mask, own: &own, required: &[] };
-            let shown: Vec<FieldKey> = effective(&content, kind, &viewer)
-                .into_iter()
-                .flat_map(|section| section.fields)
-                .collect();
-            let needed = match kind {
-                LayoutKind::IssuePage => FieldLevel::CanSee,
-                LayoutKind::NewIssue => FieldLevel::CanChange,
-            };
-            for (at, field) in FIELDS.iter().enumerate() {
-                let best = roles
-                    .iter()
-                    .zip(&world.held)
-                    .zip(&world.levels)
-                    .filter(|((_, held), _)| **held)
-                    .map(|(_, levels)| FieldLevel::ALL[levels[at]])
-                    .max();
-                let ticked = content.placed().any(|placed| {
-                    placed.field == FieldKey::from(*field)
-                        && placed.roles.iter().any(|role| mine.contains(role))
-                });
-                let allowed = best.is_some_and(|level| level >= needed)
-                    && built_in_fields(kind).contains(field);
-                prop_assert_eq!(
-                    shown.contains(&FieldKey::from(*field)),
-                    ticked && allowed,
-                    "{:?} on {:?}", field, kind
-                );
+            for kind in kinds {
+                let content = content_of(&world, &roles, kind);
+                let shown: Vec<FieldKey> = effective(&content, kind, &viewer)
+                    .into_iter()
+                    .flat_map(|section| section.fields)
+                    .collect();
+                let needed = kind.level_needed();
+                for (at, field) in FIELDS.iter().enumerate() {
+                    let best = roles
+                        .iter()
+                        .zip(&world.held)
+                        .zip(&world.levels)
+                        .filter(|((_, held), _)| **held)
+                        .map(|(_, levels)| FieldLevel::ALL[levels[at]])
+                        .max();
+                    let ticked = content.placed().any(|placed| {
+                        placed.field == FieldKey::from(*field)
+                            && placed.roles.iter().any(|role| mine.contains(role))
+                    });
+                    let allowed = best.is_some_and(|level| level >= needed)
+                        && built_in_fields(kind).contains(field);
+                    prop_assert_eq!(
+                        shown.contains(&FieldKey::from(*field)),
+                        ticked && allowed,
+                        "{:?} on {:?}", field, kind
+                    );
+                }
             }
         }
     }

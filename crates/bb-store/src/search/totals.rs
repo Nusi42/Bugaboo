@@ -11,8 +11,8 @@
 //! their places (`GroupKey::place`).
 
 use bb_app::search::{
-    FieldPlace, FieldTarget, GroupBy, GroupPage, GroupPlace, GroupTotal, ReadableWhere, SUMS_MAX,
-    SearchRequest, Sum, SumAsked, Total, Totals, TotalsAsked,
+    FieldPlace, FieldTarget, GroupBy, GroupKey, GroupPage, GroupPlace, GroupTotal, ReadableWhere,
+    SUMS_MAX, SearchRequest, Sum, SumAsked, Total, Totals, TotalsAsked,
 };
 use bb_core::id::UserId;
 use bb_core::own_fields::FieldType;
@@ -23,11 +23,14 @@ use sea_query::{
 
 use super::order::{GroupValue, Grouping, bigint};
 use super::source::{Repeats, Rows};
-use super::statements::{Built, GROUP_COLUMN, finish, found, read_key};
+use super::statements::{Built, GROUP_COLUMN, Sorted, finish, found, read_key, read_key_at};
 use super::{CompileError, Compiler, nothing};
 use crate::db::{Dialect, Row, StoredId as _};
 use crate::error::StoreError;
 use crate::schema::IssueRow;
+
+/// The column of the value of the second field of a group ([`GroupBy::then`]).
+const THEN_COLUMN: Sorted = Sorted(1);
 
 /// The name of a column of the statements of the totals.
 #[derive(Clone, Copy)]
@@ -78,7 +81,7 @@ const FOUND: &str = "found";
 
 /// The statements of the totals: of the groups (with what their keys are) and of all the issues.
 pub(crate) struct TotalsPlan {
-    pub(crate) groups: Option<(Built, GroupValue)>,
+    pub(crate) groups: Option<(Built, GroupValue, Option<GroupValue>)>,
     pub(crate) all: Option<Built>,
     /// Whether the total of all is the groups added up instead of read by its statement.
     pub(crate) from_groups: FromGroups,
@@ -125,13 +128,22 @@ fn whole(rows: usize, limit: u64) -> bool {
 }
 
 /// How the issues are split into groups, as the inner statement needs it.
-struct Split {
-    value: Expr,
-    rows: Option<Rows>,
+pub(super) struct Split {
+    pub(super) value: Expr,
+    pub(super) rows: Option<Rows>,
     what: GroupValue,
+    /// The value of the second field of one value, and what it is, when each group is split again.
+    then: Option<(Expr, GroupValue)>,
     /// Whether a row of an issue may stand twice in one group, which the inner statement then
     /// reads once.
     distinct: bool,
+}
+
+impl Split {
+    /// What the value of a group is.
+    pub(super) const fn what(&self) -> GroupValue {
+        self.what
+    }
 }
 
 impl Compiler<'_> {
@@ -179,9 +191,15 @@ impl Compiler<'_> {
             .into())
     }
 
-    /// How the field of `by` splits the issues, with the people of a set as one group.
-    fn split(&self, by: &GroupBy) -> Result<Split, CompileError> {
+    /// How the field of `by` splits the issues, with the people of a set as one group, and each
+    /// group again by the second field when there is one.
+    pub(super) fn split(&self, by: &GroupBy) -> Result<Split, CompileError> {
         let merged = !by.people.is_empty();
+        let then = by
+            .then
+            .as_deref()
+            .map(|word| self.one_grouping(word))
+            .transpose()?;
         let (value, rows, what) = match self.grouping(&by.word)? {
             Grouping::One(value, what) => (value, None, what),
             Grouping::Many { rows, value, what } => (value, Some(rows), what),
@@ -194,6 +212,7 @@ impl Compiler<'_> {
                 value,
                 rows,
                 what,
+                then,
                 distinct,
             });
         }
@@ -201,6 +220,7 @@ impl Compiler<'_> {
             value: people_sets(&value, &by.people),
             rows,
             what: GroupValue::People,
+            then,
             distinct,
         })
     }
@@ -215,6 +235,9 @@ impl Compiler<'_> {
         let mut select = Query::select();
         if let Some(split) = split {
             select.expr_as(split.value.clone(), GROUP_COLUMN);
+            if let Some((then, _)) = &split.then {
+                select.expr_as(then.clone(), THEN_COLUMN);
+            }
         }
         select.expr_as(Expr::col((IssueRow::Table, IssueRow::Id)), ISSUE);
         for (sum, columns) in sums.iter().zip(SUM_COLUMNS) {
@@ -241,8 +264,11 @@ impl Compiler<'_> {
     ) -> Result<Built, CompileError> {
         let inner = self.inner(split, sums)?;
         let mut outer = Query::select();
-        if split.is_some() {
+        if let Some(split) = split {
             outer.column(GROUP_COLUMN);
+            if split.then.is_some() {
+                outer.column(THEN_COLUMN);
+            }
         }
         outer.expr_as(Func::count(Expr::col(sea_query::Asterisk)), ISSUES);
         for columns in SUM_COLUMNS.iter().take(sums.len()) {
@@ -256,6 +282,9 @@ impl Compiler<'_> {
         outer.from_subquery(inner, Alias::new(FOUND));
         if let Some(split) = split {
             outer.group_by_col(GROUP_COLUMN);
+            if split.then.is_some() {
+                outer.group_by_col(THEN_COLUMN);
+            }
             if let Some(page) = page {
                 self.cut_to(&mut outer, split.what, page)?;
             }
@@ -405,7 +434,11 @@ pub(crate) fn totals_statements(
     };
     let statement = asked.all && from_groups != FromGroups::Always;
     Ok(TotalsPlan {
-        groups: Some((groups, split.what)),
+        groups: Some((
+            groups,
+            split.what,
+            split.then.as_ref().map(|(_, what)| *what),
+        )),
         all: statement.then(all).transpose()?,
         from_groups,
     })
@@ -443,17 +476,28 @@ fn nothing_counted(sums: usize) -> Total {
 /// set), which counts in the total of all but in no group, and how many rows there were.
 pub(crate) fn read_groups(
     rows: &[Row],
-    what: GroupValue,
+    (what, then): (GroupValue, Option<GroupValue>),
     sums: usize,
 ) -> Result<(Vec<GroupTotal>, Total), StoreError> {
     let mut groups = Vec::with_capacity(rows.len());
     let mut outside = nothing_counted(sums);
     for row in rows {
         let total = read_total(row, sums)?;
-        match read_key(row, what)? {
-            Some(key) => groups.push(GroupTotal { key, total }),
-            None => outside = outside.plus(&total),
-        }
+        let Some(key) = read_key(row, what)? else {
+            outside = outside.plus(&total);
+            continue;
+        };
+        let then = match then {
+            Some(then) => {
+                let Some(key) = read_key_at(row, then, THEN_COLUMN)? else {
+                    outside = outside.plus(&total);
+                    continue;
+                };
+                Some(key)
+            }
+            None => None,
+        };
+        groups.push(GroupTotal { key, then, total });
     }
     Ok((groups, outside))
 }
@@ -478,6 +522,7 @@ pub(crate) fn read_all(
 
 /// The groups in the order of their places, put together with the total of all.
 pub(crate) fn totals_of(mut groups: Vec<GroupTotal>, all: Total) -> Totals {
-    groups.sort_by_cached_key(|group| group.key.place());
+    groups
+        .sort_by_cached_key(|group| (group.key.place(), group.then.as_ref().map(GroupKey::place)));
     Totals { groups, all }
 }

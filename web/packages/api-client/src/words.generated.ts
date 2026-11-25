@@ -88,7 +88,7 @@ export const choiceColorWords = [
 ] as const;
 
 /** Every word of `LayoutKind`, in the order the server lists them. */
-export const layoutKindWords = ["new-issue", "issue-page"] as const;
+export const layoutKindWords = ["new-issue", "issue-page", "card"] as const;
 
 /** Every word of `HistoryTab`, in the order the server lists them. */
 export const historyTabWords = ["everything", "comments", "changes"] as const;

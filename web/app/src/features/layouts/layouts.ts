@@ -31,6 +31,7 @@ export function kindName(kind: FormKind): string {
   const names = {
     "new-issue": t("layout-kind.new-issue"),
     "issue-page": t("layout-kind.issue-page"),
+    card: t("layout-kind.card"),
   } as const satisfies Record<FormKind, string>;
   return names[kind];
 }

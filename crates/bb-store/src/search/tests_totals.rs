@@ -48,6 +48,7 @@ impl AuthStorage {
             by: Some(GroupBy {
                 word: by.to_owned(),
                 people: Vec::new(),
+                then: None,
                 page: None,
             }),
             sums: Vec::new(),
@@ -187,6 +188,7 @@ async fn qry_08_the_compiler_adds_up_groups_and_sets_of_people() -> TestResult {
             Some(GroupBy {
                 word: word.to_owned(),
                 people,
+                then: None,
                 page: None,
             })
         };
@@ -305,6 +307,7 @@ async fn qry_08_two_people_of_one_set_on_one_issue_count_once_in_its_group() -> 
             by: Some(GroupBy {
                 word: "assignedTo".to_owned(),
                 people: vec![vec![one, other]],
+                then: None,
                 page: None,
             }),
             sums: Vec::new(),
@@ -341,6 +344,7 @@ async fn walked(
             by: Some(GroupBy {
                 word: by.to_owned(),
                 people: Vec::new(),
+                then: None,
                 page: Some(GroupPage {
                     after: after.clone(),
                     limit,

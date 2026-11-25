@@ -5,6 +5,7 @@ import { register } from "../registry.ts";
 export const messages = {
   "layout-kind.new-issue": "New-issue form",
   "layout-kind.issue-page": "Issue page",
+  "layout-kind.card": "Card",
   "layouts.organization-title": "Layouts of the whole organization",
   "layouts.intro":
     "A layout says which fields a form shows, in which sections, and for which roles. A Guest can get a short form and a Team member the full one. A layout never shows a field to a role whose field permissions hide it.",

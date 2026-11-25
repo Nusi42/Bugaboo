@@ -57,26 +57,31 @@ fn read_type(row: &Row) -> Result<IssueType, StoreError> {
 pub(crate) fn issue_select() -> SelectStatement {
     let mut select = Query::select();
     select
-        .columns([
-            IssueRow::Id,
-            IssueRow::Project,
-            IssueRow::IssueType,
-            IssueRow::Code,
-            IssueRow::Title,
-            IssueRow::Description,
-            IssueRow::Status,
-            IssueRow::Priority,
-            IssueRow::StartDate,
-            IssueRow::DueDate,
-            IssueRow::EstimatedTime,
-            IssueRow::TimeLeft,
-            IssueRow::ReportedBy,
-            IssueRow::CreatedAt,
-            IssueRow::UpdatedAt,
-            IssueRow::ClosedAt,
-            IssueRow::DeletedAt,
-            IssueRow::Version,
-        ])
+        // Named with their table, so a statement that joins another table to the issues (the rows
+        // of a board's cells) reads the same columns.
+        .columns(
+            [
+                IssueRow::Id,
+                IssueRow::Project,
+                IssueRow::IssueType,
+                IssueRow::Code,
+                IssueRow::Title,
+                IssueRow::Description,
+                IssueRow::Status,
+                IssueRow::Priority,
+                IssueRow::StartDate,
+                IssueRow::DueDate,
+                IssueRow::EstimatedTime,
+                IssueRow::TimeLeft,
+                IssueRow::ReportedBy,
+                IssueRow::CreatedAt,
+                IssueRow::UpdatedAt,
+                IssueRow::ClosedAt,
+                IssueRow::DeletedAt,
+                IssueRow::Version,
+            ]
+            .map(|column| (IssueRow::Table, column)),
+        )
         .from(IssueRow::Table);
     select
 }

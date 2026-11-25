@@ -4,7 +4,9 @@
 
 use bb_core::access::AppliesTo;
 use bb_core::id::{GroupId, ProjectId, SavedSearchId};
-use bb_core::saved_search::{Column, Presentation, SearchSet, ShareTarget, TimelineOptions};
+use bb_core::saved_search::{
+    BoardOptions, CalendarOptions, Column, Presentation, SearchSet, ShareTarget, TimelineOptions,
+};
 use bb_policy::StartingRole;
 
 use super::scenarios::{Added, a_project, measured, text, token};
@@ -34,8 +36,10 @@ pub(crate) fn a_presentation() -> Presentation {
             },
         ],
         group_by: Some("statusGroup".to_owned()),
-        // A search read back always names the options of its timeline.
+        // A search read back always names the options of its timeline, board and calendar.
         timeline: Some(TimelineOptions::default()),
+        board: Some(BoardOptions::default()),
+        calendar: Some(CalendarOptions::default()),
         ..Presentation::default()
     }
 }
@@ -264,7 +268,7 @@ pub(crate) async fn save_search_scenario(world: &World) -> Added {
 
 pub(crate) async fn change_search_scenario(world: &World) -> Added {
     let made = adas_search(world).await?;
-    measured(
+    Box::pin(measured(
         &world.store,
         change_search(
             &world.ctx(),
@@ -277,14 +281,14 @@ pub(crate) async fn change_search_scenario(world: &World) -> Added {
                 presentation: None,
             },
         ),
-    )
+    ))
     .await
 }
 
 pub(crate) async fn share_search_scenario(world: &World) -> Added {
     let made = adas_search(world).await?;
     let project = a_project(world, "ACME").await?;
-    measured(
+    Box::pin(measured(
         &world.store,
         Box::pin(share(
             world,
@@ -292,7 +296,7 @@ pub(crate) async fn share_search_scenario(world: &World) -> Added {
             made.id,
             ShareTarget::Project(project),
         )),
-    )
+    ))
     .await
 }
 
@@ -302,7 +306,7 @@ pub(crate) async fn stop_sharing_search_scenario(world: &World) -> Added {
     share(world, &token(world), made.id, ShareTarget::Project(project))
         .await
         .map_err(text)?;
-    measured(
+    Box::pin(measured(
         &world.store,
         Box::pin(unshare(
             world,
@@ -310,13 +314,13 @@ pub(crate) async fn stop_sharing_search_scenario(world: &World) -> Added {
             made.id,
             ShareTarget::Project(project),
         )),
-    )
+    ))
     .await
 }
 
 pub(crate) async fn delete_search_scenario(world: &World) -> Added {
     let made = adas_search(world).await?;
-    measured(
+    Box::pin(measured(
         &world.store,
         delete_search(
             &world.ctx(),
@@ -325,7 +329,7 @@ pub(crate) async fn delete_search_scenario(world: &World) -> Added {
                 search: made.id,
             },
         ),
-    )
+    ))
     .await
 }
 
@@ -340,7 +344,7 @@ pub(crate) async fn restore_search_scenario(world: &World) -> Added {
     )
     .await
     .map_err(text)?;
-    measured(
+    Box::pin(measured(
         &world.store,
         restore_search(
             &world.ctx(),
@@ -349,13 +353,13 @@ pub(crate) async fn restore_search_scenario(world: &World) -> Added {
                 search: made.id,
             },
         ),
-    )
+    ))
     .await
 }
 
 pub(crate) async fn save_copy_scenario(world: &World) -> Added {
     let made = adas_search(world).await?;
-    measured(
+    Box::pin(measured(
         &world.store,
         save_copy(
             &world.ctx(),
@@ -365,7 +369,7 @@ pub(crate) async fn save_copy_scenario(world: &World) -> Added {
                 name: None,
             },
         ),
-    )
+    ))
     .await
 }
 
@@ -375,9 +379,9 @@ pub(crate) async fn set_project_list_scenario(world: &World) -> Added {
     share(world, &token(world), made.id, ShareTarget::Project(project))
         .await
         .map_err(text)?;
-    measured(
+    Box::pin(measured(
         &world.store,
         choose_list(world, &token(world), "ACME", Some(made.id)),
-    )
+    ))
     .await
 }

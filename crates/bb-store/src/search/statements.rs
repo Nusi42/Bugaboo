@@ -46,7 +46,7 @@ const SORT_COLUMNS: [&str; MAX_SORT_KEYS] = ["s0", "s1", "s2", "s3", "s4"];
 
 /// The name of the column that holds the nth sort value of a row.
 #[derive(Clone, Copy)]
-pub(super) struct Sorted(usize);
+pub(super) struct Sorted(pub(super) usize);
 
 impl Iden for Sorted {
     fn unquoted(&self) -> &'static str {
@@ -56,7 +56,7 @@ impl Iden for Sorted {
 
 /// The name of the column of a count.
 #[derive(Clone, Copy)]
-struct Counted;
+pub(super) struct Counted;
 
 impl Iden for Counted {
     fn unquoted(&self) -> &'static str {
@@ -410,28 +410,63 @@ pub(crate) fn read_count(row: &Row) -> Result<u64, StoreError> {
     u64::try_from(row.get::<i64>(Counted)?).map_err(|_| StoreError::Corrupt("a count"))
 }
 
+/// The value of a group key as a statement holds it, the one inverse of [`read_key_at`]: the
+/// place of a priority or a status group among all of them, the start of a range of lengths, the
+/// number of a set of people, the bytes of an ID; none for the group without a value.
+pub(super) fn key_value(key: &GroupKey) -> Option<sea_query::Value> {
+    let place = |at: Option<usize>| i64::try_from(at.unwrap_or_default()).unwrap_or_default();
+    Some(match key {
+        GroupKey::Empty => return None,
+        GroupKey::Text(text) => text.clone().into(),
+        GroupKey::Whole(number) => (*number).into(),
+        GroupKey::People(at) => i64::from(*at).into(),
+        GroupKey::Length(range) => i64::from(range.from).into(),
+        GroupKey::Priority(each) => place(Priority::ALL.iter().position(|one| one == each)).into(),
+        GroupKey::StatusGroup(each) => {
+            place(StatusGroup::ALL.iter().position(|one| one == each)).into()
+        }
+        GroupKey::Person(id) => id.stored().into(),
+        GroupKey::Group(id) => id.stored().into(),
+        GroupKey::Issue(id) => id.stored().into(),
+        GroupKey::Project(id) => id.stored().into(),
+        GroupKey::Tag(id) => id.stored().into(),
+        GroupKey::Label(id) => id.stored().into(),
+        GroupKey::IssueType(id) => id.stored().into(),
+        GroupKey::Choice(id) => id.stored().into(),
+    })
+}
+
 /// The column a statement of groups holds the value of each group in.
 pub(super) const GROUP_COLUMN: Sorted = Sorted(0);
 
 /// The key of a group from the value of its row; none for a row of no set of people, which is
 /// no group (`GroupValue::People`).
 pub(super) fn read_key(row: &Row, what: GroupValue) -> Result<Option<GroupKey>, StoreError> {
+    read_key_at(row, what, GROUP_COLUMN)
+}
+
+/// The same from the column `at` (the second grouping of the totals of a board's cells).
+pub(super) fn read_key_at(
+    row: &Row,
+    what: GroupValue,
+    at: Sorted,
+) -> Result<Option<GroupKey>, StoreError> {
     let corrupt = || StoreError::Corrupt("a group");
     Ok(Some(match what {
         GroupValue::Text => row
-            .get::<Option<String>>(Sorted(0))?
+            .get::<Option<String>>(at)?
             .map_or(GroupKey::Empty, GroupKey::Text),
         GroupValue::Whole => row
-            .get::<Option<i64>>(Sorted(0))?
+            .get::<Option<i64>>(at)?
             .map_or(GroupKey::Empty, GroupKey::Whole),
-        GroupValue::People => match row.get::<Option<i64>>(Sorted(0))? {
+        GroupValue::People => match row.get::<Option<i64>>(at)? {
             None => GroupKey::Empty,
             Some(place) => match u32::try_from(place) {
                 Ok(place) => GroupKey::People(place),
                 Err(_) => return Ok(None),
             },
         },
-        GroupValue::Length => match row.get::<Option<i64>>(Sorted(0))? {
+        GroupValue::Length => match row.get::<Option<i64>>(at)? {
             None => GroupKey::Empty,
             Some(from) => Minutes::try_from(from)
                 .ok()
@@ -439,21 +474,21 @@ pub(super) fn read_key(row: &Row, what: GroupValue) -> Result<Option<GroupKey>, 
                 .map(GroupKey::Length)
                 .ok_or_else(corrupt)?,
         },
-        GroupValue::Priority => match row.get::<Option<i64>>(Sorted(0))? {
+        GroupValue::Priority => match row.get::<Option<i64>>(at)? {
             None => GroupKey::Empty,
             Some(place) => Priority::ALL
                 .get(usize::try_from(place).map_err(|_| corrupt())?)
                 .map(|each| GroupKey::Priority(*each))
                 .ok_or_else(corrupt)?,
         },
-        GroupValue::StatusGroup => match row.get::<Option<i64>>(Sorted(0))? {
+        GroupValue::StatusGroup => match row.get::<Option<i64>>(at)? {
             None => GroupKey::Empty,
             Some(place) => StatusGroup::ALL
                 .get(usize::try_from(place).map_err(|_| corrupt())?)
                 .map(|each| GroupKey::StatusGroup(*each))
                 .ok_or_else(corrupt)?,
         },
-        GroupValue::Id(of) => match row.get::<Option<Vec<u8>>>(Sorted(0))? {
+        GroupValue::Id(of) => match row.get::<Option<Vec<u8>>>(at)? {
             None => GroupKey::Empty,
             Some(bytes) => match of {
                 IdOf::Tag => GroupKey::Tag(TagId::read(bytes)?),

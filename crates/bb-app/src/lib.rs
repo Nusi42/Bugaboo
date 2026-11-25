@@ -8,6 +8,8 @@ pub mod agents;
 pub mod ai;
 pub mod auth;
 pub mod backups;
+pub mod boards;
+pub mod calendar;
 pub mod comments;
 pub mod context;
 pub mod editing;

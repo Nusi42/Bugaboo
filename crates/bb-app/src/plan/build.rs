@@ -254,7 +254,7 @@ pub(crate) fn tells_kind(
 }
 
 /// The key of the field a date field of the timeline reads, for its field level.
-fn target_key(target: FieldTarget) -> Option<FieldKey> {
+pub(crate) fn target_key(target: FieldTarget) -> Option<FieldKey> {
     match target {
         FieldTarget::StartDate => Some(Field::StartDate.into()),
         FieldTarget::DueDate => Some(Field::DueDate.into()),
@@ -264,7 +264,7 @@ fn target_key(target: FieldTarget) -> Option<FieldKey> {
 }
 
 /// A date of an issue from one of the date fields.
-fn date_from(
+pub(crate) fn date_from(
     issue: &Issue,
     target: Option<FieldTarget>,
     values: &crate::fields::ItemValues,

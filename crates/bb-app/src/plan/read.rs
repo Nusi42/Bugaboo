@@ -28,10 +28,9 @@ use super::build::{DateTargets, Plan, PlanAsk, window_of};
 use super::person_days::hatched_of;
 use super::types::{
     AcceptedView, BarView, EffortShown, FactorShown, GoalView, HatchedDay, TimelinePage,
-    TimelinePart, TimelineQuery, TimelineRow, TimelineSearch, WarningIssue, WarningView,
-    WorkTimeShown,
+    TimelinePart, TimelineQuery, TimelineRow, WarningIssue, WarningView, WorkTimeShown,
 };
-use crate::access::{Actor, place_of_address};
+use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::issues::ReadOnRequest;
 use crate::search::{
@@ -259,20 +258,8 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         actor: &Actor,
         query: &TimelineQuery,
     ) -> Result<(String, SearchScope), AppError> {
-        let text = match &query.search {
-            TimelineSearch::Text(text) => text.clone(),
-            TimelineSearch::Saved(id) => self.open_search(actor, *id).await?.stored.search.text,
-        };
-        let scope = match &query.project {
-            None => SearchScope::Everywhere,
-            Some(address) => {
-                let found = self.find_project(address).await?;
-                match place_of_address(found.as_ref().map(|found| found.project.id))? {
-                    Where::Project(project) => SearchScope::Within(project),
-                    Where::Organization => return Err(AppError::Refused(ErrorCode::NotFound)),
-                }
-            }
-        };
+        let text = self.view_search_text(actor, &query.search).await?;
+        let (scope, _) = self.view_scope(query.project.as_deref()).await?;
         Ok((text, scope))
     }
 

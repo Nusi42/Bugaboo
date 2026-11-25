@@ -88,6 +88,15 @@ impl Rows {
         rows
     }
 
+    /// The one value `value` of these rows for the issue of the statement (the largest, for rows
+    /// that hold one), as an expression: `NULL` without a row.
+    pub(super) fn one_of(&self, value: Expr) -> Expr {
+        let mut one = self.select();
+        one.clear_selects();
+        one.expr(Func::max(value));
+        scalar(one)
+    }
+
     /// The statement with the rows of each of its issues joined to it, an issue without any once,
     /// with empty values.
     pub(super) fn join_to(&self, select: &mut SelectStatement) {
@@ -122,12 +131,7 @@ impl Subject {
     pub(super) fn one_value(&self) -> Expr {
         match self {
             Self::Column(value) => value.clone(),
-            Self::Linked(rows, value) => {
-                let mut one = rows.select();
-                one.clear_selects();
-                one.expr(Func::max(value.clone()));
-                scalar(one)
-            }
+            Self::Linked(rows, value) => rows.one_of(value.clone()),
         }
     }
 

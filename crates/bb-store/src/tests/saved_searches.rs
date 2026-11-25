@@ -5,8 +5,8 @@
 use bb_app::ports::{BoxFuture, ChangeStore};
 use bb_core::id::{GroupId, IdSource, ProjectId, SavedSearchId, UserId};
 use bb_core::saved_search::{
-    Column, Presentation, ProjectDefaultList, SavedSearch, SearchColumn, SearchShare, ShareTarget,
-    TimelineOptions, Zoom,
+    BoardOptions, CalendarOptions, CalendarSpan, CardLimit, Column, Presentation,
+    ProjectDefaultList, SavedSearch, SearchColumn, SearchShare, ShareTarget, TimelineOptions, Zoom,
 };
 use bb_core::version::FIRST_VERSION;
 use bb_testing::{TestResult, each_database};
@@ -40,6 +40,24 @@ fn presentation() -> Presentation {
             plan_by_effort: true,
             zoom: Zoom::Month,
         }),
+        board: Some(BoardOptions {
+            columns: Some("Size".to_owned()),
+            rows: Some("priority".to_owned()),
+            limits: vec![
+                CardLimit {
+                    column: Some("Large".to_owned()),
+                    limit: 3,
+                },
+                CardLimit {
+                    column: None,
+                    limit: 12,
+                },
+            ],
+        }),
+        calendar: Some(CalendarOptions {
+            dates: Some("Launch".to_owned()),
+            span: CalendarSpan::Week,
+        }),
         ..Presentation::default()
     }
 }
@@ -54,12 +72,14 @@ fn search(source: &mut impl IdSource, maker: UserId, name: &str, seconds: i64) -
         view: presentation.view,
         group_by: None,
         timeline: TimelineOptions::default(),
+        board: BoardOptions::default(),
+        calendar: CalendarOptions::default(),
         created_at: at(seconds),
         updated_at: at(seconds),
         deleted_at: None,
         version: FIRST_VERSION,
     };
-    // The options of a timeline are kept with every view.
+    // The options of a timeline, a board and a calendar are kept with every view.
     made.take_presentation(&presentation);
     made
 }
@@ -119,7 +139,7 @@ fn ids_of(found: &[SavedSearch]) -> Vec<SavedSearchId> {
 }
 
 #[tokio::test]
-async fn qry_06_a_saved_search_keeps_its_columns_in_order_and_is_changed_from_its_version()
+async fn plan_06_a_saved_search_keeps_its_columns_its_board_and_its_calendar_and_is_changed_from_its_version()
 -> TestResult {
     each_database("qry_06_store_round_trip", async |db| {
         let fixture = fixture(db).await?;
@@ -134,6 +154,9 @@ async fn qry_06_a_saved_search_keeps_its_columns_in_order_and_is_changed_from_it
         // A change from the version it has is written and counts the version up; from any other, not.
         let mut changed_search = made.clone();
         changed_search.name = "Bugs".to_owned();
+        // The card limits are written again in their new order, one fewer.
+        changed_search.board.limits.reverse();
+        changed_search.board.limits.pop();
         changed_search.version = made.version + 1;
         let fewer: Vec<SearchColumn> = presentation().rows(made.id).into_iter().take(1).collect();
         let (new, kept) = (changed_search.clone(), fewer.clone());

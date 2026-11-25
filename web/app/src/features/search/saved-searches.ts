@@ -62,9 +62,25 @@ export interface NewSearch {
   readonly presentation?: Presentation | undefined;
 }
 
+/** The options of a board as the body of a request takes them: no part of them is read-only. */
+function writableBoard(board: NonNullable<Presentation["board"]>) {
+  const { card_limits: limits, ...rest } = board;
+  return {
+    ...rest,
+    ...(limits === undefined
+      ? {}
+      : { card_limits: limits.map(({ column, limit }) => ({ column, limit })) }),
+  };
+}
+
 /** The presentation as the body of a request takes it: no part of it is read-only. */
 function writable(presentation: Presentation) {
-  return { ...presentation, columns: presentation.columns.map((column) => ({ ...column })) };
+  const { board, ...rest } = presentation;
+  return {
+    ...rest,
+    columns: presentation.columns.map((column) => ({ ...column })),
+    ...(board === undefined || board === null ? {} : { board: writableBoard(board) }),
+  };
 }
 
 /** *Save search*: keeps the search under a name; it is private and the person's own. */

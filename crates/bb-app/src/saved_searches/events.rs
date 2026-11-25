@@ -32,6 +32,28 @@ fn timeline_json(search: &SavedSearch) -> Value {
     })
 }
 
+/// The options of the board as one value of an event.
+fn board_json(search: &SavedSearch) -> Value {
+    let board = &search.board;
+    json!({
+        "columns": board.columns,
+        "rows": board.rows,
+        "limits": board
+            .limits
+            .iter()
+            .map(|each| json!({ "column": each.column, "limit": each.limit }))
+            .collect::<Vec<_>>(),
+    })
+}
+
+/// The options of the calendar as one value of an event.
+fn calendar_json(search: &SavedSearch) -> Value {
+    json!({
+        "dates": search.calendar.dates,
+        "span": search.calendar.span.code(),
+    })
+}
+
 /// The target of a share as one value of an event.
 pub(super) fn target_json(target: ShareTarget) -> Value {
     json!({ "kind": target.kind().code(), "id": target.id_text() })
@@ -59,6 +81,8 @@ pub(super) fn made(search: &SavedSearch, columns: &[SearchColumn]) -> Vec<FieldC
         set_to(member::VIEW, json!(search.view.code())),
         set_to(member::COLUMNS, columns_json(columns)),
         set_to(member::TIMELINE, timeline_json(search)),
+        set_to(member::BOARD, board_json(search)),
+        set_to(member::CALENDAR, calendar_json(search)),
     ];
     if let Some(field) = &search.group_by {
         changes.push(set_to(member::GROUP_BY, json!(field)));
@@ -83,6 +107,8 @@ pub(super) fn changed(
         ),
         difference(member::GROUP_BY, json!(was.group_by), json!(now.group_by)),
         difference(member::TIMELINE, timeline_json(was), timeline_json(now)),
+        difference(member::BOARD, board_json(was), board_json(now)),
+        difference(member::CALENDAR, calendar_json(was), calendar_json(now)),
     ]
     .into_iter()
     .flatten()

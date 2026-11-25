@@ -45,6 +45,17 @@ pub(crate) struct Counted {
     pub(crate) all: Total,
 }
 
+/// The key of a group as the store gave it, and its key of the second field ([`GroupBy::then`]).
+pub(crate) type KeyPair = (GroupKey, Option<GroupKey>);
+
+/// The groups of a total each shown as the reader may see it, with the keys the store gave them
+/// (in the same order) and the grouping that made them (people shown alike one group).
+pub(crate) struct ShownGroups {
+    pub(crate) counted: Counted,
+    pub(crate) keys: Vec<KeyPair>,
+    pub(crate) by: GroupBy,
+}
+
 /// The sums of a total, as the use case asks them and shows them.
 pub(super) struct Sums {
     /// The words of the sums, in the order of the answer.
@@ -94,7 +105,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
     }
 
     /// The totals the store adds up for `asked`.
-    pub(super) async fn totals_in(
+    pub(crate) async fn totals_in(
         &self,
         prepared: &Prepared,
         asked: &TotalsAsked,
@@ -119,6 +130,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                 word: grouping.word.clone(),
                 people: Vec::new(),
                 page,
+                then: None,
             }),
             sums: sums.to_vec(),
             all,
@@ -136,42 +148,85 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         grouping: &Grouping,
         (sums, all): (&[SumAsked], bool),
     ) -> Result<Counted, AppError> {
-        let mut by = GroupBy {
+        let by = GroupBy {
             word: grouping.word.clone(),
             people: Vec::new(),
             page: None,
+            then: None,
         };
+        Ok(self
+            .shown_groups(prepared, grouping, by, (sums, all))
+            .await?
+            .counted)
+    }
+
+    /// The totals of `grouping` split again by the field of one value `then` (the cells of a
+    /// board), each group shown as the reader may see it (people shown alike one group), with the
+    /// keys the store gave each group and the grouping that made them.
+    ///
+    /// # Errors
+    /// `search.too-slow`.
+    pub(crate) async fn cell_totals(
+        &self,
+        prepared: &Prepared,
+        grouping: &Grouping,
+        then: &str,
+    ) -> Result<ShownGroups, AppError> {
+        let by = GroupBy {
+            word: grouping.word.clone(),
+            people: Vec::new(),
+            page: None,
+            then: Some(then.to_owned()),
+        };
+        self.shown_groups(prepared, grouping, by, (&[], false))
+            .await
+    }
+
+    /// The groups of `by`, each shown as the reader may see it: read first without sums; when the
+    /// groups are people and some are shown alike, those are one group each, counted again by the
+    /// statement so an issue of two of them counts once. The sums and the total of all, when asked
+    /// for, come with that second read.
+    async fn shown_groups(
+        &self,
+        prepared: &Prepared,
+        grouping: &Grouping,
+        mut by: GroupBy,
+        (sums, all): (&[SumAsked], bool),
+    ) -> Result<ShownGroups, AppError> {
         let first = TotalsAsked {
             by: Some(by.clone()),
             sums: Vec::new(),
             all: false,
         };
         let found = self.totals_in(prepared, &first).await?;
-        let keys: Vec<GroupKey> = found.groups.iter().map(|group| group.key.clone()).collect();
+        // Each group once, though a second field splits it into several rows of the totals.
+        let mut keys: Vec<GroupKey> = Vec::new();
+        for group in &found.groups {
+            if !keys.contains(&group.key) {
+                keys.push(group.key.clone());
+            }
+        }
         let shown = self
             .shown_keys(&grouping.viewer, &prepared.looked, grouping.target, &keys)
             .await?;
-        let sets = people_sets(&keys, &shown);
-        if sets.is_none() && sums.is_empty() && !all {
-            return Ok(Counted {
-                groups: shown
-                    .into_iter()
-                    .zip(found.groups)
-                    .map(|(key, group)| (key, group.total))
-                    .collect(),
-                all: found.all,
-            });
-        }
-        let (set_keys, people): (Vec<ShownKey>, Vec<Vec<UserId>>) =
-            sets.unwrap_or_default().into_iter().unzip();
-        by.people = people;
-        let asked = TotalsAsked {
-            by: Some(by),
-            sums: sums.to_vec(),
-            all,
+        let sets = grouping
+            .of_people()
+            .then(|| people_sets(&keys, &shown))
+            .flatten();
+        let (totals, set_keys) = if sets.is_none() && sums.is_empty() && !all {
+            (found, Vec::new())
+        } else {
+            let (set_keys, people): (Vec<ShownKey>, Vec<Vec<UserId>>) =
+                sets.unwrap_or_default().into_iter().unzip();
+            by.people = people;
+            let asked = TotalsAsked {
+                by: Some(by.clone()),
+                sums: sums.to_vec(),
+                all,
+            };
+            (self.totals_in(prepared, &asked).await?, set_keys)
         };
-        let totals = self.totals_in(prepared, &asked).await?;
-        // Without sets every person is a group of their own, shown as in the first read.
+        // Without sets every group is shown as in the first read.
         let shown_of = |key: &GroupKey| match key {
             GroupKey::People(at) => set_keys.get(usize::try_from(*at).ok()?).cloned(),
             other => keys
@@ -180,13 +235,21 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                 .and_then(|at| shown.get(at).cloned())
                 .or_else(|| Some(ShownKey::Other(other.clone()))),
         };
-        Ok(Counted {
-            groups: totals
-                .groups
-                .into_iter()
-                .filter_map(|group| Some((shown_of(&group.key)?, group.total)))
-                .collect(),
-            all: totals.all,
+        let (groups, raw) = totals
+            .groups
+            .into_iter()
+            .filter_map(|group| {
+                let shown = shown_of(&group.key)?;
+                Some(((shown, group.total), (group.key, group.then)))
+            })
+            .unzip();
+        Ok(ShownGroups {
+            counted: Counted {
+                groups,
+                all: totals.all,
+            },
+            keys: raw,
+            by,
         })
     }
 
@@ -307,6 +370,7 @@ fn people_sets(keys: &[GroupKey], shown: &[ShownKey]) -> Option<Vec<(ShownKey, V
             continue;
         };
         match sets.iter_mut().find(|(each, _)| each == shown) {
+            Some((_, people)) if people.contains(person) => {}
             Some((_, people)) => people.push(*person),
             None => sets.push((shown.clone(), vec![*person])),
         }

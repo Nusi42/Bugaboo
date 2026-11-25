@@ -6,7 +6,8 @@ use bb_core::ErrorCode;
 use bb_core::event::{DomainEvent, FieldChange, RecordKind};
 use bb_core::id::SavedSearchId;
 use bb_core::saved_search::{
-    Presentation, SAVED_SEARCHES_MAX, SavedSearch, SearchColumn, TimelineOptions,
+    BoardOptions, CalendarOptions, Presentation, SAVED_SEARCHES_MAX, SavedSearch, SearchColumn,
+    TimelineOptions,
 };
 use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Permission, Place};
@@ -148,6 +149,8 @@ impl<S: AuthStore> Ctx<'_, S> {
             view: presentation.view,
             group_by: None,
             timeline: TimelineOptions::default(),
+            board: BoardOptions::default(),
+            calendar: CalendarOptions::default(),
             created_at: now,
             updated_at: now,
             deleted_at: None,

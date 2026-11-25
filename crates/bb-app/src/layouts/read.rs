@@ -4,18 +4,19 @@
 use std::collections::{BTreeSet, HashMap};
 
 use bb_core::ErrorCode;
-use bb_core::access::FieldLevel;
 use bb_core::event::RecordKind;
 use bb_core::fields::FieldKey;
 use bb_core::id::{IssueTypeId, ProjectId, RoleId};
 use bb_core::layout::{Layout, LayoutContent, LayoutKind, LayoutPlace, built_in_fields, find};
+use bb_core::project::Project;
 use bb_policy::{Authorized, Evaluation, LevelSubject as _, Permission, Place};
 
 use super::effective::{Viewer, effective};
 use super::types::{
-    EditorField, EditorRole, EditorSection, FormLayout, FormLayoutQuery, InheritedFrom,
-    LayoutEditor, LayoutEditorQuery, LayoutSlot,
+    EditorField, EditorRole, EditorSection, FormLayout, FormLayoutQuery, FormSection,
+    InheritedFrom, LayoutEditor, LayoutEditorQuery, LayoutSlot,
 };
+
 use crate::access::{Actor, ROLES_MAX};
 use crate::auth::{AppError, AuthStore, Ctx, if_there, internal};
 use crate::editing::EditorPlace;
@@ -130,44 +131,83 @@ pub async fn form_layout<S: AuthStore>(
     if !held.sees_project() {
         return Err(AppError::Refused(ErrorCode::NotFound));
     }
-    let everyone: Vec<RoleId> = ctx.all_roles().await?.iter().map(|role| role.id).collect();
-    let (_, content) = ctx.layout_in_force(&at, &everyone).await?;
-    let mask = held.field_mask_for(at.issue_type);
-    let item = Item {
-        kind: RecordKind::Issue,
-        id: None,
-        chain: at.chain.clone(),
-        issue_type: at.issue_type,
-        reported_by: None,
-    };
-    let own: BTreeSet<FieldKey> = match at.kind {
-        LayoutKind::IssuePage => {
-            ctx.visible_own_fields(&mask, &item, Held::OfItsKind)
-                .await?
-        }
-        LayoutKind::NewIssue => {
-            ctx.changeable_own_fields(&mask, &item, Held::OfItsKind)
-                .await?
-        }
-    }
-    .into_iter()
-    .collect();
-    let required = required_among(&ctx.field_catalogue().await?, &own);
-    let roles: Vec<RoleId> = held.roles().iter().map(|role| role.id).collect();
-    let sections = effective(
-        &content,
-        at.kind,
-        &Viewer {
-            roles: &roles,
-            mask: &mask,
-            own: &own,
-            required: &required,
-        },
-    );
+    let sections = ctx.shown_sections(&at, &held).await?;
     Ok(held.authorize(FormLayout {
         kind: at.kind,
         sections,
     }))
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The sections of the layout in force at `at` that a person who holds `held` there is shown:
+    /// the one reading of a layout for a person, for the forms and for the card of a board.
+    async fn shown_sections(
+        &self,
+        at: &EditorPlace<LayoutKind>,
+        held: &Evaluation,
+    ) -> Result<Vec<FormSection>, AppError> {
+        let everyone: Vec<RoleId> = self.all_roles().await?.iter().map(|role| role.id).collect();
+        let (_, content) = self.layout_in_force(at, &everyone).await?;
+        let mask = held.field_mask_for(at.issue_type);
+        let item = Item {
+            kind: RecordKind::Issue,
+            id: None,
+            chain: at.chain.clone(),
+            issue_type: at.issue_type,
+            reported_by: None,
+        };
+        let own: BTreeSet<FieldKey> = match at.kind {
+            LayoutKind::IssuePage | LayoutKind::Card => {
+                self.visible_own_fields(&mask, &item, Held::OfItsKind)
+                    .await?
+            }
+            LayoutKind::NewIssue => {
+                self.changeable_own_fields(&mask, &item, Held::OfItsKind)
+                    .await?
+            }
+        }
+        .into_iter()
+        .collect();
+        let required = required_among(&self.field_catalogue().await?, &own);
+        let roles: Vec<RoleId> = held.roles().iter().map(|role| role.id).collect();
+        Ok(effective(
+            &content,
+            at.kind,
+            &Viewer {
+                roles: &roles,
+                mask: &mask,
+                own: &own,
+                required: &required,
+            },
+        ))
+    }
+
+    /// The fields the card of an issue of `issue_type` in `project` shows to a person who holds
+    /// `held` there, in order: the layout *Card* in force there (ADR-0027, amendment of
+    /// 2026-11-24), read by the same rule as every form, so a card never shows a field the issue
+    /// page would not.
+    ///
+    /// # Errors
+    /// An internal error when the store fails.
+    pub(crate) async fn card_fields(
+        &self,
+        (project, chain): (&Project, &[ProjectId]),
+        issue_type: IssueTypeId,
+        held: &Evaluation,
+    ) -> Result<Vec<FieldKey>, AppError> {
+        let at = EditorPlace {
+            project: Some(ProjectRef::from(project)),
+            chain: chain.to_vec(),
+            issue_type: Some(issue_type),
+            kind: LayoutKind::Card,
+        };
+        Ok(self
+            .shown_sections(&at, held)
+            .await?
+            .into_iter()
+            .flat_map(|section| section.fields)
+            .collect())
+    }
 }
 
 /// The own fields of `among` that a new item must be asked for (`must_be_asked_for`: required and
@@ -197,10 +237,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             .await
             .map_err(|error| internal::<S>(&error))?
             .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-        let needed = match at.kind {
-            LayoutKind::IssuePage => FieldLevel::CanSee,
-            LayoutKind::NewIssue => FieldLevel::CanChange,
-        };
+        let needed = at.kind.level_needed();
         Ok(fields
             .iter()
             .map(|field| {

@@ -360,6 +360,61 @@ pub trait SearchStore: IssueStore + 'static {
         request: &SearchRequest,
         asked: &TotalsAsked,
     ) -> impl Future<Output = Result<Totals, SearchFailure>> + Send;
+
+    /// The first issues of each cell of a board in the order of the search, at most `window.take`
+    /// of a cell after its first `window.skip`, in one statement whatever the number of cells.
+    /// The counts of the cells are [`SearchStore::search_totals`] with [`GroupBy::then`].
+    fn search_cell_pages(
+        &self,
+        request: &SearchRequest,
+        cells: &Cells,
+        window: &CellWindow,
+    ) -> impl Future<Output = Result<Vec<CellHit>, SearchFailure>> + Send;
+}
+
+/// How the issues of a search fall into the cells of a board: the column of each value of the
+/// field of the columns, and the rows (the grouping of the totals).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Cells {
+    /// The search word of the field of the columns, a field of one value.
+    pub columns: String,
+    /// The column of each value of that field, by the place of the column; a value that is not
+    /// here is in no column.
+    pub column_of: Vec<(GroupKey, usize)>,
+    /// The rows, as the totals of the board grouped them; none for a board without rows.
+    pub rows: Option<GroupBy>,
+}
+
+/// One cell of a board: its column, and its row on a board with rows.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CellAt {
+    /// The column, by its place.
+    pub column: usize,
+    /// The group of the row; none on a board without rows.
+    pub row: Option<GroupKey>,
+}
+
+/// An issue of a cell.
+#[derive(Clone, Debug)]
+pub struct CellHit {
+    /// The cell.
+    pub at: CellAt,
+    /// The issue.
+    pub issue: Issue,
+}
+
+/// Which issues of the cells a statement reads: after the first `skip` of each, at most `take`;
+/// only those of one cell for *Show more*.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CellWindow {
+    /// How many issues of each cell come before.
+    pub skip: u64,
+    /// How many issues of each cell are read at most.
+    pub take: u64,
+    /// The one cell; none for every cell.
+    pub only: Option<CellAt>,
+    /// The groups of the rows whose cells are read, on a board with rows: the rows the board shows.
+    pub rows: Vec<GroupKey>,
 }
 
 /// The most sums one total may ask for, `count` not counted: the one limit of the totals, which
@@ -387,6 +442,9 @@ pub struct GroupBy {
     /// The people that are one group each set ([`GroupKey::People`]); empty while every person is
     /// a group of their own.
     pub people: Vec<Vec<UserId>>,
+    /// A second field, of one value for an issue, that splits each group again (the columns of a
+    /// board inside its rows, [`GroupTotal::then`]); none for one grouping.
+    pub then: Option<String>,
     /// A page of the groups in the order of their places; none for every group. The store cuts
     /// the page in the statement where the order of its values is the order of the places (texts,
     /// numbers, lengths, IDs), and answers every group otherwise, which the caller pages.
@@ -447,6 +505,8 @@ pub struct Totals {
 pub struct GroupTotal {
     /// What the group is.
     pub key: GroupKey,
+    /// Its value of the second field ([`GroupBy::then`]); none without one.
+    pub then: Option<GroupKey>,
     /// Its total.
     pub total: Total,
 }

@@ -17,8 +17,9 @@
 use std::sync::OnceLock;
 
 use base64ct::{Base64UrlUnpadded, Encoding as _};
+use bb_core::id::UserId;
 use hmac::{Hmac, KeyInit as _, Mac as _};
-use sha2::Sha256;
+use sha2::{Digest as _, Sha256};
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -76,6 +77,23 @@ impl Seal {
 
 /// The purpose the tag of a cursor is bound to, before the name of the list.
 const PURPOSE_PREFIX: &str = "cursor:";
+
+/// The name of a list that cursors are sealed for: what kind of list it is (`search`, `totals`,
+/// `timeline`, `board`), the person, and a hash of the parts of the request that make it this list,
+/// so a cursor opens for nobody else and for no other list. A part that is left out counts as
+/// empty. The one name of every list.
+#[must_use]
+pub fn list_name(kind: &str, person: UserId, parts: &[Option<&str>]) -> String {
+    let mut hash = Sha256::new();
+    for part in parts {
+        hash.update(part.unwrap_or_default().as_bytes());
+        hash.update([0]);
+    }
+    format!(
+        "{kind}:{person}:{}",
+        Base64UrlUnpadded::encode_string(&hash.finalize())
+    )
+}
 
 /// The purpose of the cursors of `list`.
 #[must_use]

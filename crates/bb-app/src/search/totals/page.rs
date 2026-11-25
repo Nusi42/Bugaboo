@@ -34,7 +34,7 @@ impl Place {
 /// The place of a shown key in the order of keys: a person by the name the reader sees, then
 /// those shown by a role, by the role, then *Someone*, then former users by their code; every other
 /// key by `GroupKey::place`.
-fn key_place(key: &ShownKey) -> GroupPlace {
+pub(crate) fn key_place(key: &ShownKey) -> GroupPlace {
     match key {
         ShownKey::Person(person) => GroupPlace {
             last: false,

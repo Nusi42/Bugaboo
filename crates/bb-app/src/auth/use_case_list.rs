@@ -240,6 +240,10 @@ macro_rules! each_use_case {
             move_dates(MoveDates) -> Authorized<DatesMoved>;
             /// A page of the timeline: rows with their bars, dependencies and warnings.
             timeline(TimelineQuery) -> Authorized<TimelinePage>;
+            /// A board: its columns with their counts, its rows and the first cards of each cell.
+            board(BoardQuery) -> Authorized<BoardPage>;
+            /// A calendar: the issues of a window of days and the marks of their goals.
+            calendar(CalendarQuery) -> Authorized<CalendarPage>;
             /// The preview of *Move it after*.
             move_after_preview(MoveAfterQuery) -> Authorized<MovePreviewPage>;
             /// *Keep and accept* a plan warning.

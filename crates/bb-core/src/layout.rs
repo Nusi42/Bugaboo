@@ -1,5 +1,5 @@
-//! Layouts (CFG-01, ISS-02, ADR-0027): which fields the issue page and the new-issue form show,
-//! in which sections and tabs, and for which roles.
+//! Layouts (CFG-01, ISS-02, ADR-0027): which fields the issue page, the new-issue form and the card
+//! of a board show, in which sections and tabs, and for which roles.
 //!
 //! A layout is set for the organization or for a project, and optionally for one issue type. The
 //! nearest place wins, and at one place the layout for the issue type wins over the layout for all
@@ -14,6 +14,7 @@
 
 use std::collections::BTreeSet;
 
+use crate::access::FieldLevel;
 use crate::fields::{Field, FieldKey};
 use crate::id::{IssueTypeId, LayoutId, ProjectId, RoleId};
 use crate::lookup::nearest_row;
@@ -36,6 +37,9 @@ const MOST_BUILT_IN: usize = {
 };
 /// The most characters of the title of a section or of the name of a tab.
 pub const TITLE_MAX: usize = 60;
+/// The most fields the card of a board shows (M10-Q4); the Issue ID and the title are always on a
+/// card and do not count.
+pub const CARD_FIELDS_MAX: usize = 4;
 
 words! {
     /// What a layout is for.
@@ -44,13 +48,29 @@ words! {
         NewIssue => "new-issue",
         /// The issue page: which fields it shows and for whom.
         IssuePage => "issue-page",
+        /// The card of a board: at most four fields besides the Issue ID and the title (ADR-0027,
+        /// amendment of 2026-11-24).
+        Card => "card",
     }
 }
 
 words_in_api!(
     LayoutKind,
-    "What a layout is for: the issue page or the new-issue form."
+    "What a layout is for: the issue page, the new-issue form or the card of a board."
 );
+
+impl LayoutKind {
+    /// The level a person needs for a field to be shown it on a form of this kind: to see it, or
+    /// on the new-issue form to change it (ADR-0027, decision 4). The one rule for the form a
+    /// person gets and for the roles the editor marks.
+    #[must_use]
+    pub const fn level_needed(self) -> FieldLevel {
+        match self {
+            Self::IssuePage | Self::Card => FieldLevel::CanSee,
+            Self::NewIssue => FieldLevel::CanChange,
+        }
+    }
+}
 
 /// The fields of the catalogue that exist on an issue and can be placed on a form of this kind.
 /// The title is always there and the type is always asked for, so neither is placed. A field of
@@ -81,6 +101,20 @@ pub const fn built_in_fields(kind: LayoutKind) -> &'static [Field] {
             Field::StartDate,
             Field::DueDate,
             Field::EstimatedTime,
+        ],
+        // The description is too long for a card; the rest of the issue page may stand on it.
+        LayoutKind::Card => &[
+            Field::Status,
+            Field::Priority,
+            Field::AssignedTo,
+            Field::ReportedBy,
+            Field::Tags,
+            Field::Labels,
+            Field::StartDate,
+            Field::DueDate,
+            Field::EstimatedTime,
+            Field::TimeLeft,
+            Field::TimeSpent,
         ],
     }
 }
@@ -149,7 +183,11 @@ impl LayoutContent {
     /// # Errors
     /// Names the first rule that is broken.
     pub fn check(&self, kind: LayoutKind) -> Result<(), Problem> {
-        if self.sections.len() > SECTIONS_MAX || self.placed().count() > PLACED_MAX {
+        let most = match kind {
+            LayoutKind::Card => CARD_FIELDS_MAX,
+            LayoutKind::IssuePage | LayoutKind::NewIssue => PLACED_MAX,
+        };
+        if self.sections.len() > SECTIONS_MAX || self.placed().count() > most {
             return Err(Problem::TooBig);
         }
         if self.sections.iter().any(|section| {
@@ -174,7 +212,7 @@ impl LayoutContent {
     /// The layout a form has until somebody customizes it: the fields the form has today, for every
     /// role. `own` are the own fields that reach the form, in the order they are offered in. The
     /// new-issue form starts short (the description and the priority); the issue page starts with
-    /// everything.
+    /// everything; the card shows *Priority*, *Assigned to* and *Due date* (M10-Q4).
     #[must_use]
     pub fn starting(kind: LayoutKind, own: &[FieldKey], roles: &[RoleId]) -> Self {
         let for_all = |field: FieldKey| PlacedField {
@@ -229,6 +267,10 @@ impl LayoutContent {
                     Field::StartDate,
                     Field::DueDate,
                 ]),
+            )],
+            LayoutKind::Card => vec![section(
+                message::LAYOUT_SECTION_MAIN.into(),
+                built_in(&[Field::Priority, Field::AssignedTo, Field::DueDate]),
             )],
         };
         Self::of_sections(sections)
@@ -665,6 +707,54 @@ mod tests {
                 "{field:?}"
             );
         }
+    }
+
+    #[test]
+    fn plan_06_a_card_places_at_most_four_fields_and_starts_with_three() {
+        let (_, team, _) = ids();
+        let starting = LayoutContent::starting(LayoutKind::Card, &[], &[team]);
+        let placed: Vec<FieldKey> = starting.placed().map(|placed| placed.field).collect();
+        assert_eq!(
+            placed,
+            [Field::Priority, Field::AssignedTo, Field::DueDate].map(FieldKey::from)
+        );
+        assert_eq!(starting.check(LayoutKind::Card), Ok(()));
+        // The three lengths of time stand on a card through the same field list (M6-F160).
+        let card = |fields: &[Field]| {
+            LayoutContent::of_sections(vec![SectionContent {
+                tab: String::new(),
+                title: String::new(),
+                fields: fields
+                    .iter()
+                    .map(|field| PlacedField {
+                        field: (*field).into(),
+                        roles: vec![team],
+                    })
+                    .collect(),
+            }])
+        };
+        let lengths = [
+            Field::Priority,
+            Field::EstimatedTime,
+            Field::TimeLeft,
+            Field::TimeSpent,
+        ];
+        assert_eq!(card(&lengths).check(LayoutKind::Card), Ok(()));
+        let five = [
+            Field::Status,
+            Field::EstimatedTime,
+            Field::TimeLeft,
+            Field::TimeSpent,
+            Field::DueDate,
+        ];
+        assert_eq!(card(&five).check(LayoutKind::Card), Err(Problem::TooBig));
+        assert_eq!(
+            card(&[Field::Description]).check(LayoutKind::Card),
+            Err(Problem::NotPlaceable)
+        );
+        // A card is seen, never filled in.
+        assert_eq!(LayoutKind::Card.level_needed(), FieldLevel::CanSee);
+        assert_eq!(LayoutKind::NewIssue.level_needed(), FieldLevel::CanChange);
     }
 
     #[test]

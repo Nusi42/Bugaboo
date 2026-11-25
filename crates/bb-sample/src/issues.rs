@@ -128,7 +128,7 @@ impl Later for Everything {
         maker.carry_out(&calendar).await?;
         let work_since = world.clock.now();
         let full: u32 = names.projects.iter().map(|project| project.issues).sum();
-        maker.work_together(self.issues, full).await?;
+        Box::pin(maker.work_together(self.issues, full)).await?;
         let ai = names.work.ai.clone();
         maker.plan_the_goal(&names.work.timeline).await?;
         maker.set_up_ai(&ai).await?;

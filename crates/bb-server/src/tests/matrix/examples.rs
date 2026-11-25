@@ -692,6 +692,8 @@ pub(super) const EXAMPLES: &[Example] = &[
     Example::with("getTimeFactor", &[Quirk::AnIssueOfTheTarget]),
     Example::with("setTimeFactor", &[Quirk::AnIssueOfTheTarget]),
     Example::with("getProjectTime", &[Quirk::ListsTheIssuesSeen]),
+    Example::with("getBoard", &[Quirk::KeysActAsThePerson]),
+    Example::with("getCalendar", &[Quirk::KeysActAsThePerson]),
 ];
 
 /// The request of an example: the method, the address with its parts filled in, and a body that

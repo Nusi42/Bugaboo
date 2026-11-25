@@ -517,3 +517,23 @@ reason = "Steps away of an issue on the relation map: the length of a chain of r
 route = "POST /api/v1/map"
 property = "steps"
 reason = "Steps away of an issue on the relation map: the length of a chain of relations walked only through issues the viewer sees (ISS-16, architecture section 7, The walk of the relation map), so it never counts a hidden issue."
+
+[[exempt]]
+route = "POST /api/v1/board"
+property = "count"
+reason = "Counts only issues the viewer may see and read: the count of a column and of a cell is a group of the compiled search, which starts from the sight of the viewer (ADR-0004), so a restricted issue is in no column and no count, and a card limit compares with this number only (M10-Q2, PRIV-13, test plan_06_a_card_limit_counts_only_what_the_reader_sees_and_refuses_nothing)."
+
+[[exempt]]
+route = "POST /api/v1/board"
+property = "issues"
+reason = "Counts only issues the viewer may see and read: the groups of the rows of a board are made by the same statement as the groups of a search, which starts from the sight of the viewer (ADR-0004); a field the viewer may not read is refused instead of grouped (QRY-05, PRIV-13)."
+
+[[exempt]]
+route = "POST /api/v1/board"
+property = "time_spent"
+reason = "Minutes, not a count of things: the time booked on one issue of a card the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry (ADR-0035, decision 4)."
+
+[[exempt]]
+route = "POST /api/v1/calendar"
+property = "time_spent"
+reason = "Minutes, not a count of things: the time booked on one issue of the calendar the viewer sees, shown only to a reader of Time spent (the field level). It names no person and no time entry (ADR-0035, decision 4)."

@@ -9,10 +9,9 @@ use std::sync::Arc;
 use axum::Extension;
 use axum::extract::{FromRef, State};
 use axum::response::Response;
-use base64ct::{Base64UrlUnpadded, Encoding as _};
 use bb_app::plan::{
     AcceptWarning, AcceptedWarningView, MoveAfterQuery, MovePreview, MovePreviewPage, TimelinePage,
-    TimelinePart, TimelineQuery, TimelineSearch, WarningView,
+    TimelinePart, TimelineQuery, WarningView,
 };
 use bb_core::issue::CalendarDay;
 use bb_core::plan::Days;
@@ -21,7 +20,6 @@ use bb_core::saved_search::TimelineOptions;
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sha2::{Digest as _, Sha256};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -32,7 +30,7 @@ use super::auth::{
 };
 use super::issues::IssueItem;
 use super::saved_searches::TimelineOptionsBody;
-use super::search::{SearchGroupKeyBody, counted, group_key};
+use super::search::{SearchGroupKeyBody, counted, group_key, view_search};
 use super::timeline_bar::{BarBody, TimelinePersonDaysBody};
 use crate::errors::{ApiError, ApiJson};
 use crate::limits::Limits;
@@ -321,24 +319,18 @@ impl Masked for TimelinePageBody {}
 /// The name of the list a cursor of the timeline is sealed for: the person and a hash of what the
 /// page is of, so a cursor opens for nobody else and for no other timeline.
 fn list_of(person: bb_core::id::UserId, body: &TimelineBody) -> String {
-    let mut hash = Sha256::new();
-    for part in [
-        body.saved_search.as_deref(),
-        body.search_text.as_deref(),
-        body.project.as_deref(),
-        body.timeline.start_field(),
-        body.timeline.end_field(),
-    ] {
-        hash.update(part.unwrap_or_default().as_bytes());
-        hash.update([0]);
-    }
-    hash.update([u8::from(matches!(
-        body.part,
-        TimelinePartBody::NotScheduled
-    ))]);
-    format!(
-        "timeline:{person}:{}",
-        Base64UrlUnpadded::encode_string(&hash.finalize())
+    let not_scheduled = matches!(body.part, TimelinePartBody::NotScheduled);
+    bb_app::seal::list_name(
+        "timeline",
+        person,
+        &[
+            body.saved_search.as_deref(),
+            body.search_text.as_deref(),
+            body.project.as_deref(),
+            body.timeline.start_field(),
+            body.timeline.end_field(),
+            not_scheduled.then_some("not-scheduled"),
+        ],
     )
 }
 
@@ -429,13 +421,7 @@ async fn get_timeline(
         .as_deref()
         .map(|cursor| paging::open(&list, cursor))
         .transpose()?;
-    let search = match (&body.saved_search, &body.search_text) {
-        (Some(id), _) => TimelineSearch::Saved(
-            id.parse()
-                .map_err(|_| ApiError::new(bb_core::ErrorCode::NotFound))?,
-        ),
-        (None, text) => TimelineSearch::Text(text.clone().unwrap_or_default()),
-    };
+    let search = view_search(body.saved_search.as_deref(), body.search_text.as_deref())?;
     let page = auth
         .api()?
         .timeline(

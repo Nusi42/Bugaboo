@@ -77,6 +77,7 @@ crate::entities! {
     crate::saved_search::ProjectDefaultList,
     crate::saved_search::SavedSearch,
     crate::saved_search::SearchColumn,
+    crate::saved_search::SearchCardLimit,
     crate::saved_search::SearchShare,
     crate::theme::OwnTheme,
     crate::work_times::record::AwayTime,

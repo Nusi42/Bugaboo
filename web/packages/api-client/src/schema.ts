@@ -1366,6 +1366,54 @@ export interface paths {
     patch: operations["changeAwayTime"];
     trace?: never;
   };
+  "/api/v1/board": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * A board of a search: a column for each status (statuses of the same name merged across the
+     *     workflows of the issues found), status group or choice, with how many issues the reader sees in
+     *     each and its card limit (`over` when the count is above it, nothing refused); the rows; and the
+     *     first cards of each cell, in the order of the search, each with the fields of its layout *Card*
+     *     and where it may go (`moves`, from what its own workflow allows the reader). Restricted issues
+     *     are in no column and no count. With `more`, the next cards of one cell. It reads and counts
+     *     against the searches of the person; an access key reads it as its person may.
+     */
+    post: operations["getBoard"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/calendar": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * The issues of a search whose date field (*Dates from*: *Due date* unless the options name
+     *     *Start date* or an own date field) lies in a window of at most six weeks, each on its day, at
+     *     most 200 (`more` says when there are more), and the due dates of their goals as marks. Restricted
+     *     issues and dates the reader may not read are on no day. It reads and counts against the
+     *     searches of the person; an access key reads it as its person may.
+     */
+    post: operations["getCalendar"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/check-access/people": {
     parameters: {
       query?: never;
@@ -6724,6 +6772,115 @@ export interface components {
       /** @description The seven usual work days, Monday first. */
       usual: components["schemas"]["UsualDayBody"][];
     };
+    /** @description Ask for a board: a saved search or a search text, and the options of the view. */
+    BoardBody: {
+      board?: components["schemas"]["BoardOptionsBody"] | null;
+      /** @description How many cards a cell holds at most, from 1 to 50; any other number is refused with `request.invalid`. */
+      limit?: number;
+      /** @description The `next_cursor` of one cell, for its next cards (*Show more*); left out, the whole board. */
+      more?: string | null;
+      /** @description *Only this project*: `project is KEY` in place of `project within KEY`. */
+      only_this_project?: boolean;
+      /**
+       * @description The project whose board it is, by ID or short name: `project within KEY` is written into
+       *     the text, the project and everything below it; left out, everywhere the person sees.
+       */
+      project?: string | null;
+      /** @description The saved search the board is a view of, by its ID; or else `search_text`. */
+      saved_search?: string | null;
+      /** @description The search text, which need not be saved; used when `saved_search` is left out. */
+      search_text?: string | null;
+    };
+    /** @description A card. */
+    BoardCardBody: {
+      /**
+       * @description The fields the card shows, in order (the layout *Card* of its type, as the reader may read
+       *     it); the Issue ID and the title always show.
+       */
+      fields: components["schemas"]["FieldKey"][];
+      /** @description The issue, with what the reader may see of it in its project. */
+      issue: components["schemas"]["IssueItem"];
+      /** @description Where it may go and why not, one for each column it is not in. */
+      moves: components["schemas"]["CardMoveBody"][];
+    };
+    /** @description The cards of one column in one row. */
+    BoardCellBody: {
+      /** @description The first cards, in the order of the search (at the start: priority, then last changed). */
+      cards: components["schemas"]["BoardCardBody"][];
+      /** @description The column, by its place. */
+      column: number;
+      /**
+       * Format: int64
+       * @description How many issues the reader sees in the cell.
+       */
+      count: number;
+      /** @description The cursor of the next cards of the cell (give it as `more`); `null` when there are none. */
+      next_cursor: string | null;
+      /** @description The row, by its place; `null` on a board without rows. */
+      row: number | null;
+    };
+    /** @description A column. */
+    BoardColumnBody: {
+      /**
+       * Format: int64
+       * @description How many issues the reader sees in it.
+       */
+      count: number;
+      /**
+       * @description What the column stands for as the search language writes it: the name of a status, the
+       *     word of a status group, the name of a choice; `null` for the issues without a value.
+       */
+      key: string | null;
+      /**
+       * Format: int32
+       * @description Its card limit; `null` for none.
+       */
+      limit: number | null;
+      /** @description Whether more cards than the limit are in it: nothing is refused. */
+      over: boolean;
+      status_group: components["schemas"]["StatusGroup"] | null;
+    };
+    /**
+     * @description The options of a board view (ADR-0034, amendment of 2026-11-24). Left out, a saved search keeps
+     *     a column for each status, no rows and no card limits.
+     */
+    BoardOptionsBody: {
+      /** @description The card limits of the columns that have one, each column once. */
+      card_limits?: components["schemas"]["CardLimitBody"][];
+      /**
+       * @description The field the columns come from, by its search word: `status group` or an own field that
+       *     holds one choice; `null` for *Status*, statuses of the same name being one column.
+       */
+      columns: string | null;
+      /**
+       * @description The field the rows come from, by its search word (one the readable fields mark
+       *     `timeline_group`); `null` for no rows.
+       */
+      rows: string | null;
+    };
+    /** @description A board. */
+    BoardPageBody: {
+      /** @description The cells that hold issues. */
+      cells: components["schemas"]["BoardCellBody"][];
+      /** @description The columns, in order; empty columns stay. */
+      columns: components["schemas"]["BoardColumnBody"][];
+      /** @description The rows, in order, at most 20; empty without rows. */
+      rows: components["schemas"]["BoardRowBody"][];
+      /** @description Whether the search found more rows than the board shows. */
+      rows_truncated: boolean;
+      /** @description The search text that was run: a project's board has its project written in. */
+      search_text: string;
+    };
+    /** @description A row of a board. */
+    BoardRowBody: {
+      /**
+       * Format: int64
+       * @description How many issues the reader sees in it.
+       */
+      issues: number;
+      /** @description What the row is, as the reader may see it (people shown alike are one row). */
+      key: components["schemas"]["SearchGroupKeyBody"];
+    };
     /** @description One day of one's own week compared with the time booked on issues, in whole minutes. */
     BookedDayBody: {
       /**
@@ -6789,6 +6946,113 @@ export interface components {
      * @enum {string}
      */
     BriefPart: "description" | "steps-to-reproduce" | "done-when";
+    /** @description Ask for the issues of a window of days. */
+    CalendarBody: {
+      /** @description The options of the view: the date field (*Dates from*). */
+      calendar: components["schemas"]["CalendarOptionsBody"];
+      /**
+       * Format: date
+       * @description The first day of the window (`2026-11-30`).
+       */
+      first: string;
+      /**
+       * Format: date
+       * @description The last day of the window; a window is six weeks at most.
+       */
+      last: string;
+      /** @description *Only this project*: `project is KEY` in place of `project within KEY`. */
+      only_this_project?: boolean;
+      /**
+       * @description The project whose calendar it is, by ID or short name: `project within KEY` is written into
+       *     the text; left out, everywhere the person sees.
+       */
+      project?: string | null;
+      /** @description The saved search the calendar is a view of, by its ID; or else `search_text`. */
+      saved_search?: string | null;
+      /** @description The search text, which need not be saved; used when `saved_search` is left out. */
+      search_text?: string | null;
+    };
+    /** @description An issue on its day. */
+    CalendarEntryBody: {
+      /**
+       * Format: date
+       * @description The day of its date field.
+       */
+      day: string;
+      /** @description The issue, with what the reader may see of it in its project. */
+      issue: components["schemas"]["IssueItem"];
+      /** @description Whether the reader may change the date field on this issue: only then can it be dragged. */
+      may_move: boolean;
+    };
+    /** @description The due date of a goal, a mark that is not dragged. */
+    CalendarMarkBody: {
+      /**
+       * Format: date
+       * @description Its *Due date*.
+       */
+      day: string;
+      /** @description The goal, by its internal ID. */
+      issue: string;
+      /** @description Its readable ID. */
+      readable_id: string;
+      /** @description Its title; `null` when the reader may not read it. */
+      title: string | null;
+    };
+    /**
+     * @description The options of a calendar view (ADR-0034, amendment of 2026-11-24). Left out, a saved search
+     *     keeps *Due date* and a month.
+     */
+    CalendarOptionsBody: {
+      /**
+       * @description The date field the issues stand on (*Dates from*), by its search word; `null` for *Due
+       *     date*.
+       */
+      dates_field: string | null;
+      /** @description What the calendar shows first. */
+      span: components["schemas"]["CalendarSpan"];
+    };
+    /** @description The issues of a window of days. */
+    CalendarPageBody: {
+      /** @description The issues, by day, then in the order of the search. */
+      entries: components["schemas"]["CalendarEntryBody"][];
+      /** @description The due dates of the goals of the issues shown that lie in the window. */
+      marks: components["schemas"]["CalendarMarkBody"][];
+      /** @description Whether the window holds more than the 200 issues answered. */
+      more: boolean;
+      /** @description The search text that was run: a project's calendar has its project written in. */
+      search_text: string;
+    };
+    /**
+     * @description What a calendar shows first: a month or a week.
+     * @enum {string}
+     */
+    CalendarSpan: "month" | "week";
+    /**
+     * @description The soft limit of one column of a board: the column's title says "4 of 3" when more cards are in
+     *     it, and nothing is refused (ADR-0034, amendment of 2026-11-24).
+     */
+    CardLimitBody: {
+      /**
+       * @description The column, by the `key` of a column of the board: the name of a status or a choice, or the
+       *     word of a status group; `null` for the column of the issues without a value.
+       */
+      column: string | null;
+      /** @description The card limit of the column, from 1 to 999: above it the column's title turns orange. */
+      limit: number;
+    };
+    /** @description Where a card may go, or why not. */
+    CardMoveBody: {
+      /** @description The column, by its place among the columns. */
+      column: number;
+      /** @description The fields the change asks for first; empty when it needs none. */
+      needs: components["schemas"]["FieldKey"][];
+      refused: components["schemas"]["MoveRefusedBody"] | null;
+      /**
+       * @description The status the card enters there (the `to` of the status change); `null` for a column of
+       *     choices, whose move is the change of the field.
+       */
+      to: string | null;
+    };
     /** @description The HTTPS certificate the server uses itself. */
     CertificateBody: {
       /**
@@ -9271,10 +9535,10 @@ export interface components {
       sections: components["schemas"]["EditorSectionBody"][];
     };
     /**
-     * @description What a layout is for: the issue page or the new-issue form.
+     * @description What a layout is for: the issue page, the new-issue form or the card of a board.
      * @enum {string}
      */
-    LayoutKind: "new-issue" | "issue-page";
+    LayoutKind: "new-issue" | "issue-page" | "card";
     /** @description How long a kind of data is kept. */
     LengthBody: {
       /**
@@ -9860,6 +10124,11 @@ export interface components {
       /** @description The list was cut: it names the first people it found. */
       truncated: boolean;
     };
+    /**
+     * @description Why a card may not go to a column.
+     * @enum {string}
+     */
+    MoveRefusedBody: "no-such-status" | "no-such-change" | "cannot-change";
     /**
      * @description Where a person may move a project to.
      * @enum {string}
@@ -11231,12 +11500,14 @@ export interface components {
      *     `spacing` an older client still sends is not read.
      */
     PresentationRef: {
+      board?: components["schemas"]["BoardOptionsBody"] | null;
+      calendar?: components["schemas"]["CalendarOptionsBody"] | null;
       /** @description The columns, in order. None at all means the columns of the project's list. */
       columns: components["schemas"]["ColumnBody"][];
       /** @description The field the rows are grouped by, by its search word. */
       group_by: string | null;
       timeline?: components["schemas"]["TimelineOptionsBody"] | null;
-      /** @description The kind of view. M5 shows the kind `list`. */
+      /** @description The kind of view. */
       view: components["schemas"]["ViewKind"];
     };
     /** @description What to preview: a new name, or the one it would be combined with. */
@@ -13913,10 +14184,10 @@ export interface components {
       items: components["schemas"]["RecordVersionBody"][];
     };
     /**
-     * @description The kind of view a saved search is shown as: a list, the timeline or the relation map. Other kinds come with their views.
+     * @description The kind of view a saved search is shown as: a list, the timeline, the relation map, a board or a calendar.
      * @enum {string}
      */
-    ViewKind: "list" | "timeline" | "map";
+    ViewKind: "list" | "timeline" | "map" | "board" | "calendar";
     /**
      * @description What work that waits for a person waits for.
      * @enum {string}
@@ -17080,6 +17351,68 @@ export interface operations {
       403: components["responses"]["Forbidden"];
       404: components["responses"]["NotFound"];
       409: components["responses"]["Conflict"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getBoard: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["BoardBody"];
+      };
+    };
+    responses: {
+      /** @description A board. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BoardPageBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
+      413: components["responses"]["TooLarge"];
+      429: components["responses"]["TooManyRequests"];
+      500: components["responses"]["InternalError"];
+      503: components["responses"]["Unavailable"];
+    };
+  };
+  getCalendar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CalendarBody"];
+      };
+    };
+    responses: {
+      /** @description The issues of a window of days. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CalendarPageBody"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
       413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];

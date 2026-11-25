@@ -13,7 +13,7 @@ use bb_core::time::range::LengthRange;
 use bb_searchlang::Direction;
 use sea_query::{
     Alias, Cond, DynIden, Expr, ExprTrait as _, Func, IntoIden as _, JoinType, Order, Query,
-    SelectStatement, SimpleExpr,
+    SimpleExpr,
 };
 
 use super::source::{Domain, Rows, Subject};
@@ -329,6 +329,16 @@ impl Compiler<'_> {
         }
     }
 
+    /// How a field that holds one value for an issue groups the issues, as one expression of the
+    /// issue (no rows joined), and what the value is: the second grouping of the totals of a
+    /// board's cells, and the columns of its pages.
+    pub(super) fn one_grouping(&self, word: &str) -> Result<(Expr, GroupValue), CompileError> {
+        Ok(match self.grouping(word)? {
+            Grouping::One(value, what) => (value, what),
+            Grouping::Many { rows, value, what } => (rows.one_of(value), what),
+        })
+    }
+
     /// The keys of the order of this search, the ID last.
     pub(super) fn keys(&self) -> Result<Vec<Key>, CompileError> {
         let sort = &self.request.search.search().sort;
@@ -422,8 +432,9 @@ impl Compiler<'_> {
         keys.last().map_or(Order::Desc, |key| key.order.clone())
     }
 
-    /// Puts the order on the select, issues without a value last.
-    pub(super) fn order_by(select: &mut SelectStatement, keys: &[Key]) {
+    /// Puts the order on the select (or the window of a board's cells), issues without a value
+    /// last.
+    pub(super) fn order_by(select: &mut impl sea_query::OrderedStatement, keys: &[Key]) {
         for key in keys {
             if !key.always {
                 select.order_by_expr(key.value.clone().is_null(), Order::Asc);

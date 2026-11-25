@@ -148,17 +148,7 @@ fn operand_of(kind: FieldType, value: &FieldValue) -> Option<Operand> {
             })
         }
         (FieldType::YesNo, FieldValue::Flag(flag)) => Some(text(if *flag { YES } else { NO })),
-        (FieldType::Date, FieldValue::Day(days)) => {
-            let day = date_of(*days)?;
-            Some(Operand::Date {
-                date: Date {
-                    year: u16::try_from(day.year()).ok()?,
-                    month: u8::try_from(day.month()).ok()?,
-                    day: u8::try_from(day.day()).ok()?,
-                },
-                span: Span::default(),
-            })
-        }
+        (FieldType::Date, FieldValue::Day(days)) => day_operand(date_of(*days)?),
         _ => None,
     }
 }
@@ -530,6 +520,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         Ok(())
     }
+}
+
+/// A day as a value of the language (`2026-10-25`); none for a day the language cannot write.
+pub(crate) fn day_operand(day: jiff::civil::Date) -> Option<Operand> {
+    Some(Operand::Date {
+        date: Date {
+            year: u16::try_from(day.year()).ok()?,
+            month: u8::try_from(day.month()).ok()?,
+            day: u8::try_from(day.day()).ok()?,
+        },
+        span: Span::default(),
+    })
 }
 
 #[cfg(test)]

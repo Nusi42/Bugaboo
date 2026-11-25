@@ -651,6 +651,7 @@ mod tests;
 mod themes;
 mod time;
 mod timeline;
+mod views;
 mod what_roles_see;
 mod work_times;
 mod working_hours;

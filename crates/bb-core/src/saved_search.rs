@@ -12,6 +12,7 @@ use serde::Serialize;
 
 use crate::fields::ID_WORD;
 use crate::id::{GroupId, ProjectId, SavedSearchId, UserId};
+use crate::names::name_key;
 use crate::personal::{Entity, NotPersonal};
 
 /// The most columns one saved search shows.
@@ -31,9 +32,16 @@ pub const SAVED_SEARCHES_MAX: usize = 500;
 /// The most groups and projects one saved search is shared with.
 pub const SHARES_MAX: usize = 100;
 
+/// The most card limits one board keeps: one for each column, and a board has no more columns
+/// than the most statuses of a workflow or choices of a field.
+pub const CARD_LIMITS_MAX: usize = 100;
+
+/// The highest card limit of a column: a soft limit says something only when it is small.
+pub const CARD_LIMIT_MAX: u32 = 999;
+
 words! {
-    /// The kind of view a saved search is shown as: a list, or the timeline (M8); board and
-    /// calendar read the same record when their milestones come (ADR-0034, decision 1).
+    /// The kind of view a saved search is shown as (ADR-0034, decision 1 and the amendment of
+    /// 2026-11-24): a list, the timeline, a board or a calendar.
     pub enum ViewKind {
         /// A list of issues, one row each.
         List => "list",
@@ -42,13 +50,130 @@ words! {
         /// The relation map of the results: at most 200 of them and the relations between them,
         /// with no walk beyond them (ISS-16, ADR-0034, amendment 2026-11-24).
         Map => "map",
+        /// A board: a column for each status, status group or choice, with cards (PLAN-06).
+        Board => "board",
+        /// A calendar: each issue on the day of one date field (PLAN-09).
+        Calendar => "calendar",
     }
 }
 
 words_in_api!(
     ViewKind,
-    "The kind of view a saved search is shown as: a list, the timeline or the relation map. Other kinds come with their views."
+    "The kind of view a saved search is shown as: a list, the timeline, the relation map, a board or a calendar."
 );
+
+words! {
+    /// What a calendar shows first: a month or a week (PLAN-09).
+    pub enum CalendarSpan {
+        /// A month, a row for each week.
+        Month => "month",
+        /// One week, a column for each day.
+        Week => "week",
+    }
+}
+
+words_in_api!(
+    CalendarSpan,
+    "What a calendar shows first: a month or a week."
+);
+
+/// The soft limit of one column of a board (M10-Q2): the column's title says "4 of 3" when more
+/// cards than this are in it, and nothing is refused.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct CardLimit {
+    /// The column, by the value it stands for as the search language writes it: the name of a
+    /// status, the word of a status group or the name of a choice; `None` for the column of the
+    /// issues without a value.
+    pub column: Option<String>,
+    /// How many cards the column should hold at most.
+    pub limit: u32,
+}
+
+/// The options of a board view, kept with its saved search (ADR-0034, amendment of 2026-11-24).
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize)]
+pub struct BoardOptions {
+    /// The field the columns come from, by its search word: *Status group* or an own field that
+    /// holds one choice; `None` for *Status*, whose statuses of the same name are one column.
+    pub columns: Option<String>,
+    /// The field that splits the board into rows, by its search word; `None` for no rows.
+    pub rows: Option<String>,
+    /// The soft limits of the columns that have one, each column once.
+    pub limits: Vec<CardLimit>,
+}
+
+impl BoardOptions {
+    /// Whether the options can be kept: words where they name fields, two different fields for the
+    /// columns and the rows, at most [`CARD_LIMITS_MAX`] limits, each column once (names that are
+    /// the same name are one column, [`name_key`]), each limit
+    /// between 1 and [`CARD_LIMIT_MAX`]. Whether the fields and the values exist for a person is
+    /// the check of the use case.
+    #[must_use]
+    pub fn is_valid(&self) -> bool {
+        self.columns.as_deref().is_none_or(is_word)
+            && self.rows.as_deref().is_none_or(is_word)
+            && (self.rows.is_none() || self.rows != self.columns)
+            && self.limits.len() <= CARD_LIMITS_MAX
+            && self.limits.iter().enumerate().all(|(at, each)| {
+                (1..=CARD_LIMIT_MAX).contains(&each.limit)
+                    && each.column.as_deref().is_none_or(is_word)
+                    && !self.limits[..at].iter().any(|earlier| {
+                        earlier.column.as_deref().map(name_key)
+                            == each.column.as_deref().map(name_key)
+                    })
+            })
+    }
+
+    /// The rows of the limits of the saved search `search`, counted from 0.
+    #[must_use]
+    pub fn limit_rows(&self, search: SavedSearchId) -> Vec<SearchCardLimit> {
+        self.limits
+            .iter()
+            .zip(0_i64..)
+            .map(|(each, position)| SearchCardLimit {
+                search,
+                position,
+                column: each.column.clone(),
+                limit: i64::from(each.limit),
+            })
+            .collect()
+    }
+
+    /// The limits of `rows` (in any order), as the board keeps them.
+    #[must_use]
+    pub fn limits_of(rows: &[SearchCardLimit]) -> Vec<CardLimit> {
+        let mut ordered: Vec<&SearchCardLimit> = rows.iter().collect();
+        ordered.sort_by_key(|row| row.position);
+        ordered
+            .into_iter()
+            .filter_map(|row| {
+                Some(CardLimit {
+                    column: row.column.clone(),
+                    limit: u32::try_from(row.limit).ok()?,
+                })
+            })
+            .collect()
+    }
+}
+
+/// The options of a calendar view, kept with its saved search (M10-Q5).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct CalendarOptions {
+    /// The date field the issues stand on (*Dates from*), by its search word; `None` for *Due
+    /// date*.
+    pub dates: Option<String>,
+    /// What the calendar shows first.
+    pub span: CalendarSpan,
+}
+
+impl Default for CalendarOptions {
+    /// *Due date*, a month.
+    fn default() -> Self {
+        Self {
+            dates: None,
+            span: CalendarSpan::Month,
+        }
+    }
+}
 
 words! {
     /// How many days the timeline shows across the screen (PLAN-01): from a day to a quarter.
@@ -116,6 +241,10 @@ pub struct Presentation {
     /// keeps the ones a search has (the starting ones for a new search), so a client that knows
     /// only lists never takes them away.
     pub timeline: Option<TimelineOptions>,
+    /// The options of the board, kept like those of the timeline.
+    pub board: Option<BoardOptions>,
+    /// The options of the calendar, kept like those of the timeline.
+    pub calendar: Option<CalendarOptions>,
 }
 
 impl Default for Presentation {
@@ -126,6 +255,8 @@ impl Default for Presentation {
             columns: Vec::new(),
             group_by: None,
             timeline: None,
+            board: None,
+            calendar: None,
         }
     }
 }
@@ -159,9 +290,16 @@ impl Presentation {
                 .as_ref()
                 .and_then(|timeline| timeline.dates.as_ref())
                 .is_none_or(|(start, end)| is_word(start) && is_word(end) && start != end)
+            && self.board.as_ref().is_none_or(BoardOptions::is_valid)
+            && self
+                .calendar
+                .as_ref()
+                .and_then(|calendar| calendar.dates.as_deref())
+                .is_none_or(is_word)
     }
 
-    /// The presentation of `search` with its `columns` (in any order).
+    /// The presentation of `search` with its `columns` (in any order); the limits of its board are
+    /// in `search` already.
     #[must_use]
     pub fn of(search: &SavedSearch, columns: &[SearchColumn]) -> Self {
         let mut ordered: Vec<&SearchColumn> = columns.iter().collect();
@@ -177,6 +315,8 @@ impl Presentation {
                 .collect(),
             group_by: search.group_by.clone(),
             timeline: Some(search.timeline.clone()),
+            board: Some(search.board.clone()),
+            calendar: Some(search.calendar.clone()),
         }
     }
 
@@ -196,7 +336,8 @@ impl Presentation {
     }
 
     /// The search words of every field the presentation names: the columns (besides the ID column),
-    /// the grouping and the date fields of the timeline.
+    /// the grouping, the date fields of the timeline and of the calendar, and the columns and the
+    /// rows of the board.
     pub fn fields(&self) -> impl Iterator<Item = &str> {
         self.columns
             .iter()
@@ -208,6 +349,18 @@ impl Presentation {
                     .iter()
                     .filter_map(|timeline| timeline.dates.as_ref())
                     .flat_map(|(start, end)| [start.as_str(), end.as_str()]),
+            )
+            .chain(self.board.iter().flat_map(|board| {
+                board
+                    .columns
+                    .as_deref()
+                    .into_iter()
+                    .chain(board.rows.as_deref())
+            }))
+            .chain(
+                self.calendar
+                    .iter()
+                    .filter_map(|calendar| calendar.dates.as_deref()),
             )
     }
 }
@@ -240,6 +393,15 @@ pub struct SavedSearch {
     /// the names of own fields, which a person wrote.
     #[personal(category = "content", basis = "legitimate_interests")]
     pub timeline: TimelineOptions,
+    /// The options of the board. Its fields are named by their search words and its limits by the
+    /// names of statuses and choices, which a person wrote. The limits are rows of their own
+    /// ([`SearchCardLimit`]).
+    #[personal(category = "content", basis = "legitimate_interests")]
+    pub board: BoardOptions,
+    /// The options of the calendar. Its date field is named by its search word, which can be the
+    /// name of an own field.
+    #[personal(category = "content", basis = "legitimate_interests")]
+    pub calendar: CalendarOptions,
     /// When it was made.
     #[not_personal]
     pub created_at: Timestamp,
@@ -256,15 +418,40 @@ pub struct SavedSearch {
 
 impl SavedSearch {
     /// Takes how `presentation` shows the search (the kind of view, the grouping and, when it
-    /// names them, the options of the timeline); the columns are rows of their own
-    /// ([`Presentation::rows`]).
+    /// names them, the options of the timeline, the board and the calendar); the columns are rows
+    /// of their own ([`Presentation::rows`]), and so are the limits of the board
+    /// ([`BoardOptions::limit_rows`]).
     pub fn take_presentation(&mut self, presentation: &Presentation) {
         self.view = presentation.view;
         self.group_by.clone_from(&presentation.group_by);
         if let Some(timeline) = &presentation.timeline {
             self.timeline.clone_from(timeline);
         }
+        if let Some(board) = &presentation.board {
+            self.board.clone_from(board);
+        }
+        if let Some(calendar) = &presentation.calendar {
+            self.calendar.clone_from(calendar);
+        }
     }
+}
+
+/// One card limit of the board of a saved search, in order.
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct SearchCardLimit {
+    /// The search.
+    #[not_personal]
+    pub search: SavedSearchId,
+    /// Its place among the limits of the search, counted from 0.
+    #[not_personal]
+    pub position: i64,
+    /// The column, by the name of its status or choice or the word of its status group; `None`
+    /// for the column of the issues without a value. A person wrote the names.
+    #[personal(category = "content", basis = "legitimate_interests")]
+    pub column: Option<String>,
+    /// The limit.
+    #[not_personal]
+    pub limit: i64,
 }
 
 /// One column of a saved search, in order.
@@ -421,8 +608,11 @@ mod tests {
         let presentation = Presentation {
             columns: vec![column("title", Some(300)), column("status", None)],
             group_by: Some("statusGroup".to_owned()),
-            // Read back, a search always names the options of its timeline.
+            // Read back, a search always names the options of its timeline, board and calendar.
             timeline: Some(TimelineOptions::default()),
+            board: Some(BoardOptions::default()),
+            calendar: Some(CalendarOptions::default()),
+
             ..Presentation::default()
         };
         let mut ids = crate::id::SequentialIds::default();
@@ -441,6 +631,8 @@ mod tests {
             view: presentation.view,
             group_by: presentation.group_by.clone(),
             timeline: TimelineOptions::default(),
+            board: BoardOptions::default(),
+            calendar: CalendarOptions::default(),
             created_at: Timestamp::UNIX_EPOCH,
             updated_at: Timestamp::UNIX_EPOCH,
             deleted_at: None,

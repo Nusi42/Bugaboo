@@ -224,6 +224,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 word: IssueField::Project.word().to_owned(),
                 people: Vec::new(),
                 page: None,
+                then: None,
             }),
             sums: Vec::new(),
             all: false,

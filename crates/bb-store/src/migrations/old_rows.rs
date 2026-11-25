@@ -2,7 +2,7 @@
 //! change what is stored: written with the column names of `crate::schema`, never through the
 //! program's use cases, so a test starts from what an old server left.
 
-use bb_core::id::{LayoutId, RoleId};
+use bb_core::id::{LayoutId, RoleId, SavedSearchId, UserId};
 use bb_testing::TestResult;
 use sea_query::{DynIden, Expr, IntoIden as _, Query};
 
@@ -10,6 +10,7 @@ use super::Database;
 use crate::db::StoredId as _;
 use crate::schema::{
     LayoutFieldRoleRow, LayoutFieldRow, LayoutOffFieldRow, LayoutRow, LayoutSectionRow, RoleRow,
+    SavedSearchRow,
 };
 
 /// Inserts one row of `values` into `table`.
@@ -23,6 +24,40 @@ pub(super) async fn insert<const N: usize>(
     row.into_table(table).columns(columns).values(values)?;
     database.execute(&row).await?;
     Ok(())
+}
+
+/// A saved list *Open bugs* of `maker`, with the columns every version since migration 30 has (no
+/// spacing, no options of a view).
+pub(super) async fn old_saved_list(
+    database: &Database,
+    search: SavedSearchId,
+    maker: UserId,
+) -> TestResult {
+    insert(
+        database,
+        SavedSearchRow::Table,
+        [
+            SavedSearchRow::Id.into_iden(),
+            SavedSearchRow::Name.into_iden(),
+            SavedSearchRow::Text.into_iden(),
+            SavedSearchRow::Maker.into_iden(),
+            SavedSearchRow::View.into_iden(),
+            SavedSearchRow::CreatedAt.into_iden(),
+            SavedSearchRow::UpdatedAt.into_iden(),
+            SavedSearchRow::Version.into_iden(),
+        ],
+        [
+            Expr::val(search.stored()),
+            Expr::val("Open bugs"),
+            Expr::val("status is open"),
+            Expr::val(maker.stored()),
+            Expr::val("list"),
+            Expr::val(1_i64),
+            Expr::val(1_i64),
+            Expr::val(1_i64),
+        ],
+    )
+    .await
 }
 
 /// A role at this place among the roles.

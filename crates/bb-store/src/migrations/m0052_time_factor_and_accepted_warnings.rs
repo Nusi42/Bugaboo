@@ -117,10 +117,10 @@ mod tests {
     use sea_query::{Expr, ExprTrait as _, IntoIden as _, Order, Query};
 
     use super::super::Database;
-    use super::super::old_rows::insert;
+    use super::super::old_rows::{insert, old_saved_list};
     use crate::auth::AuthStorage;
     use crate::db::StoredId as _;
-    use crate::schema::{AssignedPersonRow, SavedSearchRow};
+    use crate::schema::AssignedPersonRow;
     use crate::test_support::{at, insert_old_task};
 
     #[tokio::test]
@@ -150,31 +150,7 @@ mod tests {
                 .await?;
             }
             let search = SavedSearchId::from_parts(Timestamp::UNIX_EPOCH, [5; 10])?;
-            insert(
-                &database,
-                SavedSearchRow::Table,
-                [
-                    SavedSearchRow::Id.into_iden(),
-                    SavedSearchRow::Name.into_iden(),
-                    SavedSearchRow::Text.into_iden(),
-                    SavedSearchRow::Maker.into_iden(),
-                    SavedSearchRow::View.into_iden(),
-                    SavedSearchRow::CreatedAt.into_iden(),
-                    SavedSearchRow::UpdatedAt.into_iden(),
-                    SavedSearchRow::Version.into_iden(),
-                ],
-                [
-                    Expr::val(search.stored()),
-                    Expr::val("Open bugs"),
-                    Expr::val("status is open"),
-                    Expr::val(lea.stored()),
-                    Expr::val("list"),
-                    Expr::val(1_i64),
-                    Expr::val(1_i64),
-                    Expr::val(1_i64),
-                ],
-            )
-            .await?;
+            old_saved_list(&database, search, lea).await?;
             assert_eq!(database.migrate_until(52, at(1)).await?, [52]);
 
             // Both people have place 0, so the order they had stays: Lea first.
@@ -195,6 +171,8 @@ mod tests {
                 })
                 .collect::<Result<_, crate::StoreError>>()?;
             assert_eq!(people, [(lea, 0), (ben, 0)]);
+            // The search is read as the program reads it now, with the columns of later migrations.
+            database.migrate(at(2)).await?;
             // The search starts with the built-in dates, without plan by effort, a week wide.
             let mut read = database.begin_read().await?;
             let kept = AuthStorage::saved_search_in(&mut read, search)

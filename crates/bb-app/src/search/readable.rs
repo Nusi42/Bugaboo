@@ -28,12 +28,12 @@ use bb_core::ErrorCode;
 use bb_core::access::FieldLevel;
 use bb_core::agent_work::AgentWorkState;
 use bb_core::fields::{Field, FieldKey, ID_WORD, word_key};
-use bb_core::id::{FieldId, ProjectId};
+use bb_core::id::{FieldId, IssueTypeId, ProjectId};
 use bb_core::issue::{IssueType, Priority, StatusGroup};
 use bb_core::names::name_key;
 use bb_core::own_fields::{FieldChoice, FieldFor, FieldType};
 use bb_core::people_kinds::PeopleKind;
-use bb_core::workflow::WorkflowStatus;
+use bb_core::workflow::{WorkflowContent, WorkflowStatus};
 use bb_policy::{Authorized, Evaluation, FieldMask, Masked, Place as Where};
 use bb_searchlang::Field as SearchField;
 use bb_searchlang::{FieldKind, IssueField, Operator, ReadableFields, own_field_word};
@@ -224,15 +224,19 @@ impl<S: AuthStore> Ctx<'_, S> {
             .map(|(chain, held)| Place::of(chain, held))
             .collect();
         let mut types: Vec<IssueType> = Vec::new();
-        let mut statuses: Vec<WorkflowStatus> = Vec::new();
+        let mut workflows = Vec::new();
         for place in &places {
             for (found, workflow) in self.workflows_reaching(&seen, &place.chain).await? {
-                statuses.extend(workflow.statuses.iter().cloned());
+                workflows.push((found.id, workflow));
                 if !types.iter().any(|each| each.id == found.id) {
                     types.push(found);
                 }
             }
         }
+        let statuses: Vec<WorkflowStatus> = workflows
+            .iter()
+            .flat_map(|(_, workflow)| workflow.statuses.iter().cloned())
+            .collect();
         let own = self
             .store()
             .field_definitions()
@@ -262,6 +266,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         let looked = Looked {
             fields,
             own_reach,
+            workflows,
             statuses,
             types,
             own,
@@ -282,6 +287,10 @@ impl<S: AuthStore> Ctx<'_, S> {
 pub(crate) struct Looked {
     /// The fields the person may use, with what each reads.
     pub(crate) fields: Vec<Searchable>,
+    /// The workflow in force for each issue type the person may know, place by place where the
+    /// search looks (the first project first): what the statuses and the columns of a board come
+    /// from.
+    pub(crate) workflows: Vec<(IssueTypeId, Arc<WorkflowContent>)>,
     /// The statuses of the workflows in force where the search looks, for the types the person
     /// may know.
     pub(crate) statuses: Vec<WorkflowStatus>,

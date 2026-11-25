@@ -31,8 +31,18 @@ export type TimelineOptions = Schema<"TimelineOptionsBody">;
 /** The zoom of a timeline (*Days · Weeks · Months · Quarters*). */
 export type ZoomWord = Schema<"Zoom">;
 
-/** Every kind of view: the compiler stops here when the server gets a new one. */
-const viewKinds: Readonly<Record<ShownAs, true>> = { list: true, timeline: true, map: true };
+/**
+ * Every kind of view, and whether the screen shows it yet: the compiler stops here when the server
+ * gets a new one. The board and the calendar are read on the server; their screens come later, and
+ * until then an address that names them opens the list.
+ */
+const viewKinds: Readonly<Record<ShownAs, boolean>> = {
+  list: true,
+  timeline: true,
+  map: true,
+  board: false,
+  calendar: false,
+};
 
 /** Every zoom, the same way, in the order they are offered. */
 const zooms: Readonly<Record<ZoomWord, true>> = {
@@ -43,7 +53,12 @@ const zooms: Readonly<Record<ZoomWord, true>> = {
 };
 
 function isViewKind(word: string | undefined): word is ShownAs {
-  return word !== undefined && Object.hasOwn(viewKinds, word);
+  for (const [kind, shown] of Object.entries(viewKinds)) {
+    if (shown && kind === word) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function isZoom(word: string | undefined): word is ZoomWord {

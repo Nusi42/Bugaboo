@@ -18,15 +18,14 @@ mod count;
 mod page;
 mod shown;
 
-use base64ct::{Base64UrlUnpadded, Encoding as _};
 use bb_core::ErrorCode;
 use bb_core::id::UserId;
 use bb_policy::{Authorized, Masked, Place as Where};
 use serde::Serialize;
-use sha2::{Digest as _, Sha256};
 
-pub(crate) use count::{Counted, Grouping};
+pub(crate) use count::{Counted, Grouping, KeyPair};
 pub use page::GROUPS_PAGE;
+pub(crate) use page::key_place;
 pub use shown::{GroupTotalShown, SumShown, TotalShown};
 
 use self::count::sums_of;
@@ -124,8 +123,7 @@ pub fn totals_list(person: UserId, query: &SearchTotalsQuery) -> String {
         GroupOrder::Key => "key",
         GroupOrder::Count => "count",
     };
-    let mut hash = Sha256::new();
-    for part in [
+    let parts: Vec<Option<&str>> = [
         query.text.as_str(),
         &scope,
         query.by.as_deref().unwrap_or_default(),
@@ -133,14 +131,9 @@ pub fn totals_list(person: UserId, query: &SearchTotalsQuery) -> String {
     ]
     .into_iter()
     .chain(query.sums.iter().map(String::as_str))
-    {
-        hash.update(part.as_bytes());
-        hash.update([0]);
-    }
-    format!(
-        "totals:{person}:{}",
-        Base64UrlUnpadded::encode_string(&hash.finalize())
-    )
+    .map(Some)
+    .collect();
+    crate::seal::list_name("totals", person, &parts)
 }
 
 /// The totals of a search.

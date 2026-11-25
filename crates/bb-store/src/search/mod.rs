@@ -18,8 +18,8 @@
 use std::cell::{Cell, RefCell};
 
 use bb_app::search::{
-    FieldTarget, MapStep, SearchFailure, SearchHit, SearchRequest, SearchStore, Total, Totals,
-    TotalsAsked, target_of,
+    CellHit, CellWindow, Cells, FieldTarget, MapStep, SearchFailure, SearchHit, SearchRequest,
+    SearchStore, Total, Totals, TotalsAsked, target_of,
 };
 use bb_core::id::IssueId;
 use sea_query::{CommonTableExpression, Cond, Expr, ExprTrait as _};
@@ -32,6 +32,7 @@ use crate::auth::AuthStorage;
 use crate::db::{Dialect, Statement};
 use crate::error::StoreError;
 
+mod cells;
 pub(crate) mod filter;
 mod order;
 mod source;
@@ -258,12 +259,13 @@ impl SearchStore for AuthStorage {
         let plan = totals::totals_statements(request, database.dialect(), asked).map_err(failed)?;
         let sums = asked.sums.len();
         let (groups, outside, read) = match &plan.groups {
-            Some((built, what)) => {
+            Some((built, what, then)) => {
                 let rows = database
                     .fetch_all_within(built, SEARCH_TIME)
                     .await
                     .map_err(stopped)?;
-                let (groups, outside) = totals::read_groups(&rows, *what, sums).map_err(failed)?;
+                let (groups, outside) =
+                    totals::read_groups(&rows, (*what, *then), sums).map_err(failed)?;
                 (groups, outside, rows.len())
             }
             None => (Vec::new(), Total::default(), 0),
@@ -283,6 +285,26 @@ impl SearchStore for AuthStorage {
             .map_err(failed)?;
         Ok(totals::totals_of(groups, all))
     }
+
+    async fn search_cell_pages(
+        &self,
+        request: &SearchRequest,
+        cells: &Cells,
+        window: &CellWindow,
+    ) -> Result<Vec<CellHit>, SearchFailure> {
+        let (built, rows) =
+            cells::cell_pages_statement(request, self.database().dialect(), cells, window)
+                .map_err(failed)?;
+        self.database()
+            .fetch_all_within(&built, SEARCH_TIME)
+            .await
+            .map_err(stopped)?
+            .iter()
+            .map(|row| cells::read_cell_hit(row, rows))
+            .filter_map(Result::transpose)
+            .collect::<Result<_, _>>()
+            .map_err(failed)
+    }
 }
 
 #[cfg(test)]
@@ -301,6 +323,8 @@ mod tests_agent_work_current;
 mod tests_agent_work_more;
 #[cfg(test)]
 mod tests_ai;
+#[cfg(test)]
+mod tests_cells;
 #[cfg(test)]
 mod tests_map;
 #[cfg(test)]

@@ -15,7 +15,8 @@ use bb_app::saved_searches::{
 };
 use bb_core::id::SavedSearchId;
 use bb_core::saved_search::{
-    Column, Presentation, SearchSet, ShareKind, ShareTarget, TimelineOptions, ViewKind, Zoom,
+    BoardOptions, CARD_LIMIT_MAX, CalendarOptions, CalendarSpan, CardLimit, Column, Presentation,
+    SearchSet, ShareKind, ShareTarget, TimelineOptions, ViewKind, Zoom,
 };
 use bb_policy::{Masked, PersonRef};
 use serde::{Deserialize, Serialize};
@@ -124,12 +125,137 @@ impl TryFrom<TimelineOptionsBody> for TimelineOptions {
     }
 }
 
+/// The soft limit of one column of a board: the column's title says "4 of 3" when more cards are in
+/// it, and nothing is refused (ADR-0034, amendment of 2026-11-24).
+#[derive(Clone, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct CardLimitBody {
+    /// The column, by the `key` of a column of the board: the name of a status or a choice, or the
+    /// word of a status group; `null` for the column of the issues without a value.
+    #[serde(default)]
+    #[schema(required = true)]
+    column: Option<String>,
+    /// The card limit of the column: above it the column's title turns orange.
+    #[schema(schema_with = card_limit_schema)]
+    limit: u32,
+}
+
+/// A card limit as the API description says it, from `bb_core::saved_search`.
+fn card_limit_schema() -> utoipa::openapi::schema::Object {
+    utoipa::openapi::schema::ObjectBuilder::new()
+        .schema_type(utoipa::openapi::schema::Type::Integer)
+        .minimum(Some(1))
+        .maximum(Some(CARD_LIMIT_MAX))
+        .description(Some(format!(
+            "The card limit of the column, from 1 to {CARD_LIMIT_MAX}: above it the column's title turns orange."
+        )))
+        .build()
+}
+
+/// The options of a board view (ADR-0034, amendment of 2026-11-24). Left out, a saved search keeps
+/// a column for each status, no rows and no card limits.
+#[derive(Clone, Default, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct BoardOptionsBody {
+    /// The field the columns come from, by its search word: `status group` or an own field that
+    /// holds one choice; `null` for *Status*, statuses of the same name being one column.
+    #[serde(default)]
+    #[schema(required = true)]
+    columns: Option<String>,
+    /// The field the rows come from, by its search word (one the readable fields mark
+    /// `timeline_group`); `null` for no rows.
+    #[serde(default)]
+    #[schema(required = true)]
+    rows: Option<String>,
+    /// The card limits of the columns that have one, each column once.
+    #[serde(default)]
+    card_limits: Vec<CardLimitBody>,
+}
+
+impl BoardOptionsBody {
+    /// The field the columns come from, when the options name one.
+    pub(crate) fn columns(&self) -> Option<&str> {
+        self.columns.as_deref()
+    }
+
+    /// The field the rows come from, when the options name one.
+    pub(crate) fn rows(&self) -> Option<&str> {
+        self.rows.as_deref()
+    }
+}
+
+impl From<&BoardOptions> for BoardOptionsBody {
+    fn from(options: &BoardOptions) -> Self {
+        Self {
+            columns: options.columns.clone(),
+            rows: options.rows.clone(),
+            card_limits: options
+                .limits
+                .iter()
+                .map(|each| CardLimitBody {
+                    column: each.column.clone(),
+                    limit: each.limit,
+                })
+                .collect(),
+        }
+    }
+}
+
+impl From<BoardOptionsBody> for BoardOptions {
+    fn from(body: BoardOptionsBody) -> Self {
+        Self {
+            columns: body.columns,
+            rows: body.rows,
+            limits: body
+                .card_limits
+                .into_iter()
+                .map(|each| CardLimit {
+                    column: each.column,
+                    limit: each.limit,
+                })
+                .collect(),
+        }
+    }
+}
+
+/// The options of a calendar view (ADR-0034, amendment of 2026-11-24). Left out, a saved search
+/// keeps *Due date* and a month.
+#[derive(Clone, Serialize, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct CalendarOptionsBody {
+    /// The date field the issues stand on (*Dates from*), by its search word; `null` for *Due
+    /// date*.
+    #[serde(default)]
+    #[schema(required = true)]
+    dates_field: Option<String>,
+    /// What the calendar shows first.
+    span: CalendarSpan,
+}
+
+impl From<&CalendarOptions> for CalendarOptionsBody {
+    fn from(options: &CalendarOptions) -> Self {
+        Self {
+            dates_field: options.dates.clone(),
+            span: options.span,
+        }
+    }
+}
+
+impl From<CalendarOptionsBody> for CalendarOptions {
+    fn from(body: CalendarOptionsBody) -> Self {
+        Self {
+            dates: body.dates_field,
+            span: body.span,
+        }
+    }
+}
+
 /// How the results of a saved search are shown. How close together the rows are is not part of
 /// it: every list follows the person's setting `appearance.spacing` (ADR-0034, amendment), and a
 /// `spacing` an older client still sends is not read.
 #[derive(Clone, Serialize, Deserialize, ToSchema)]
 pub(crate) struct PresentationRef {
-    /// The kind of view. M5 shows the kind `list`.
+    /// The kind of view.
     view: ViewKind,
     /// The columns, in order. None at all means the columns of the project's list.
     columns: Vec<ColumnBody>,
@@ -140,6 +266,14 @@ pub(crate) struct PresentationRef {
     /// ones it has.
     #[serde(default)]
     timeline: Option<TimelineOptionsBody>,
+    /// The options of the board, kept for every view; left out of a change, the search keeps the
+    /// ones it has.
+    #[serde(default)]
+    board: Option<BoardOptionsBody>,
+    /// The options of the calendar, kept for every view; left out of a change, the search keeps
+    /// the ones it has.
+    #[serde(default)]
+    calendar: Option<CalendarOptionsBody>,
 }
 
 impl From<&Presentation> for PresentationRef {
@@ -159,6 +293,11 @@ impl From<&Presentation> for PresentationRef {
                 .timeline
                 .as_ref()
                 .map(TimelineOptionsBody::from),
+            board: presentation.board.as_ref().map(BoardOptionsBody::from),
+            calendar: presentation
+                .calendar
+                .as_ref()
+                .map(CalendarOptionsBody::from),
         }
     }
 }
@@ -179,6 +318,8 @@ impl TryFrom<PresentationRef> for Presentation {
                 .collect(),
             group_by: body.group_by,
             timeline: body.timeline.map(TimelineOptions::try_from).transpose()?,
+            board: body.board.map(BoardOptions::from),
+            calendar: body.calendar.map(CalendarOptions::from),
         })
     }
 }

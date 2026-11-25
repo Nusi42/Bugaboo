@@ -325,4 +325,9 @@ pub(super) const ALL: &[Definition] = &[
         name: "walk_index",
         steps: || Ok(super::m0064_walk_index::steps()),
     },
+    Definition {
+        version: 66,
+        name: "board_calendar_card",
+        steps: || Ok(super::m0066_board_calendar_card::steps()),
+    },
 ];

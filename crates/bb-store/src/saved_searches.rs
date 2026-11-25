@@ -4,8 +4,8 @@
 use bb_app::saved_searches::{Reach, SavedSearchStore};
 use bb_core::id::{GroupId, ProjectId, SavedSearchId, UserId};
 use bb_core::saved_search::{
-    ProjectDefaultList, SavedSearch, SearchColumn, SearchShare, ShareKind, ShareTarget,
-    TimelineOptions, ViewKind, Zoom,
+    BoardOptions, CalendarOptions, CalendarSpan, ProjectDefaultList, SavedSearch, SearchColumn,
+    SearchShare, ShareKind, ShareTarget, TimelineOptions, ViewKind, Zoom,
 };
 use jiff::Timestamp;
 use sea_query::{Cond, Expr, ExprTrait as _, Order, Query, SelectStatement};
@@ -15,6 +15,8 @@ use crate::db::{Row, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::locks::{LockClass, lock_key};
 use crate::schema::{ProjectDefaultListRow, SavedSearchRow, SearchColumnRow, SearchShareRow};
+
+mod limits;
 
 fn search_select() -> SelectStatement {
     let mut select = Query::select();
@@ -30,6 +32,10 @@ fn search_select() -> SelectStatement {
             SavedSearchRow::TimelineEnd,
             SavedSearchRow::PlanByEffort,
             SavedSearchRow::Zoom,
+            SavedSearchRow::BoardColumns,
+            SavedSearchRow::BoardRows,
+            SavedSearchRow::CalendarDates,
+            SavedSearchRow::CalendarSpan,
             SavedSearchRow::CreatedAt,
             SavedSearchRow::UpdatedAt,
             SavedSearchRow::DeletedAt,
@@ -55,6 +61,17 @@ fn read_search(row: &Row) -> Result<SavedSearch, StoreError> {
             plan_by_effort: row.get(SavedSearchRow::PlanByEffort)?,
             zoom: Zoom::from_code(&row.get::<String>(SavedSearchRow::Zoom)?)
                 .ok_or(StoreError::Corrupt("a zoom"))?,
+        },
+        // The card limits are rows of their own, read with the searches (`limits`).
+        board: BoardOptions {
+            columns: row.get(SavedSearchRow::BoardColumns)?,
+            rows: row.get(SavedSearchRow::BoardRows)?,
+            limits: Vec::new(),
+        },
+        calendar: CalendarOptions {
+            dates: row.get(SavedSearchRow::CalendarDates)?,
+            span: CalendarSpan::from_code(&row.get::<String>(SavedSearchRow::CalendarSpan)?)
+                .ok_or(StoreError::Corrupt("a span of a calendar"))?,
         },
         created_at: row.time(SavedSearchRow::CreatedAt)?,
         updated_at: row.time(SavedSearchRow::UpdatedAt)?,
@@ -190,12 +207,7 @@ impl SavedSearchStore for AuthStorage {
     ) -> Result<Option<SavedSearch>, StoreError> {
         let mut select = search_select();
         select.and_where(Expr::col(SavedSearchRow::Id).eq(id.stored()));
-        transaction
-            .fetch_optional(&select)
-            .await?
-            .as_ref()
-            .map(read_search)
-            .transpose()
+        Ok(limits::limited(transaction, &select).await?.pop())
     }
 
     async fn search_columns_in(
@@ -272,12 +284,7 @@ impl SavedSearchStore for AuthStorage {
         if let Some(after) = after {
             select.and_where(Expr::col(SavedSearchRow::Id).gt(after.stored()));
         }
-        self.database()
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_search)
-            .collect()
+        limits::limited(&mut self.database(), &select).await
     }
 
     async fn saved_searches_shared_with(
@@ -301,12 +308,7 @@ impl SavedSearchStore for AuthStorage {
         if let Some(after) = after {
             select.and_where(Expr::col(SavedSearchRow::Id).gt(after.stored()));
         }
-        self.database()
-            .fetch_all(&select)
-            .await?
-            .iter()
-            .map(read_search)
-            .collect()
+        limits::limited(&mut self.database(), &select).await
     }
 
     async fn count_shared_searches_of_in(
@@ -438,6 +440,10 @@ impl SavedSearchStore for AuthStorage {
                 SavedSearchRow::TimelineEnd,
                 SavedSearchRow::PlanByEffort,
                 SavedSearchRow::Zoom,
+                SavedSearchRow::BoardColumns,
+                SavedSearchRow::BoardRows,
+                SavedSearchRow::CalendarDates,
+                SavedSearchRow::CalendarSpan,
                 SavedSearchRow::CreatedAt,
                 SavedSearchRow::UpdatedAt,
                 SavedSearchRow::DeletedAt,
@@ -454,6 +460,10 @@ impl SavedSearchStore for AuthStorage {
                 Expr::val(timeline_end(search)),
                 Expr::val(search.timeline.plan_by_effort),
                 Expr::val(search.timeline.zoom.code()),
+                Expr::val(search.board.columns.clone()),
+                Expr::val(search.board.rows.clone()),
+                Expr::val(search.calendar.dates.clone()),
+                Expr::val(search.calendar.span.code()),
                 Expr::val(to_micros(search.created_at)),
                 Expr::val(to_micros(search.updated_at)),
                 Expr::val(search.deleted_at.map(to_micros)),
@@ -461,7 +471,8 @@ impl SavedSearchStore for AuthStorage {
             ])
             .map_err(|_| StoreError::Corrupt("a saved search"))?;
         transaction.execute(&insert).await?;
-        insert_columns(transaction, columns).await
+        insert_columns(transaction, columns).await?;
+        limits::put_limits(transaction, search).await
     }
 
     async fn update_saved_search(
@@ -481,6 +492,10 @@ impl SavedSearchStore for AuthStorage {
             .value(SavedSearchRow::TimelineEnd, timeline_end(search))
             .value(SavedSearchRow::PlanByEffort, search.timeline.plan_by_effort)
             .value(SavedSearchRow::Zoom, search.timeline.zoom.code())
+            .value(SavedSearchRow::BoardColumns, search.board.columns.clone())
+            .value(SavedSearchRow::BoardRows, search.board.rows.clone())
+            .value(SavedSearchRow::CalendarDates, search.calendar.dates.clone())
+            .value(SavedSearchRow::CalendarSpan, search.calendar.span.code())
             .value(SavedSearchRow::UpdatedAt, to_micros(search.updated_at))
             .value(SavedSearchRow::Version, search.version)
             .and_where(Expr::col(SavedSearchRow::Id).eq(search.id.stored()))
@@ -494,6 +509,7 @@ impl SavedSearchStore for AuthStorage {
             .and_where(Expr::col(SearchColumnRow::Search).eq(search.id.stored()));
         transaction.execute(&delete).await?;
         insert_columns(transaction, columns).await?;
+        limits::put_limits(transaction, search).await?;
         Ok(true)
     }
 
@@ -642,6 +658,7 @@ impl SavedSearchStore for AuthStorage {
             .from_table(SearchColumnRow::Table)
             .and_where(Expr::col(SearchColumnRow::Search).is_in(stored_ids(&private)));
         transaction.execute(&columns).await?;
+        limits::delete_limits(transaction, &private).await?;
         let mut searches = Query::delete();
         searches
             .from_table(SavedSearchRow::Table)

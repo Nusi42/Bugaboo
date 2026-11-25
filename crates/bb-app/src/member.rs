@@ -240,6 +240,10 @@ pub(crate) mod saved_search {
     pub(crate) const GROUP_BY: &str = "group_by";
     /// The options of the timeline: the date fields, *Plan by effort* and the zoom.
     pub(crate) const TIMELINE: &str = "timeline";
+    /// The options of the board: the columns, the rows and the card limits.
+    pub(crate) const BOARD: &str = "board";
+    /// The options of the calendar: the date field and what it shows first.
+    pub(crate) const CALENDAR: &str = "calendar";
     /// The group or project it is shared with.
     pub(crate) const SHARED_WITH: &str = "shared_with";
     pub(crate) const DELETED_AT: &str = crate::issues::member::DELETED_AT;

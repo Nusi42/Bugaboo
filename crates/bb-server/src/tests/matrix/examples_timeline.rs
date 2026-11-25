@@ -1,7 +1,8 @@
-//! The example requests of the routes of the timeline (PLAN-01, PLAN-13, PLAN-14, SEC-MATRIX): a
-//! page of the timeline of everything the actor sees, and the preview of *Move it after*, the
-//! accepted warning and the time factor of an issue of the target project with a start date and
-//! the administrator as its person on the bar.
+//! The example requests of the routes of the timeline, the board and the calendar (PLAN-01,
+//! PLAN-06, PLAN-09, PLAN-13, PLAN-14, SEC-MATRIX): a page of the timeline, the board and the
+//! calendar of everything the actor sees, and the preview of *Move it after*, the accepted warning
+//! and the time factor of an issue of the target project with a start date and the administrator as
+//! its person on the bar.
 
 use bb_testing::Failure;
 use jiff::civil::Date;
@@ -20,9 +21,9 @@ async fn a_bar(fixture: &Fixture<'_>) -> Result<String, Failure> {
     a_planned_issue(fixture, Some(start), Some(vec![fixture.admin_id()])).await
 }
 
-/// The request of a route of the timeline, if the operation is one. An access key reads the
-/// timeline like a search, but no work times: its bars keep the dates people set, and it gets no
-/// hatched day and no warning about what a person can work (architecture §12).
+/// The request of a route of the timeline, the board or the calendar, if the operation is one. An
+/// access key reads the timeline like a search, but no work times: its bars keep the dates people
+/// set, and it gets no hatched day and no warning about what a person can work (architecture §12).
 pub(super) async fn timeline_request(
     fixture: &Fixture<'_>,
     operation: &str,
@@ -67,6 +68,23 @@ pub(super) async fn timeline_request(
             "PUT",
             format!("/api/v1/issues/{}/time-factor", a_bar(fixture).await?),
             Some(json!({"version": 1, "percent": 150})),
+        ),
+        // The board and the calendar of everything the actor sees: like a page of the timeline,
+        // whoever is signed in is let in and shown what they read, a key as its person.
+        "getBoard" => (
+            "POST",
+            "/api/v1/board".into(),
+            Some(json!({"search_text": "", "board": {"rows": "priority"}})),
+        ),
+        "getCalendar" => (
+            "POST",
+            "/api/v1/calendar".into(),
+            Some(json!({
+                "search_text": "",
+                "calendar": {"dates_field": null, "span": "month"},
+                "first": MONDAY,
+                "last": "2026-03-31",
+            })),
         ),
         _ => return Ok(None),
     }))

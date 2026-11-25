@@ -18,7 +18,6 @@ use rcgen as _;
 use rust_embed as _;
 use serde as _;
 use serde_json as _;
-use sha2 as _;
 use tower as _;
 use tower_http as _;
 use tracing as _;

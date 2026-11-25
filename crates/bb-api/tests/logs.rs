@@ -20,7 +20,6 @@ use rust_embed as _;
 use rustls as _;
 use serde as _;
 use serde_json as _;
-use sha2 as _;
 use tempfile as _;
 use tokio_rustls as _;
 use tower_http as _;

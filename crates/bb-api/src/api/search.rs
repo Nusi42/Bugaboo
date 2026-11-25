@@ -13,13 +13,12 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::response::Response;
 use axum::{Extension, extract::FromRef};
-use base64ct::{Base64UrlUnpadded, Encoding as _};
 use bb_app::auth::RequestInfo;
 use bb_app::issues::IssueView;
 use bb_app::search::{
-    GroupKey, NAME_CHOICES_MAX, NameChoiceKind, NameChoicesQuery, ReadableFieldsQuery,
+    GroupKey, GroupShown, NAME_CHOICES_MAX, NameChoiceKind, NameChoicesQuery, ReadableFieldsQuery,
     SearchCountQuery, SearchGroupsQuery, SearchPage, SearchQuery, SearchScope, SearcherQuery,
-    ShownKey,
+    ShownKey, ViewSearch,
 };
 use bb_core::id::{ProjectId, UserId};
 use bb_core::issue::{Priority, StatusGroup};
@@ -27,7 +26,6 @@ use bb_core::time::Minutes;
 use bb_policy::{Authorized, Masked, PersonRef};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sha2::{Digest as _, Sha256};
 use utoipa::ToSchema;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
@@ -140,6 +138,17 @@ pub(crate) struct SearchGroupBody {
     name: Option<String>,
 }
 
+impl From<GroupShown> for SearchGroupBody {
+    fn from(each: GroupShown) -> Self {
+        Self {
+            key: group_key(each.key),
+            issues: each.issues,
+            filter: each.filter,
+            name: each.name,
+        }
+    }
+}
+
 /// How many issues a search finds in each group of a field.
 #[derive(Serialize, ToSchema)]
 pub(crate) struct SearchGroupsBody {
@@ -236,6 +245,22 @@ pub(super) async fn counted(
     counted_by(auth, limits, info, session_token, Limits::check_search).await
 }
 
+/// The search a view shows (the timeline, the board, the calendar): the saved search a body names
+/// by its ID, else its search text. An ID that is none is not found, as a search that does not
+/// exist.
+pub(super) fn view_search(
+    saved_search: Option<&str>,
+    search_text: Option<&str>,
+) -> Result<ViewSearch, ApiError> {
+    Ok(match saved_search {
+        Some(id) => ViewSearch::Saved(
+            id.parse()
+                .map_err(|_| ApiError::new(bb_core::ErrorCode::NotFound))?,
+        ),
+        None => ViewSearch::Text(search_text.unwrap_or_default().to_owned()),
+    })
+}
+
 /// Who asks, counted against the allowance that `check` names (searches or suggestions).
 async fn counted_by(
     auth: &AuthHandle,
@@ -272,14 +297,7 @@ fn scope_of(within: Option<&str>) -> Result<SearchScope, ApiError> {
 /// The name of the list a cursor is sealed for: the person and a hash of the search (its text and
 /// where it looks), so a cursor opens for nobody else and for no other search.
 fn list_of(person: UserId, text: &str, within: Option<&str>) -> String {
-    let mut hash = Sha256::new();
-    hash.update(text.as_bytes());
-    hash.update([0]);
-    hash.update(within.unwrap_or_default().as_bytes());
-    format!(
-        "search:{person}:{}",
-        Base64UrlUnpadded::encode_string(&hash.finalize())
-    )
+    bb_app::seal::list_name("search", person, &[Some(text), within])
 }
 
 /// The issues a search finds, a page at a time, in the order of the search (newest first without
@@ -434,12 +452,7 @@ async fn group_searched_issues(
             groups: shown
                 .groups
                 .into_iter()
-                .map(|each| SearchGroupBody {
-                    key: group_key(each.key),
-                    issues: each.issues,
-                    filter: each.filter,
-                    name: each.name,
-                })
+                .map(SearchGroupBody::from)
                 .collect(),
         }
     }))
