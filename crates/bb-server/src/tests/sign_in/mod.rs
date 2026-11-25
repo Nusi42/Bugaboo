@@ -90,6 +90,7 @@ mod themes_http;
 // browser of these tests.
 mod dashboards_boxes_http;
 mod dashboards_http;
+mod dashboards_more_http;
 mod list_labels_http;
 #[path = "../matrix/mod.rs"]
 mod matrix;

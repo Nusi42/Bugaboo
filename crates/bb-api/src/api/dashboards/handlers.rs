@@ -5,7 +5,7 @@ use axum::extract::State;
 use axum::response::Response;
 use bb_app::dashboards::{
     ChangeDashboard, CopyDashboard, CreateDashboard, DashboardQuery, DashboardsQuery,
-    DeleteDashboard, HomeQuery, RestoreDashboard, ShareDashboard, StopSharingDashboard,
+    DeleteDashboard, OpenHome, RestoreDashboard, ShareDashboard, StopSharingDashboard,
 };
 use bb_app::saved_searches::Shareable;
 use bb_core::ErrorCode;
@@ -134,7 +134,7 @@ async fn get_home(
     Session(session_token): Session,
 ) -> Result<Response, ApiError> {
     auth.after_who_asks(&info, &session_token, Ok(())).await?;
-    let home = auth.api()?.home(info, HomeQuery { session_token }).await?;
+    let home = auth.api()?.home(info, OpenHome { session_token }).await?;
     answer_authorized(&home.map(|view| DashboardBody::from(&view)))
 }
 

@@ -319,8 +319,9 @@ define_ordered_id! {
     DashboardId
 }
 
-define_ordered_id! {
-    /// The ID of a box of a dashboard (CFG-03).
+define_random_id! {
+    /// The ID of a box of a dashboard (CFG-03). Fully random: nothing orders by it, and it tells
+    /// nothing of when the box was added or of the other boxes.
     DashboardBoxId
 }
 
@@ -503,6 +504,7 @@ impl crate::personal::NotPersonal for AccessKeyId {}
 impl crate::personal::NotPersonal for AgentId {}
 impl crate::personal::NotPersonal for OAuthClientId {}
 impl crate::personal::NotPersonal for GrantId {}
+impl crate::personal::NotPersonal for DashboardBoxId {}
 impl crate::personal::NotPersonal for HandOverId {}
 impl crate::personal::NotPersonal for StandingRuleId {}
 impl crate::personal::NotPersonal for AgentWorkId {}

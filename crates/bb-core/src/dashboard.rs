@@ -33,8 +33,8 @@ pub const BOXES_MAX: usize = 20;
 /// The lowest row a box can start at: every box of a full dashboard stacked at its highest.
 pub const GRID_ROWS_MAX: u32 = 160;
 
-/// The most dashboards one person makes, those in the trash and *Home* included (ADR-0050,
-/// decision 3): the 51st is refused.
+/// The most dashboards one person has outside the trash, *Home* included (ADR-0050, decision 3):
+/// the 51st is refused, and so is taking one out of the trash past it.
 pub const DASHBOARDS_MAX: usize = 50;
 
 /// How many issues a box of *Search results* shows: the first by the search's sort (M10-Q13).

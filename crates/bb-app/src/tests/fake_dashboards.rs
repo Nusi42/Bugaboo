@@ -106,7 +106,7 @@ impl DashboardStore for FakeStore {
                 .dashboards
                 .records
                 .iter()
-                .filter(|dashboard| dashboard.maker == maker)
+                .filter(|dashboard| dashboard.maker == maker && dashboard.deleted_at.is_none())
                 .map(|_| ()),
         ))
     }

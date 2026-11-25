@@ -350,7 +350,10 @@ impl DashboardStore for AuthStorage {
         transaction: &mut Transaction,
         maker: UserId,
     ) -> Result<u64, StoreError> {
-        count_of(transaction, maker, |_| ()).await
+        count_of(transaction, maker, |select| {
+            select.and_where(Expr::col(DashboardRow::DeletedAt).is_null());
+        })
+        .await
     }
 
     async fn count_shared_dashboards_of_in(

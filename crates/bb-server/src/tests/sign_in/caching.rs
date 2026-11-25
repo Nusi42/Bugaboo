@@ -17,7 +17,7 @@ use serde_json::json;
 use tower::ServiceExt as _;
 
 use super::files_http::run_jobs;
-use super::http::{ADA_EMAIL, Browser, called, never_stored_reads, totp};
+use super::http::{ADA_EMAIL, Browser, Reply, called, never_stored_reads, totp};
 use super::issues_site::id_of;
 use super::policy_rig::Org;
 use super::rig::{PASSWORD, Rig};
@@ -264,7 +264,8 @@ async fn own_records(
     rig: &Rig,
     ada: &mut Browser,
     (issue, person): (&str, &str),
-) -> Result<[String; 6], Failure> {
+) -> Result<[String; 8], Failure> {
+    let (dashboard, its_box) = a_dashboard_with_a_box(ada).await?;
     Ok([
         an_upload_on(ada, issue).await?,
         a_run_of(rig, person).await?,
@@ -272,7 +273,45 @@ async fn own_records(
         an_agent(ada).await?,
         a_theme(ada).await?,
         an_export(rig, ada).await?,
+        dashboard,
+        its_box,
     ])
+}
+
+/// A dashboard of the person with one box: its ID and the ID of the box.
+async fn a_dashboard_with_a_box(ada: &mut Browser) -> Result<(String, String), Failure> {
+    let timer = json!({"kind": "my-timer", "title": "Timer", "column": 0, "row": 0, "width": 3, "height": 2});
+    let board = ada
+        .send(
+            "POST",
+            "/api/v1/dashboards",
+            Some(json!({"name": "Checks", "boxes": [timer]})),
+        )
+        .await?;
+    Ok((
+        id_of(&board)?,
+        board.body["boxes"][0]["id"]
+            .as_str()
+            .ok_or("no box")?
+            .to_owned(),
+    ))
+}
+
+/// A read that is kept privately: it gives a weak tag, answers 304 with the same tag and no body
+/// for that tag, and in full for another.
+async fn assert_kept(ada: &mut Browser, path: &str, first: &Reply) -> Result<(), Failure> {
+    let tag = first.header("etag").to_owned();
+    assert!(tag.starts_with("W/\""), "{path}: {tag}");
+    assert_eq!(first.header("cache-control"), "private, no-cache", "{path}");
+    ada.set_header("if-none-match", &tag);
+    let again = ada.send("GET", path, None).await?;
+    assert_eq!(again.status, StatusCode::NOT_MODIFIED, "{path}");
+    assert_eq!(again.header("etag"), tag, "{path}");
+    assert!(again.body.is_null(), "{path}");
+    ada.set_header("if-none-match", "W/\"another\"");
+    let other = ada.send("GET", path, None).await?;
+    assert_eq!(other.status, StatusCode::OK, "{path}");
+    Ok(())
 }
 
 async fn an_agent(ada: &mut Browser) -> Result<String, Failure> {
@@ -354,28 +393,18 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
         // A comment and an own field, for the routes that name one.
         let (comment_id, field_id) = a_comment_and_a_field(&mut ada, &readable_id).await?;
         let (issue_type_id, label_group_id) = a_type_and_a_label_group(&mut ada).await?;
-        let [upload_id, run_id, search_id, agent_id, theme_id, export_id] =
-            own_records(&rig, &mut ada, (&readable_id, &person_id)).await?;
+        let [
+            upload_id,
+            run_id,
+            search_id,
+            agent_id,
+            theme_id,
+            export_id,
+            dashboard_id,
+            box_id,
+        ] = own_records(&rig, &mut ada, (&readable_id, &person_id)).await?;
         // A work day of the person, for the routes that name a date, and an app.
         let app_query = a_work_day_and_an_app(&rig, &mut ada).await?;
-        // A dashboard with a box, for the routes that name them.
-        let board = ada
-            .send(
-                "POST",
-                "/api/v1/dashboards",
-                Some(
-                    json!({"name": "Checks", "boxes": [{"kind": "my-timer", "title": "Timer",
-                    "column": 0, "row": 0, "width": 3, "height": 2}]}),
-                ),
-            )
-            .await?;
-        let (dashboard_id, box_id) = (
-            board.body["id"].as_str().ok_or("no dashboard")?.to_owned(),
-            board.body["boxes"][0]["id"]
-                .as_str()
-                .ok_or("no box")?
-                .to_owned(),
-        );
         let routes = get_routes();
         assert!(routes.len() >= 9, "{routes:?}");
         let (mut kept, mut never_stored) = (0, 0);
@@ -434,21 +463,7 @@ async fn perf_03_every_get_answers_an_etag_and_304_on_a_match() -> TestResult {
             }
 
             kept += 1;
-            let tag = first.header("etag").to_owned();
-            assert!(tag.starts_with("W/\""), "{path}: {tag}");
-            assert_eq!(first.header("cache-control"), "private, no-cache", "{path}");
-
-            // The tag it gave: no body, the same tag.
-            ada.set_header("if-none-match", &tag);
-            let again = ada.send("GET", path, None).await?;
-            assert_eq!(again.status, StatusCode::NOT_MODIFIED, "{path}");
-            assert_eq!(again.header("etag"), tag, "{path}");
-            assert!(again.body.is_null(), "{path}");
-
-            // Some other tag: the answer in full.
-            ada.set_header("if-none-match", "W/\"another\"");
-            let other = ada.send("GET", path, None).await?;
-            assert_eq!(other.status, StatusCode::OK, "{path}");
+            assert_kept(&mut ada, path, &first).await?;
         }
         assert!(
             kept >= 4 && never_stored >= 5,

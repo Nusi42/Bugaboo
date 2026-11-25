@@ -14,8 +14,8 @@ use bb_policy::{Authorized, Evaluation, PeopleContext, Place};
 
 use super::open::{Opened, Stored};
 use super::types::{
-    BoxView, DashboardItem, DashboardPage, DashboardQuery, DashboardView, DashboardsQuery,
-    HomeQuery, ReadyMadeList, ReadyMadeQuery, ReadyMadeView,
+    BoxChange, BoxView, DashboardItem, DashboardPage, DashboardQuery, DashboardView,
+    DashboardsQuery, OpenHome, ReadyMadeList, ReadyMadeQuery, ReadyMadeView,
 };
 use super::write::inserting;
 use crate::access::Actor;
@@ -225,29 +225,34 @@ pub async fn dashboard<S: AuthStore>(
 
 /// The person's *Home* (ADR-0050, decision 6): their own dashboard, made at first use from the
 /// blocks *Home* showed before, as the ready-made boxes "My timer", "My open issues" and "Due
-/// soon". Nobody else reaches it.
+/// soon". Nobody else reaches it. The first visit writes it, with its event.
 ///
 /// # Errors
 /// `limit.reached` when it has to be made and the person has as many dashboards as they may have.
 pub async fn home<S: AuthStore>(
     ctx: &Ctx<'_, S>,
-    input: HomeQuery,
+    input: OpenHome,
 ) -> Result<Authorized<DashboardView>, AppError> {
     let actor = ctx.inbox_owner(&input.session_token).await?;
     let reaching = ctx.reaching(&actor).await?;
     if let Some(stored) = ctx.stored_home(actor.person.id).await? {
         return ctx.authorized_dashboard(&actor, &reaching, stored).await;
     }
+    // The boxes are kept as the ready-made list writes them, whatever the person may see now: a box
+    // they cannot see is left out of the frame like any other, and shows once they may.
     let mut row = 0;
-    let mut specs = Vec::with_capacity(HOME_BOXES.len());
+    let mut given = Vec::with_capacity(HOME_BOXES.len());
     for entry in HOME_BOXES.iter().filter_map(|which| ready_made(*which)) {
-        specs.push(ready_spec(entry, row));
+        given.push(BoxChange {
+            id: None,
+            spec: ready_spec(entry, row),
+        });
         row += entry.height;
     }
+    let id = ctx.new_dashboard_id()?;
+    let boxes = ctx.placed(id, given, &[])?;
     let name = Message::from(message::DASHBOARD_HOME_NAME).render();
-    let new = ctx
-        .new_dashboard((&actor, &reaching), &name, specs, true)
-        .await?;
+    let new = ctx.new_dashboard(&actor, (id, &name, true), boxes)?;
     let why = Why::default();
     let written = ctx
         .store()

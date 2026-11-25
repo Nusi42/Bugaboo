@@ -481,8 +481,9 @@ pub(super) fn example_path(template: &str) -> String {
 pub(super) fn required_query(template: &str) -> Option<&'static str> {
     match template {
         "/api/v1/search/issues/groups" => Some("?by=priority"),
-        "/api/v1/saved-searches/share-choices" => Some("?kind=group"),
-        "/api/v1/dashboards/share-choices" => Some("?kind=group"),
+        "/api/v1/saved-searches/share-choices" | "/api/v1/dashboards/share-choices" => {
+            Some("?kind=group")
+        }
         "/api/v1/search/names" => Some("?kind=people&starting_with=a"),
         "/api/v1/me/work-days"
         | "/api/v1/people/{person}/work-days"

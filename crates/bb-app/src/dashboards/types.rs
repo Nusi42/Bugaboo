@@ -113,8 +113,8 @@ pub struct DashboardQuery {
     pub dashboard: DashboardId,
 }
 
-/// The person's *Home*, made at first use.
-pub struct HomeQuery {
+/// Open the person's *Home*: it is made, with its event, at the first visit.
+pub struct OpenHome {
     /// The secret of the session of the request.
     pub session_token: String,
 }

@@ -62,35 +62,47 @@ fn boxes() -> Vec<Step> {
     let number =
         |column: DashboardBoxRow| ColumnDef::new(column).big_integer().not_null().to_owned();
     let text = |column: DashboardBoxRow| ColumnDef::new(column).text().to_owned();
-    vec![Step::Table(
-        Table::create()
-            .table(DashboardBoxRow::Table)
-            .col(id_column(DashboardBoxRow::Dashboard))
-            .col(id_column(DashboardBoxRow::Id))
-            .col(number(DashboardBoxRow::Position))
-            .col(ColumnDef::new(DashboardBoxRow::Kind).text().not_null())
-            .col(number(DashboardBoxRow::GridColumn))
-            .col(number(DashboardBoxRow::GridRow))
-            .col(number(DashboardBoxRow::Width))
-            .col(number(DashboardBoxRow::Height))
-            .col(ColumnDef::new(DashboardBoxRow::Title).text().not_null())
-            .col(text(DashboardBoxRow::SearchText))
-            .col(ColumnDef::new(DashboardBoxRow::SavedSearch).blob())
-            .col(text(DashboardBoxRow::ChartBy))
-            .col(text(DashboardBoxRow::ChartShape))
-            .col(text(DashboardBoxRow::TimeSpan))
-            .primary_key(
-                Index::create()
-                    .col(DashboardBoxRow::Dashboard)
-                    .col(DashboardBoxRow::Position),
-            )
-            .foreign_key(
-                ForeignKey::create()
-                    .from(DashboardBoxRow::Table, DashboardBoxRow::Dashboard)
-                    .to(DashboardRow::Table, DashboardRow::Id),
-            )
-            .to_owned(),
-    )]
+    vec![
+        Step::Table(
+            Table::create()
+                .table(DashboardBoxRow::Table)
+                .col(id_column(DashboardBoxRow::Dashboard))
+                .col(id_column(DashboardBoxRow::Id))
+                .col(number(DashboardBoxRow::Position))
+                .col(ColumnDef::new(DashboardBoxRow::Kind).text().not_null())
+                .col(number(DashboardBoxRow::GridColumn))
+                .col(number(DashboardBoxRow::GridRow))
+                .col(number(DashboardBoxRow::Width))
+                .col(number(DashboardBoxRow::Height))
+                .col(ColumnDef::new(DashboardBoxRow::Title).text().not_null())
+                .col(text(DashboardBoxRow::SearchText))
+                .col(ColumnDef::new(DashboardBoxRow::SavedSearch).blob())
+                .col(text(DashboardBoxRow::ChartBy))
+                .col(text(DashboardBoxRow::ChartShape))
+                .col(text(DashboardBoxRow::TimeSpan))
+                .primary_key(
+                    Index::create()
+                        .col(DashboardBoxRow::Dashboard)
+                        .col(DashboardBoxRow::Position),
+                )
+                .foreign_key(
+                    ForeignKey::create()
+                        .from(DashboardBoxRow::Table, DashboardBoxRow::Dashboard)
+                        .to(DashboardRow::Table, DashboardRow::Id),
+                )
+                .to_owned(),
+        ),
+        // A box is named once on its dashboard.
+        Step::Index(
+            Index::create()
+                .name("dashboard_box_by_id")
+                .table(DashboardBoxRow::Table)
+                .col(DashboardBoxRow::Dashboard)
+                .col(DashboardBoxRow::Id)
+                .unique()
+                .to_owned(),
+        ),
+    ]
 }
 
 fn shares() -> Vec<Step> {

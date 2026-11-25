@@ -437,7 +437,7 @@ macro_rules! each_use_case {
             /// Opens one dashboard, with the boxes that check for the person.
             dashboard(DashboardQuery) -> Authorized<DashboardView>;
             /// Opens the person's *Home*, made at first use.
-            home(HomeQuery) -> Authorized<DashboardView>;
+            home(OpenHome) -> Authorized<DashboardView>;
             /// What one box of a dashboard answers for the person.
             dashboard_box(BoxQuery) -> BoxAnswer;
             /// What a box would answer before it is added.

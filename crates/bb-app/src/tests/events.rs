@@ -251,6 +251,7 @@ table! {
     "delete_dashboard" => sdb::delete_dashboard_scenario,
     "restore_dashboard" => sdb::restore_dashboard_scenario,
     "copy_dashboard" => sdb::copy_dashboard_scenario,
+    "home" => sdb::home_scenario,
     "create_starter_time_fields" => sti::create_starter_time_fields_scenario,
     "start_timer" => sti::start_timer_scenario,
     "stop_timer" => sti::stop_timer_scenario,

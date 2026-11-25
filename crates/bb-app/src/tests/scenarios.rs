@@ -100,7 +100,7 @@ pub(crate) fn token(world: &World) -> String {
     world.admin.session_token.clone()
 }
 
-async fn a_group(world: &World, name: &str) -> Result<GroupId, String> {
+pub(crate) async fn a_group(world: &World, name: &str) -> Result<GroupId, String> {
     Ok(create_group(
         &world.ctx(),
         CreateGroup {

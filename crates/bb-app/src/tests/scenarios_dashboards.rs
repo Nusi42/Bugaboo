@@ -4,13 +4,15 @@
 use bb_core::dashboard::{BoxKind, BoxOptions, BoxPlace, BoxSpec};
 use bb_core::saved_search::ShareTarget;
 
-use super::scenarios::{Added, a_project, measured, text, token};
-use super::world::World;
+use super::scenarios::{Added, a_group, a_project, measured, text, token};
+use super::world::{Outcome, World};
 use crate::dashboards::{
     BoxChange, ChangeDashboard, CopyDashboard, CreateDashboard, DashboardView, DeleteDashboard,
-    RestoreDashboard, ShareDashboard, StopSharingDashboard, change_dashboard, copy_dashboard,
-    create_dashboard, delete_dashboard, restore_dashboard, share_dashboard, stop_sharing_dashboard,
+    OpenHome, RestoreDashboard, ShareDashboard, StopSharingDashboard, change_dashboard,
+    copy_dashboard, create_dashboard, delete_dashboard, home, restore_dashboard, share_dashboard,
+    stop_sharing_dashboard,
 };
+use crate::people::{DeleteGroup, delete_group};
 
 /// *My timer*, which reads no search, at the top left: a box any world can keep.
 fn a_timer() -> BoxSpec {
@@ -179,4 +181,79 @@ pub(crate) async fn copy_dashboard_scenario(world: &World) -> Added {
         ),
     ))
     .await
+}
+
+/// The person's *Home*, made at the first visit.
+async fn open_home(world: &World) -> Result<DashboardView, String> {
+    Ok(home(
+        &world.ctx(),
+        OpenHome {
+            session_token: token(world),
+        },
+    )
+    .await
+    .map_err(text)?
+    .into_value())
+}
+
+pub(crate) async fn home_scenario(world: &World) -> Added {
+    Box::pin(measured(&world.store, open_home(world))).await
+}
+
+#[tokio::test]
+async fn cfg_03_the_first_visit_of_home_writes_one_event_and_the_next_none() -> Outcome {
+    let world = World::new().await?;
+    let first = Box::pin(measured(&world.store, open_home(&world))).await?;
+    assert_eq!(first, 1, "the first visit makes Home");
+    let again = Box::pin(measured(&world.store, open_home(&world))).await?;
+    assert_eq!(again, 0, "a later visit writes nothing");
+    Ok(())
+}
+
+#[tokio::test]
+async fn cfg_03_deleting_a_group_ends_its_dashboard_shares_with_an_event_each() -> Outcome {
+    let world = World::new().await?;
+    let group = a_group(&world, "Team").await?;
+    let mut shared = Vec::new();
+    for _ in 0..2 {
+        let made = adas_dashboard(&world).await?;
+        share_dashboard(
+            &world.ctx(),
+            ShareDashboard {
+                session_token: token(&world),
+                dashboard: made.id,
+                target: ShareTarget::Group(group),
+            },
+        )
+        .await
+        .map_err(text)?;
+        shared.push(made.id);
+    }
+    let added = Box::pin(measured(
+        &world.store,
+        delete_group(
+            &world.ctx(),
+            DeleteGroup {
+                session_token: token(&world),
+                group,
+            },
+        ),
+    ))
+    .await?;
+    // The event of the group, and one for each dashboard that is no longer shared with it.
+    assert_eq!(added, 3);
+    for dashboard in shared {
+        let opened = crate::dashboards::dashboard(
+            &world.ctx(),
+            crate::dashboards::DashboardQuery {
+                session_token: token(&world),
+                dashboard,
+            },
+        )
+        .await
+        .map_err(text)?
+        .into_value();
+        assert!(opened.shared_with.is_empty(), "{opened:?}");
+    }
+    Ok(())
 }

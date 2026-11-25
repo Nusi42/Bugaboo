@@ -16,7 +16,7 @@ use super::issues_site::{ISSUES, PROJECTS, Site, id_of, ok, text_in, version_of}
 use super::perf_queries::{Counter, LIST_AT_MOST, assert_as_many_statements, five_and_forty};
 
 /// *Numbers and chart* of `text`, as bars by `by` or as one number.
-fn chart(text: &str, by: Option<&str>) -> Value {
+pub(super) fn chart(text: &str, by: Option<&str>) -> Value {
     let options = match by {
         Some(by) => json!({"search_text": text, "by": by, "shape": "bars"}),
         None => json!({"search_text": text, "shape": "number"}),

@@ -57,6 +57,29 @@ pub(super) fn inserting<S: AuthStore>(
     }
 }
 
+/// The change that takes a dashboard out of the trash. It stops with `limit.reached` (in `why`)
+/// when the maker has as many dashboards as they may have: counted in the same change, under the
+/// lock of the maker, as when one is made.
+fn restoring<S: AuthStore>(
+    dashboard: &Dashboard,
+    version: i64,
+    why: Why,
+) -> impl for<'t> FnOnce(&'t mut S::Transaction) -> BoxFuture<'t, Result<(), S::Error>> + Send + 'static
+{
+    let maker = dashboard.maker;
+    let taken_out = trashing::<S>(dashboard, version, why.clone());
+    move |transaction: &mut S::Transaction| {
+        Box::pin(async move {
+            S::lock_dashboards_of(transaction, maker).await?;
+            let have = S::count_dashboards_of_in(transaction, maker).await?;
+            if have >= u64::try_from(DASHBOARDS_MAX).unwrap_or(u64::MAX) {
+                return Err(why.stop::<S>(ErrorCode::LimitReached));
+            }
+            taken_out(transaction).await
+        })
+    }
+}
+
 /// The change that puts a dashboard into the trash or takes it out. It stops, with the reason in
 /// `why`, when the dashboard is gone or was changed meanwhile.
 fn trashing<S: AuthStore>(
@@ -78,10 +101,46 @@ fn trashing<S: AuthStore>(
 }
 
 impl<S: AuthStore> Ctx<'_, S> {
+    /// The boxes as they are written on `dashboard`, in the order given: at most twenty that do
+    /// not overlap, each ID named once, the places packed. A box keeps its ID when it is one of
+    /// `known`; the others get new ones. Nothing is judged for a person here.
+    ///
+    /// # Errors
+    /// `request.invalid` for boxes that cannot be kept together, or an ID named twice.
+    pub(super) fn placed(
+        &self,
+        dashboard: DashboardId,
+        given: Vec<BoxChange>,
+        known: &[DashboardBoxId],
+    ) -> Result<Vec<DashboardBox>, AppError> {
+        let named: Vec<DashboardBoxId> = given.iter().filter_map(|each| each.id).collect();
+        let repeated = named
+            .iter()
+            .enumerate()
+            .any(|(at, id)| named[..at].contains(id));
+        let specs: Vec<BoxSpec> = given.iter().map(|each| each.spec.clone()).collect();
+        if repeated || !boxes_are_valid(&specs) {
+            return Err(ErrorCode::InvalidRequest.into());
+        }
+        let places: Vec<_> = specs.iter().map(|spec| spec.place).collect();
+        Ok(given
+            .into_iter()
+            .zip(pack(&places).into_iter().zip(0_i64..))
+            .map(|(each, (place, position))| DashboardBox {
+                dashboard,
+                id: each
+                    .id
+                    .filter(|id| known.contains(id))
+                    .unwrap_or_else(|| DashboardBoxId::generate(&mut self.ids())),
+                position,
+                spec: BoxSpec { place, ..each.spec },
+            })
+            .collect())
+    }
+
     /// The boxes as the actor keeps them on `dashboard`: each title a name, each text trimmed and
     /// in its canonical spelling, every box checking for the actor (a text they may run, a saved
-    /// search they may open, a field they may read), at most twenty that do not overlap, and the
-    /// places packed. A box keeps its ID when it names one of `before`; the others get new ones.
+    /// search they may open, a field they may read), placed as [`Self::placed`] places them.
     ///
     /// # Errors
     /// `request.invalid` for a box that cannot be kept or does not check for the actor.
@@ -90,72 +149,101 @@ impl<S: AuthStore> Ctx<'_, S> {
         (actor, reaching): (&Actor, &Reaching),
         dashboard: DashboardId,
         given: Vec<BoxChange>,
-        before: &[DashboardBox],
+        known: &[DashboardBoxId],
     ) -> Result<Vec<DashboardBox>, AppError> {
-        let mut specs = Vec::with_capacity(given.len());
-        for each in &given {
-            let mut spec = each.spec.clone();
+        let mut judge = self.judge(actor, reaching).await?;
+        judge.lift_budget();
+        let mut checked = Vec::with_capacity(given.len());
+        for each in given {
+            let mut spec = each.spec;
             spec.title = clean_name(&spec.title)?;
             if let Some(BoxSource::Text(text)) = &spec.source {
                 spec.source = Some(BoxSource::Text(clean_search_text(text)?));
             }
-            specs.push(spec);
-        }
-        if !boxes_are_valid(&specs) {
-            return Err(ErrorCode::InvalidRequest.into());
-        }
-        let mut judge = self.judge(actor, reaching).await?;
-        judge.lift_budget();
-        for spec in &mut specs {
             let reads = self
-                .box_reads(&mut judge, reaching, spec)
+                .box_reads(&mut judge, reaching, &spec)
                 .await?
                 .ok_or(AppError::Refused(ErrorCode::InvalidRequest))?;
             if let (Some(BoxSource::Text(_)), Reads::Text(canonical)) = (&spec.source, reads) {
                 spec.source = Some(BoxSource::Text(canonical));
             }
+            checked.push(BoxChange { id: each.id, spec });
         }
         drop(judge);
-        let places: Vec<_> = specs.iter().map(|spec| spec.place).collect();
-        let mut boxes = Vec::with_capacity(specs.len());
-        for ((each, mut spec), (place, position)) in given
-            .into_iter()
-            .zip(specs)
-            .zip(pack(&places).into_iter().zip(0_i64..))
-        {
-            spec.place = place;
-            let id = match each.id.filter(|id| before.iter().any(|old| old.id == *id)) {
-                Some(id) => id,
-                None => DashboardBoxId::generate(&mut self.ids())
-                    .map_err(|error| AppError::Internal(error.to_string()))?,
-            };
-            boxes.push(DashboardBox {
-                dashboard,
-                id,
-                position,
-                spec,
-            });
-        }
-        Ok(boxes)
+        self.placed(dashboard, checked, known)
     }
 
-    /// A new dashboard of the actor, private, with its boxes checked for them and the event that
-    /// says it was made.
-    pub(super) async fn new_dashboard(
+    /// The stored boxes the maker did not name in a change and cannot see now: a change keeps them
+    /// (ADR-0050, decision 3), because the maker was never shown them to keep or to remove.
+    async fn unseen_boxes(
         &self,
         (actor, reaching): (&Actor, &Reaching),
-        name: &str,
-        specs: Vec<BoxSpec>,
-        home: bool,
+        stored: &[DashboardBox],
+        named: &[DashboardBoxId],
+    ) -> Result<Vec<DashboardBox>, AppError> {
+        let mut judge = self.judge(actor, reaching).await?;
+        judge.lift_budget();
+        let mut unseen = Vec::new();
+        for each in stored.iter().filter(|each| !named.contains(&each.id)) {
+            if self
+                .box_reads(&mut judge, reaching, &each.spec)
+                .await?
+                .is_none()
+            {
+                unseen.push(each.clone());
+            }
+        }
+        Ok(unseen)
+    }
+
+    /// The boxes a change names, then the boxes it keeps unseen, in their packed places below
+    /// them.
+    fn with_unseen(
+        &self,
+        dashboard: DashboardId,
+        named: Vec<DashboardBox>,
+        unseen: Vec<DashboardBox>,
+    ) -> Result<Vec<DashboardBox>, AppError> {
+        let below = named
+            .iter()
+            .map(|each| each.spec.place.row + each.spec.place.height)
+            .max()
+            .unwrap_or(0);
+        let top = unseen
+            .iter()
+            .map(|each| each.spec.place.row)
+            .min()
+            .unwrap_or(0);
+        let known: Vec<DashboardBoxId> = named.iter().chain(&unseen).map(|each| each.id).collect();
+        let shifted = unseen.into_iter().map(|mut each| {
+            each.spec.place.row = each.spec.place.row - top + below;
+            each
+        });
+        let given = named
+            .into_iter()
+            .chain(shifted)
+            .map(|each| BoxChange {
+                id: Some(each.id),
+                spec: each.spec,
+            })
+            .collect();
+        self.placed(dashboard, given, &known)
+    }
+
+    /// The ID of a dashboard about to be made.
+    pub(super) fn new_dashboard_id(&self) -> Result<DashboardId, AppError> {
+        DashboardId::generate(&mut self.ids())
+            .map_err(|error| AppError::Internal(error.to_string()))
+    }
+
+    /// A new dashboard of the actor, private, with its boxes and the event that says it was made.
+    pub(super) fn new_dashboard(
+        &self,
+        actor: &Actor,
+        (id, name, home): (DashboardId, &str, bool),
+        boxes: Vec<DashboardBox>,
     ) -> Result<NewDashboard, AppError> {
         let name = clean_name(name)?;
-        let id = DashboardId::generate(&mut self.ids())
-            .map_err(|error| AppError::Internal(error.to_string()))?;
-        let given = specs
-            .into_iter()
-            .map(|spec| BoxChange { id: None, spec })
-            .collect();
-        let boxes = self.kept_boxes((actor, reaching), id, given, &[]).await?;
         let now = self.now();
         let dashboard = Dashboard {
             id,
@@ -177,6 +265,22 @@ impl<S: AuthStore> Ctx<'_, S> {
             boxes,
             event,
         })
+    }
+
+    /// A new private dashboard of the actor with boxes that each check for them.
+    async fn checked_dashboard(
+        &self,
+        (actor, reaching): (&Actor, &Reaching),
+        name: &str,
+        specs: Vec<BoxSpec>,
+    ) -> Result<NewDashboard, AppError> {
+        let id = self.new_dashboard_id()?;
+        let given = specs
+            .into_iter()
+            .map(|spec| BoxChange { id: None, spec })
+            .collect();
+        let boxes = self.kept_boxes((actor, reaching), id, given, &[]).await?;
+        self.new_dashboard(actor, (id, name, false), boxes)
     }
 
     /// A dashboard that was just written, as its maker sees it.
@@ -261,7 +365,7 @@ pub async fn create_dashboard<S: AuthStore>(
     let actor = ctx.inbox_owner(&input.session_token).await?;
     let reaching = ctx.reaching(&actor).await?;
     let new = ctx
-        .new_dashboard((&actor, &reaching), &input.name, input.boxes, false)
+        .checked_dashboard((&actor, &reaching), &input.name, input.boxes)
         .await?;
     let why = Why::default();
     ctx.store()
@@ -298,8 +402,19 @@ pub async fn change_dashboard<S: AuthStore>(
     }
     let boxes = match input.boxes {
         Some(given) => {
-            ctx.kept_boxes((&actor, &reaching), before.id, given, &stored.boxes)
-                .await?
+            let known: Vec<DashboardBoxId> = stored.boxes.iter().map(|each| each.id).collect();
+            let named: Vec<DashboardBoxId> = given.iter().filter_map(|each| each.id).collect();
+            let kept = ctx
+                .kept_boxes((&actor, &reaching), before.id, given, &known)
+                .await?;
+            let unseen = ctx
+                .unseen_boxes((&actor, &reaching), &stored.boxes, &named)
+                .await?;
+            if unseen.is_empty() {
+                kept
+            } else {
+                ctx.with_unseen(before.id, kept, unseen)?
+            }
         }
         None => stored.boxes.clone(),
     };
@@ -371,7 +486,8 @@ pub async fn delete_dashboard<S: AuthStore>(
 ///
 /// # Errors
 /// `resource.not-found` for a dashboard that is not in the trash or that the person may not take
-/// out: whoever may not is not told that it is in the trash (SEC-06).
+/// out: whoever may not is not told that it is in the trash (SEC-06); `limit.reached` when its
+/// maker has as many dashboards as they may have.
 pub async fn restore_dashboard<S: AuthStore>(
     ctx: &Ctx<'_, S>,
     input: RestoreDashboard,
@@ -385,7 +501,7 @@ pub async fn restore_dashboard<S: AuthStore>(
     ctx.store()
         .record_change(
             &event,
-            trashing::<S>(&after, found.dashboard.version, why.clone()),
+            restoring::<S>(&after, found.dashboard.version, why.clone()),
         )
         .await
         .map_err(|error| why.answer::<S>(&error, ErrorCode::NotFound))?;
@@ -424,7 +540,7 @@ pub async fn copy_dashboard<S: AuthStore>(
         .map(|kept| kept.spec)
         .collect();
     let new = ctx
-        .new_dashboard((&actor, &reaching), &name, specs, false)
+        .checked_dashboard((&actor, &reaching), &name, specs)
         .await?;
     let why = Why::default();
     ctx.store()

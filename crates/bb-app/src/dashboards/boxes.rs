@@ -5,8 +5,9 @@
 
 use bb_core::ErrorCode;
 use bb_core::dashboard::{
-    BOX_ISSUES, BoxKind, BoxSpec, ChartShape, RECENT_CHANGES, RECENT_ISSUES, SMALL_TIMELINE_ROWS,
-    SMALL_TIMELINE_WEEKS, TimeSpan, WEEK_ENTRIES, boxes_are_valid,
+    BOX_HEIGHT_MIN, BOX_ISSUES, BOX_WIDTH_MIN, BoxKind, BoxOptions, BoxPlace, BoxSource, BoxSpec,
+    ChartShape, RECENT_CHANGES, RECENT_ISSUES, SMALL_TIMELINE_ROWS, SMALL_TIMELINE_WEEKS, TimeSpan,
+    WEEK_ENTRIES, boxes_are_valid,
 };
 use bb_core::history::HistoryTab;
 use bb_core::id::IssueId;
@@ -232,6 +233,22 @@ impl<S: AuthStore> Ctx<'_, S> {
     }
 }
 
+/// The box judged in place of one that is not on the dashboard: search results of everything.
+fn stand_in() -> BoxSpec {
+    BoxSpec {
+        kind: BoxKind::SearchResults,
+        place: BoxPlace {
+            column: 0,
+            row: 0,
+            width: BOX_WIDTH_MIN,
+            height: BOX_HEIGHT_MIN,
+        },
+        title: String::new(),
+        source: Some(BoxSource::Text(String::new())),
+        options: BoxOptions::default(),
+    }
+}
+
 /// What one box of a dashboard answers for the person who looks at it: the read of its kind, run as
 /// them. A box that does not check for them is not found, as one that does not exist.
 ///
@@ -244,16 +261,18 @@ pub async fn dashboard_box<S: AuthStore>(
 ) -> Result<BoxAnswer, AppError> {
     let actor = ctx.inbox_owner(&input.session_token).await?;
     let Opened { stored, reaching } = ctx.open_dashboard(&actor, input.dashboard).await?;
-    let spec = stored
+    let found = stored
         .boxes
         .into_iter()
         .find(|each| each.id == input.dashboard_box)
-        .map(|each| each.spec)
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
-    let reads = ctx
-        .reads_for(&actor, &reaching, &spec)
-        .await?
-        .ok_or(AppError::Refused(ErrorCode::NotFound))?;
+        .map(|each| each.spec);
+    // A box that is not there is judged like one that is (a stand-in of search results), so a box
+    // left out and a box that does not exist run the same reads before the same answer.
+    let judged = found.clone().unwrap_or_else(stand_in);
+    let reads = ctx.reads_for(&actor, &reaching, &judged).await?;
+    let (Some(spec), Some(reads)) = (found, reads) else {
+        return Err(ErrorCode::NotFound.into());
+    };
     ctx.box_answer((&input.session_token, &actor, &reaching), &spec, reads)
         .await
 }

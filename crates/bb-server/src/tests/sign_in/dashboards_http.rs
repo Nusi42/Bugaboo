@@ -352,20 +352,25 @@ async fn cfg_03_limits_of_boxes_and_dashboards_are_counted_inside_the_change() -
         let over = create(&mut ada, "Over", vec![timer(0), timer(1)]).await?;
         assert_eq!(over.code(), "request.invalid");
         ok(&create(&mut ada, "Full", boxes(20)).await?)?;
-        // *Home* and the trash count among the 50 of a person.
+        // *Home* counts among the 50 of a person; the trash does not.
         ok(&ada.send("GET", &format!("{DASHBOARDS}/home"), None).await?)?;
-        let trashed = create(&mut ada, "Trashed", Vec::new()).await?;
-        let trashed = format!("{DASHBOARDS}/{}", id_of(&trashed)?);
-        assert_eq!(
-            ada.send("DELETE", &trashed, None).await?.status,
-            StatusCode::NO_CONTENT
-        );
-        for number in 3..50 {
-            ok(&create(&mut ada, &format!("Board {number}"), Vec::new()).await?)?;
+        let mut last = String::new();
+        for number in 3..=50 {
+            last = id_of(&create(&mut ada, &format!("Board {number}"), Vec::new()).await?)?;
         }
         let refused = create(&mut ada, "One more", Vec::new()).await?;
         assert_eq!(refused.status, StatusCode::CONFLICT, "{}", refused.body);
         assert_eq!(refused.code(), "limit.reached");
+        let trashed = format!("{DASHBOARDS}/{last}");
+        let deleted = ada.send("DELETE", &trashed, None).await?;
+        assert_eq!(deleted.status, StatusCode::NO_CONTENT);
+        ok(&create(&mut ada, "One more", Vec::new()).await?)?;
+        // Taking one out of the trash past the limit is refused the same way.
+        let restored = ada
+            .send("POST", &format!("{trashed}/restore"), None)
+            .await?;
+        assert_eq!(restored.status, StatusCode::CONFLICT, "{}", restored.body);
+        assert_eq!(restored.code(), "limit.reached");
         Ok(())
     })
     .await

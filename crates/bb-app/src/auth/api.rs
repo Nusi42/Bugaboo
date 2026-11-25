@@ -151,7 +151,7 @@ use crate::boards::{BoardPage, BoardQuery, board};
 use crate::calendar::{CalendarPage, CalendarQuery, calendar};
 use crate::dashboards::{
     BoxAnswer, BoxPreviewQuery, BoxQuery, ChangeDashboard, CopyDashboard, CreateDashboard,
-    DashboardPage, DashboardQuery, DashboardView, DashboardsQuery, DeleteDashboard, HomeQuery,
+    DashboardPage, DashboardQuery, DashboardView, DashboardsQuery, DeleteDashboard, OpenHome,
     ReadyMadeList, ReadyMadeQuery, RestoreDashboard, RestoredDashboard, ShareDashboard,
     StopSharingDashboard, box_preview, change_dashboard, copy_dashboard, create_dashboard,
     dashboard, dashboard_box, dashboards, delete_dashboard, home, ready_made_boxes,

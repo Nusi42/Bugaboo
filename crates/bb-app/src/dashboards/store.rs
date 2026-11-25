@@ -25,7 +25,7 @@ pub trait DashboardStore: ChangeStore + 'static {
         fn dashboard_shares(id: DashboardId) -> Vec<DashboardShare> = dashboard_shares_in;
         /// The *Home* of a person, if it was made.
         fn home_of(person: UserId) -> Option<Dashboard> = home_of_in;
-        /// How many dashboards a person has, the trash and *Home* included.
+        /// How many dashboards a person has outside the trash, *Home* included.
         fn count_dashboards_of(maker: UserId) -> u64 = count_dashboards_of_in;
         /// How many dashboards a person made that are shared with a group or a project: the ones
         /// that stay, shown with *Former user* as their maker, when the person is removed.
