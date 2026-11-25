@@ -43,3 +43,24 @@ describe("the rows grouped by goal (UX §4.7)", () => {
     expect(shown([rowOf("first", goal), rowOf("goal", none)])).toEqual(["[issue] 1", "first"]);
   });
 });
+
+describe("the group without a value (UX §4.7)", () => {
+  const release: GroupKey = { type: "release", value: "r" };
+  const later: GroupKey = { type: "release", value: "s" };
+  const none: GroupKey = { type: "empty" };
+
+  it("plan_04_none_comes_last_over_two_pages", () => {
+    // The first page starts with an issue of no release; the second page adds another release.
+    const first = [rowOf("loose", none), rowOf("shipped", release)];
+    const second = [rowOf("loose too", none), rowOf("next", later)];
+    expect(shown([...first, ...second])).toEqual([
+      "[release] 1",
+      "shipped",
+      "[release] 1",
+      "next",
+      "[empty] 2",
+      "loose",
+      "loose too",
+    ]);
+  });
+});

@@ -365,7 +365,7 @@ async fn plan_13_a_delay_is_shown_along_dependencies_and_moves_nothing() -> Test
         );
         assert_eq!(
             found["dependencies"],
-            json!([{"first": first_id, "then": then_id}])
+            json!([{"first": first_id, "then": then_id, "drives": false}])
         );
         let warnings = warnings_on(&found, &then_id);
         assert_eq!(warnings.len(), 1, "{found}");

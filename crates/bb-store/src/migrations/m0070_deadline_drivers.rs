@@ -40,7 +40,8 @@ mod tests {
             let search = SavedSearchId::from_parts(Timestamp::UNIX_EPOCH, [7; 10])?;
             let maker = UserId::from_random([9; 16]);
             old_saved_list(&database, search, maker).await?;
-            assert_eq!(database.migrate_until(70, at(1)).await?, [70]);
+            // Whatever migrations come between, migration 70 is among those run.
+            assert!(database.migrate(at(1)).await?.contains(&70));
             let mut read = database.begin_read().await?;
             let kept = AuthStorage::saved_search_in(&mut read, search)
                 .await?

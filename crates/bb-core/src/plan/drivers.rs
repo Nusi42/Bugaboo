@@ -1,11 +1,12 @@
 //! Deadline drivers and the two warnings of impossible dependencies (PLAN-05, ADR-0043, amendment
 //! of 2026-11-24).
 //!
-//! Every rule here stands on one schedule, [`Chain`]: the days each bar would have if every issue
+//! Every rule here stands on the one schedule along dependencies ([`super::order`], which *Move it
+//! after* uses too), with every bar free to move: the days each bar would have if every issue
 //! started no earlier than the day after the issues it waits for end, each keeping its number of
 //! days. It is worked out, never shown and never stored: the bars keep the dates people set, and
-//! nothing moves by itself (ADR-0043, decision 5). Loops of dependencies stored before loops were
-//! refused are left out of it: nothing on them can start (*Loop*).
+//! nothing moves by itself (ADR-0043, decision 5). The issues on a loop keep their days, and the
+//! dependencies of the loop count for nothing (*Loop*).
 //!
 //! - The **drivers** of an end are the issues whose delay by a day moves that end by a day: the
 //!   members that end last, and, walking back, every issue they wait for with no slack.
@@ -15,17 +16,18 @@
 //! Pure, and given only the issues the reader sees: a chain through a hidden issue is not followed,
 //! and nothing tells that one exists.
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashMap, VecDeque};
 use std::hash::BuildHasher;
 
 use jiff::civil::Date;
 use serde::Serialize;
 
 use super::Days;
-use super::bar::{Bar, WorkedOut};
+use super::bar::Bar;
+use super::order::Schedule;
 use super::warning::Warning;
 use crate::id::{IssueId, ReleaseId};
-use crate::relation::{Dependency, dependency_loops};
+use crate::relation::{Dependency, DependencyGraph, dependency_loops};
 
 /// An end of the view that deadline drivers set.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
@@ -48,17 +50,6 @@ pub struct End {
     pub members: Vec<IssueId>,
 }
 
-/// The dependencies that lie on a loop, each named once.
-fn on_loops(dependencies: &[Dependency]) -> HashSet<Dependency> {
-    dependency_loops(dependencies)
-        .iter()
-        .flat_map(|on_it| {
-            let next = on_it.iter().skip(1).chain(on_it.first());
-            on_it.iter().copied().zip(next.copied()).collect::<Vec<_>>()
-        })
-        .collect()
-}
-
 /// *Loop*: every issue on a loop of dependencies, with the issue on it that it waits for directly.
 /// An issue on two loops is named once, with the first.
 #[must_use]
@@ -77,83 +68,39 @@ pub fn loops(dependencies: &[Dependency]) -> Vec<(IssueId, Warning)> {
         .collect()
 }
 
-/// The schedule of the chain: the earliest days of every bar along the dependencies that lie on no
-/// loop.
+/// The deadline drivers of a page: each issue with the ends it sets, and the dependencies of the
+/// chains, along which a delay moves an end.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Drivers {
+    /// Each driver with the ends it sets, in the order of the ends.
+    pub ends: BTreeMap<IssueId, Vec<EndOf>>,
+    /// The dependencies with no slack between two drivers of one end.
+    pub links: BTreeSet<Dependency>,
+}
+
+/// The chain of a plan: the one schedule along its dependencies ([`DependencyGraph::schedule`]),
+/// where every bar may move, worked out and never shown.
 pub struct Chain {
-    /// The issues each issue waits for, among the bars.
-    before: HashMap<IssueId, Vec<IssueId>>,
-    /// The earliest days of each bar: as late as the bar itself, or the day after the last of the
-    /// issues it waits for ends, whichever is later, with its number of days.
-    earliest: HashMap<IssueId, Days>,
+    schedule: Schedule,
 }
 
 impl Chain {
-    /// The schedule of these bars along these dependencies. A dependency with an end that has no
-    /// bar, or that lies on a loop, is left out.
+    /// The schedule of these bars along these dependencies (the loop rule of [`super::order`]).
     #[must_use]
     pub fn new<H: BuildHasher>(
         dependencies: &[Dependency],
         bars: &HashMap<IssueId, Bar, H>,
     ) -> Self {
-        let looped = on_loops(dependencies);
-        let mut before: HashMap<IssueId, Vec<IssueId>> = HashMap::new();
-        let mut after: HashMap<IssueId, Vec<IssueId>> = HashMap::new();
-        for (first, then) in dependencies.iter().copied() {
-            if looped.contains(&(first, then))
-                || !bars.contains_key(&first)
-                || !bars.contains_key(&then)
-            {
-                continue;
-            }
-            before.entry(then).or_default().push(first);
-            after.entry(first).or_default().push(then);
+        let days: HashMap<IssueId, Days> = bars.iter().map(|(id, bar)| (*id, bar.days)).collect();
+        Self {
+            schedule: DependencyGraph::new(dependencies).schedule(&days, None, |_| true),
         }
-        // Kahn's order, the smallest ID first, so the same plan gives the same schedule.
-        let mut open: BTreeMap<IssueId, usize> = bars
-            .keys()
-            .map(|id| (*id, before.get(id).map_or(0, Vec::len)))
-            .collect();
-        let mut ready: VecDeque<IssueId> = open
-            .iter()
-            .filter(|(_, count)| **count == 0)
-            .map(|(id, _)| *id)
-            .collect();
-        let mut earliest: HashMap<IssueId, Days> = HashMap::new();
-        while let Some(at) = ready.pop_front() {
-            let Some(now) = bars.get(&at).map(|bar| bar.days) else {
-                continue;
-            };
-            let start = before
-                .get(&at)
-                .into_iter()
-                .flatten()
-                .filter_map(|first| earliest.get(first))
-                .map(|days| days.last)
-                .max()
-                .and_then(|last| last.tomorrow().ok());
-            let days = match start {
-                Some(start) if start > now.first => {
-                    now.shifted(Days::between(now.first, start)).unwrap_or(now)
-                }
-                _ => now,
-            };
-            earliest.insert(at, days);
-            for next in after.get(&at).into_iter().flatten() {
-                if let Some(count) = open.get_mut(next) {
-                    *count = count.saturating_sub(1);
-                    if *count == 0 {
-                        ready.push_back(*next);
-                    }
-                }
-            }
-        }
-        Self { before, earliest }
     }
 
     /// The earliest days of the bar of `issue`; none without a bar.
     #[must_use]
     pub fn earliest(&self, issue: IssueId) -> Option<Days> {
-        self.earliest.get(&issue).copied()
+        self.schedule.days(issue)
     }
 
     /// The end of these members: the last of their earliest last days; none when none has a bar.
@@ -167,11 +114,13 @@ impl Chain {
     }
 
     /// The drivers of these members: the ones that end on their end, and every issue they wait for,
-    /// over any number of steps, that ends on the day before the one after it starts.
+    /// over any number of steps, that ends on the day before the one after it starts; with the
+    /// dependencies walked.
     #[must_use]
-    pub fn drivers(&self, members: &[IssueId]) -> BTreeSet<IssueId> {
+    pub fn drivers(&self, members: &[IssueId]) -> (BTreeSet<IssueId>, BTreeSet<Dependency>) {
+        let mut links = BTreeSet::new();
         let Some(end) = self.end(members) else {
-            return BTreeSet::new();
+            return (BTreeSet::new(), links);
         };
         let mut found: BTreeSet<IssueId> = members
             .iter()
@@ -183,53 +132,60 @@ impl Chain {
             let Some(start) = self.earliest(at).map(|days| days.first) else {
                 continue;
             };
-            for first in self.before.get(&at).into_iter().flatten() {
+            for first in self.schedule.before(at) {
                 let binds = self
                     .earliest(*first)
                     .and_then(|days| days.last.tomorrow().ok())
                     == Some(start);
-                if binds && found.insert(*first) {
-                    queue.push_back(*first);
+                if binds {
+                    links.insert((*first, at));
+                    if found.insert(*first) {
+                        queue.push_back(*first);
+                    }
                 }
             }
         }
-        found
+        (found, links)
     }
 
-    /// The drivers of every end, each issue with the ends it sets, in the order of the ends.
+    /// The drivers of every end ([`Drivers`]).
     #[must_use]
-    pub fn drivers_of(&self, ends: &[End]) -> BTreeMap<IssueId, Vec<EndOf>> {
-        let mut sets: BTreeMap<IssueId, Vec<EndOf>> = BTreeMap::new();
+    pub fn drivers_of(&self, ends: &[End]) -> Drivers {
+        let mut drivers = Drivers::default();
         for end in ends {
-            for issue in self.drivers(&end.members) {
-                let list = sets.entry(issue).or_default();
+            let (found, links) = self.drivers(&end.members);
+            for issue in found {
+                let list = drivers.ends.entry(issue).or_default();
                 if !list.contains(&end.of) {
                     list.push(end.of);
                 }
             }
+            drivers.links.extend(links);
         }
-        sets
+        drivers
     }
 
-    /// *Cannot fit*: each issue whose due date (a last day people set, not one *Plan by effort*
-    /// worked out) is on or before the earliest day the issues it waits for can end, with the one
-    /// of them that ends last and the due date it needs to keep its number of days after them.
+    /// *Cannot fit*: each issue with a due date people set (`dues`) that is on or before the
+    /// earliest day the issues it waits for can end, with the one of them that ends last and the
+    /// due date it needs to keep the number of days of its bar after them. An issue without a due
+    /// date has no such warning, whatever its bar.
     #[must_use]
-    pub fn cannot_fit<H: BuildHasher>(
+    pub fn cannot_fit<H: BuildHasher, G: BuildHasher>(
         &self,
         bars: &HashMap<IssueId, Bar, H>,
+        dues: &HashMap<IssueId, Date, G>,
     ) -> Vec<(IssueId, Warning)> {
-        let mut found: Vec<(IssueId, Warning)> = bars
+        let mut found: Vec<(IssueId, Warning)> = dues
             .iter()
-            .filter(|(_, bar)| bar.worked_out != WorkedOut::Due)
-            .filter_map(|(id, bar)| {
+            .filter_map(|(id, due)| {
+                let bar = bars.get(id)?;
                 let (first, ends) = self
-                    .before
-                    .get(id)?
+                    .schedule
+                    .before(*id)
                     .iter()
                     .filter_map(|first| self.earliest(*first).map(|days| (*first, days.last)))
                     .max_by_key(|(first, last)| (*last, std::cmp::Reverse(*first)))?;
-                if bar.days.last > ends {
+                if *due > ends {
                     return None;
                 }
                 let length = Days::between(bar.days.first, bar.days.last) + 1;

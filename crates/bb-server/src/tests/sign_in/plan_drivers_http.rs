@@ -120,6 +120,19 @@ async fn plan_05_the_chain_that_sets_the_end_of_a_goal_is_the_drivers() -> TestR
             let id = id_of_key(&mut ada, key).await?;
             assert!(ends_of(&on, &id).is_empty(), "{key}: {on}");
         }
+        // The dependency with no slack is a link of the chain; the one with slack is not.
+        let (api_id, early_id) = (
+            id_of_key(&mut ada, &api).await?,
+            id_of_key(&mut ada, &early).await?,
+        );
+        let drives = |first: &str| {
+            on["dependencies"]
+                .as_array()
+                .and_then(|all| all.iter().find(|each| each["first"] == first))
+                .map(|each| each["drives"].clone())
+        };
+        assert_eq!(drives(&api_id), Some(json!(true)), "{on}");
+        assert_eq!(drives(&early_id), Some(json!(false)), "{on}");
         // The goal's own day is the last of the view.
         assert_eq!(ends_of(&on, &goal_id), ["view"], "{on}");
         // Off, the page names no driver.
@@ -407,34 +420,17 @@ async fn plan_05_make_it_longer_moves_the_due_date_only_when_the_person_confirms
     .await
 }
 
-/// The kinds of the groups of the rows of a page, in order, each once where it starts.
-fn group_kinds(page: &Value) -> Vec<String> {
-    let mut kinds: Vec<String> = Vec::new();
-    for row in page["rows"].as_array().into_iter().flatten() {
-        let kind = match row["group"]["type"].as_str() {
-            Some("release") => format!(
-                "release:{}",
-                row["group"]["value"].as_str().unwrap_or_default()
-            ),
-            Some(other) => other.to_owned(),
-            None => "none".to_owned(),
-        };
-        if kinds.last() != Some(&kind) {
-            kinds.push(kind);
-        }
-    }
-    kinds
-}
-
 #[tokio::test]
 async fn plan_04_rows_group_by_planned_for_release_with_none_last() -> TestResult {
+    // The group of none is put last by the screen over all pages (`linesOf`, its test
+    // `plan_04_none_comes_last_over_two_pages`); the answer gives each row its group.
     each_database("plan_04_group_by_release", async |db| {
         let (rig, app) = rig_and_app(db).await?;
         let (site, mut ada) = Site::start(&rig, &app).await?;
         let next = release(&site, &mut ada, "2.5", "2027-03-10").await?;
         let dated = json!({"start_date": MONDAY, "due_date": "2027-03-02"});
         // The issue without a release comes first in the order of the search.
-        planned(&site, &mut ada, "Loose end", dated.clone()).await?;
+        let loose = planned(&site, &mut ada, "Loose end", dated.clone()).await?;
         let shipped = planned(&site, &mut ada, "Shipped", dated).await?;
         ok(&change(&mut ada, &shipped, json!({"planned_for_release": next})).await?)?;
         let grouped = page(
@@ -447,9 +443,20 @@ async fn plan_04_rows_group_by_planned_for_release_with_none_last() -> TestResul
             ),
         )
         .await?;
+        // Each row in the group of its release, or of none; the screen shows that group last.
+        let group_of = |key: &str| {
+            super::plan_site::rows_of(&grouped, key)
+                .first()
+                .map(|row| row["group"].clone())
+        };
         assert_eq!(
-            group_kinds(&grouped),
-            [format!("release:{next}"), "empty".to_owned()],
+            group_of(&shipped),
+            Some(json!({"type": "release", "value": next})),
+            "{grouped}"
+        );
+        assert_eq!(
+            group_of(&loose),
+            Some(json!({"type": "empty"})),
             "{grouped}"
         );
         // A board groups its rows by it too.

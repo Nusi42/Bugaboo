@@ -117,12 +117,7 @@ export function TimelineResults(props: TimelineResultsProps) {
                 },
               }}
             />
-            {phone ? null : (
-              <TimelineLegend
-                rows={model.read.rows}
-                drivers={props.view.timeline.deadline_drivers ?? false}
-              />
-            )}
+            {phone ? null : <TimelineLegend rows={model.read.rows} />}
           </InPaneHead>
           <TimelineBody
             props={props}

@@ -38999,8 +38999,12 @@
       "TimelineDependencyBody": {
         "type": "object",
         "description": "One dependency between two issues of the page.",
-        "required": ["first", "then"],
+        "required": ["first", "then", "drives"],
         "properties": {
+          "drives": {
+            "type": "boolean",
+            "description": "With *Deadline drivers* on: whether it is a link of a chain of drivers, with no slack, so\na delay of `first` moves an end; drawn stronger."
+          },
           "first": {
             "type": "string",
             "description": "The issue that must finish first."

@@ -156,6 +156,9 @@ pub(crate) struct TimelineDependencyBody {
     first: String,
     /// The issue that waits for it.
     then: String,
+    /// With *Deadline drivers* on: whether it is a link of a chain of drivers, with no slack, so
+    /// a delay of `first` moves an end; drawn stronger.
+    drives: bool,
 }
 
 /// An issue a warning names besides its own.
@@ -464,6 +467,7 @@ pub(crate) fn page_body(page: TimelinePage, list: &str) -> Result<TimelinePageBo
             .map(|(first, then)| TimelineDependencyBody {
                 first: first.to_string(),
                 then: then.to_string(),
+                drives: page.driving.contains(&(*first, *then)),
             })
             .collect(),
         warnings: page.warnings.iter().map(PlanWarningBody::from).collect(),

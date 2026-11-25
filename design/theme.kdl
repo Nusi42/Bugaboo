@@ -4022,6 +4022,10 @@ part "timeline-bracket" {
 mixin "diamond" {
     rotate "45deg"
     background "$fg"
+    // Forced colors drop the fill: the diamond keeps its edge in the text color.
+    forced {
+        border "$border-width solid CanvasText"
+    }
 }
 
 part "timeline-diamond" {
@@ -4047,6 +4051,10 @@ part "timeline-release" {
     width "$border-width"
     background "$fg-muted"
     pointer-events none
+    // Forced colors drop the fill: the line is drawn as an edge in the text color.
+    forced {
+        border-inline-start "$border-width solid CanvasText"
+    }
 }
 
 // The label stands after the line, clear of a diamond on the same day (the head of the group of the release).
@@ -4356,6 +4364,7 @@ part "timeline-phone.facts" {
 // The word of a deadline driver in the phone list (*Sets the end*), in the color of the outline on a computer.
 part "timeline-phone.driver" {
     color "$accent-fg"
+    white-space nowrap
 }
 
 // The diamond and the *Release date* of a release in the head of its group in the phone list.

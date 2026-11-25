@@ -8,7 +8,9 @@ use super::{Chain, End, EndOf, loops};
 use crate::id::{IssueId, ReleaseId, SequentialIds};
 use crate::plan::Days;
 use crate::plan::bar::{Bar, WorkedOut};
+use crate::plan::order::move_after;
 use crate::plan::warning::{Delay, Warning, WayOut, release_delays};
+use crate::relation::DependencyGraph;
 
 fn ids(count: usize) -> Vec<IssueId> {
     let mut sequence = SequentialIds::default();
@@ -54,17 +56,29 @@ fn plan_05_the_drivers_are_the_chain_with_no_slack_that_ends_last() {
     let (dependencies, bars) = sample(&issues);
     let chain = Chain::new(&dependencies, &bars);
     let members = issues.clone();
-    let drivers: Vec<IssueId> = chain.drivers(&members).into_iter().collect();
-    assert_eq!(drivers, vec![issues[0], issues[1], issues[2]]);
+    let (drivers, links) = chain.drivers(&members);
+    assert_eq!(
+        drivers.into_iter().collect::<Vec<_>>(),
+        vec![issues[0], issues[1], issues[2]]
+    );
+    // The chain is the dependencies with no slack; the one with slack is not in it.
+    assert_eq!(
+        links.into_iter().collect::<Vec<_>>(),
+        vec![(issues[0], issues[1]), (issues[1], issues[2])]
+    );
     assert_eq!(chain.end(&members), Some(day(9)));
     // A goal over E alone is driven by E alone.
     assert_eq!(
-        chain.drivers(&[issues[4]]).into_iter().collect::<Vec<_>>(),
+        chain
+            .drivers(&[issues[4]])
+            .0
+            .into_iter()
+            .collect::<Vec<_>>(),
         vec![issues[4]]
     );
     // No member with a bar: no end and no drivers.
     assert_eq!(chain.end(&[issues[5]]), None);
-    assert!(chain.drivers(&[issues[5]]).is_empty());
+    assert!(chain.drivers(&[issues[5]]).0.is_empty());
 }
 
 #[test]
@@ -73,7 +87,7 @@ fn plan_05_a_delay_of_a_driver_by_a_day_moves_the_end_by_a_day_and_of_any_other_
     let (dependencies, bars) = sample(&issues);
     let chain = Chain::new(&dependencies, &bars);
     let end = chain.end(&issues).unwrap();
-    let drivers = chain.drivers(&issues);
+    let (drivers, _) = chain.drivers(&issues);
     for issue in bars.keys() {
         let mut later = bars.clone();
         let bar = later.get_mut(issue).unwrap();
@@ -90,16 +104,18 @@ fn plan_05_each_end_names_its_drivers_once() {
     let (dependencies, bars) = sample(&issues);
     let chain = Chain::new(&dependencies, &bars);
     let goal = issues[5];
-    let sets = chain.drivers_of(&[
-        End {
-            of: EndOf::Goal(goal),
-            members: vec![issues[1]],
-        },
-        End {
-            of: EndOf::View,
-            members: issues.clone(),
-        },
-    ]);
+    let sets = chain
+        .drivers_of(&[
+            End {
+                of: EndOf::Goal(goal),
+                members: vec![issues[1]],
+            },
+            End {
+                of: EndOf::View,
+                members: issues.clone(),
+            },
+        ])
+        .ends;
     assert_eq!(
         sets.get(&issues[0]),
         Some(&vec![EndOf::Goal(goal), EndOf::View])
@@ -143,15 +159,16 @@ fn plan_05_a_due_date_before_what_it_waits_for_can_end_cannot_fit() {
     let issues = ids(4);
     let (a, b, c, d) = (issues[0], issues[1], issues[2], issues[3]);
     // A (0–4) then B (2–3), which is due before A ends; B then C (6–6), due on the day B can end
-    // at the earliest (5–6). D (0–8) waits for nothing.
+    // at the earliest (5–6), which counts as too early too. D (0–8) waits for nothing.
     let bars = HashMap::from([
         (a, set(0, 4)),
         (b, set(2, 3)),
         (c, set(6, 6)),
         (d, set(0, 8)),
     ]);
+    let dues = HashMap::from([(b, day(3)), (c, day(6)), (d, day(8))]);
     let chain = Chain::new(&[(a, b), (b, c)], &bars);
-    let found = chain.cannot_fit(&bars);
+    let found = chain.cannot_fit(&bars, &dues);
     assert_eq!(
         found,
         vec![
@@ -178,17 +195,48 @@ fn plan_05_a_due_date_before_what_it_waits_for_can_end_cannot_fit() {
         found[0].1.ways_out(),
         vec![WayOut::MakeItLonger, WayOut::KeepAndAccept]
     );
-    // A due date *Plan by effort* worked out is no due date people set.
-    let mut worked = bars.clone();
-    worked.insert(
-        b,
-        Bar {
-            worked_out: WorkedOut::Due,
-            ..bars[&b]
-        },
-    );
-    let found = Chain::new(&[(a, b)], &worked).cannot_fit(&worked);
+    // A due date a day after what it waits for ends fits.
+    let later = HashMap::from([(c, day(7))]);
+    assert!(chain.cannot_fit(&bars, &later).is_empty());
+}
+
+#[test]
+fn plan_05_an_issue_without_a_due_date_never_cannot_fit() {
+    let issues = ids(2);
+    let (a, b) = (issues[0], issues[1]);
+    // B has only a start date, inside A: a bar of one day people did not give a due date. A due
+    // date *Plan by effort* worked out is no due date people set either.
+    let bars = HashMap::from([(a, set(0, 4)), (b, set(2, 2))]);
+    let chain = Chain::new(&[(a, b)], &bars);
+    let found = chain.cannot_fit(&bars, &HashMap::new());
     assert!(found.is_empty(), "{found:?}");
+}
+
+#[test]
+fn plan_13_issues_on_a_loop_stay_and_what_waits_for_them_waits_where_they_stand() {
+    let issues = ids(4);
+    let (a, b, c, d) = (issues[0], issues[1], issues[2], issues[3]);
+    // A then B and B then A: a loop. B then C. D then A, from outside the loop.
+    let bars = HashMap::from([
+        (a, set(2, 3).days),
+        (b, set(0, 5).days),
+        (c, set(1, 1).days),
+        (d, set(0, 4).days),
+    ]);
+    let graph = DependencyGraph::new(&[(a, b), (b, a), (b, c), (d, a)]);
+    let schedule = graph.schedule(&bars, None, |_| true);
+    // The issues on the loop keep their days, also A, which waits for D outside it.
+    assert_eq!(schedule.days(a), Some(bars[&a]));
+    assert_eq!(schedule.days(b), Some(bars[&b]));
+    assert!(schedule.on_loop(a) && schedule.on_loop(b) && !schedule.on_loop(c));
+    // C waits for B where B stands: the day after B ends.
+    assert_eq!(schedule.days(c), Some(Days::one(day(6))));
+    // *Move it after* follows the same rule: the loop stays, C moves.
+    let moved = move_after(&graph, &bars, a, day(10));
+    assert_eq!(
+        moved.iter().map(|each| each.issue).collect::<Vec<_>>(),
+        vec![c]
+    );
 }
 
 #[test]

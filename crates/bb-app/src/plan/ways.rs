@@ -287,7 +287,8 @@ pub async fn accept_warning<S: AuthStore + SearchStore>(
         let ask = ctx
             .ask_for(&actor, &issue, vec![issue.clone()], &input.options, around)
             .await?;
-        let plan = ctx.plan_with_surroundings(ask).await?;
+        // Boxed: the plan is a large future, and accepting is only one of its callers.
+        let plan = Box::pin(ctx.plan_with_surroundings(ask)).await?;
         let has_it = plan.warnings.iter().any(|(id, warning)| {
             *id == issue.id && warning.kind() == input.kind && plan.tells(&issue, warning, named)
         });

@@ -302,6 +302,9 @@ pub struct TimelinePage {
     pub releases: Vec<ReleaseMark>,
     /// The deadline drivers among the issues of the page, when *Deadline drivers* is on.
     pub drivers: Vec<DriverView>,
+    /// The dependencies between issues of the page along which a delay moves an end: the links of
+    /// the drivers' chains, with no slack.
+    pub driving: Vec<(IssueId, IssueId)>,
 }
 
 impl Masked for TimelinePage {}
@@ -322,6 +325,7 @@ impl TimelinePage {
             people_days: Vec::new(),
             releases: Vec::new(),
             drivers: Vec::new(),
+            driving: Vec::new(),
         }
     }
 }

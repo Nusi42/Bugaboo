@@ -14601,6 +14601,11 @@ export interface components {
     };
     /** @description One dependency between two issues of the page. */
     TimelineDependencyBody: {
+      /**
+       * @description With *Deadline drivers* on: whether it is a link of a chain of drivers, with no slack, so
+       *     a delay of `first` moves an end; drawn stronger.
+       */
+      drives: boolean;
       /** @description The issue that must finish first. */
       first: string;
       /** @description The issue that waits for it. */

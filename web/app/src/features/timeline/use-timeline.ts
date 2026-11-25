@@ -56,7 +56,7 @@ export function useTimelineModel(
       changes,
     }),
     openWarnings: marks.openCount,
-    arrows: arrowsOf(lines, read.dependencies, daysOf, chart.span, read.lookups.endsOf),
+    arrows: arrowsOf(lines, read.dependencies, daysOf, chart.span),
     onToggle,
     context: {
       span: chart.span,

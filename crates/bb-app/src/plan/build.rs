@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use bb_core::ErrorCode;
 use bb_core::fields::{Field, FieldKey};
-use bb_core::id::{IssueId, ProjectId, ReleaseId, UserId};
+use bb_core::id::{IssueId, ProjectId, RelationKindId, ReleaseId, UserId};
 use bb_core::issue::Issue;
 use bb_core::own_fields::FieldType;
 use bb_core::own_fields_value::{FieldValue, date_of};
@@ -32,7 +32,7 @@ use jiff::civil::Date;
 use super::factor::person_on_bar;
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
-use crate::issues::Where;
+use crate::issues::{Where, known_release};
 use crate::projects::Shown;
 use crate::relations::effect_kinds;
 use crate::search::{FieldTarget, Searchable, target_of};
@@ -158,8 +158,11 @@ pub(crate) struct Plan {
     /// Which issue of the set sits under which.
     pub(crate) parents: Vec<(IssueId, IssueId)>,
     /// The releases the issues of the set are planned for, where the reader may read *Planned for
-    /// release* and sees the project of the release.
+    /// release*; [`Plan::planned_for`] shows only those the reader may know.
     pub(crate) releases: HashMap<ReleaseId, Release>,
+    /// The end dates people set that the reader may read, of the date field the bars end at: the
+    /// due dates *Cannot fit* is about (a date *Plan by effort* worked out is none).
+    pub(crate) ends: HashMap<IssueId, Date>,
     /// The projects the reader sees.
     pub(crate) sight: Shown,
     /// The schedule along the dependencies of the set (deadline drivers, *Cannot fit*).
@@ -222,12 +225,14 @@ impl Plan {
             .map_or(&[], Vec::as_slice)
     }
 
-    /// The release an issue is planned for, when the reader may know it.
+    /// The release an issue is planned for, when the reader may read the field and know the
+    /// release ([`known_release`]); a release they may not know is no release, as in every grouping
+    /// of a search (ADR-0049).
     pub(crate) fn planned_for(&self, issue: &Issue) -> Option<&Release> {
         issue
             .planned_for_release
             .filter(|_| self.reads(issue, Field::PlannedForRelease))
-            .and_then(|release| self.releases.get(&release))
+            .and_then(|release| known_release(&self.releases, release, &self.sight))
     }
 
     /// The time factor of an issue as the reader may read it: ×1 when it is hidden from them.
@@ -338,14 +343,34 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(seen)
     }
 
+    /// The kinds of relation with a date effect: what makes a relation a dependency.
+    pub(crate) async fn dependency_kinds(&self) -> Result<Vec<RelationKindId>, AppError> {
+        Ok(effect_kinds(
+            &self
+                .store()
+                .relation_kinds()
+                .await
+                .map_err(|error| internal::<S>(&error))?,
+        ))
+    }
+
     /// The dependencies and the sub-issues around `issues`, as the IDs of the issues at their
     /// other ends: what a plan reads next to them.
     pub(crate) async fn around(
         &self,
         issues: &[IssueId],
     ) -> Result<(Vec<Dependency>, Vec<(IssueId, IssueId)>), AppError> {
+        let kinds = self.dependency_kinds().await?;
+        self.around_of(kinds, issues).await
+    }
+
+    /// The same, with the kinds of dependencies read already.
+    async fn around_of(
+        &self,
+        kinds: Vec<RelationKindId>,
+        issues: &[IssueId],
+    ) -> Result<(Vec<Dependency>, Vec<(IssueId, IssueId)>), AppError> {
         let failed = |error: S::Error| internal::<S>(&error);
-        let kinds = effect_kinds(&self.store().relation_kinds().await.map_err(failed)?);
         let dependencies = self
             .store()
             .dependencies_touching(kinds, issues.to_vec())
@@ -365,13 +390,20 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// The plan of the issues of `ask` and of the issues around them that the reader may see (the
     /// other ends of their dependencies, their goals and sub-issues), which count for their
     /// warnings: the plan of a page of the timeline, and of the issue a way out is chosen for.
-    pub(crate) async fn plan_with_surroundings(
+    pub(crate) async fn plan_with_surroundings(&self, ask: PlanAsk<'_>) -> Result<Plan, AppError> {
+        let kinds = self.dependency_kinds().await?;
+        self.plan_around(ask, kinds).await
+    }
+
+    /// The same, with the kinds of dependencies read already.
+    pub(crate) async fn plan_around(
         &self,
         mut ask: PlanAsk<'_>,
+        kinds: Vec<RelationKindId>,
     ) -> Result<Plan, AppError> {
         let asked: HashSet<IssueId> = ask.issues.iter().map(|issue| issue.id).collect();
         let ids: Vec<IssueId> = asked.iter().copied().collect();
-        let (dependencies, parents) = self.around(&ids).await?;
+        let (dependencies, parents) = self.around_of(kinds, &ids).await?;
         let others: Vec<IssueId> = dependencies
             .iter()
             .flat_map(|(first, then)| [*first, *then])
@@ -442,9 +474,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             )
             .await?
         };
-        let releases = self
-            .planned_releases(&ask.issues, &held, &ask.sight)
-            .await?;
+        let releases = self.planned_releases(&ask.issues, &held).await?;
         let mut plan = Plan {
             issues: ask
                 .issues
@@ -469,6 +499,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 .filter(|(child, parent)| in_set.contains(child) && in_set.contains(parent))
                 .collect(),
             releases,
+            ends: HashMap::new(),
             sight: ask.sight,
             chain: Chain::new(&[], &HashMap::new()),
             warnings: Vec::new(),
@@ -476,43 +507,23 @@ impl<S: AuthStore> Ctx<'_, S> {
             reader: ask.actor.person.id,
         };
         self.read_days(&mut plan, ask.window, ask.actor).await?;
-        // The bars, from the dates the reader may read in the project and for the type of each
-        // issue: an issue around the page is judged where it is, not where the search looked.
-        let mut bars = HashMap::new();
-        for issue in plan.issues.values() {
-            let readable = |target: Option<FieldTarget>| {
-                target
-                    .and_then(target_key)
-                    .is_some_and(|key| plan.reads(issue, key))
-            };
-            let start =
-                date_from(issue, ask.dates.start, &values).filter(|_| readable(ask.dates.start));
-            let end = date_from(issue, ask.dates.end, &values).filter(|_| readable(ask.dates.end));
-            let effort = plan.effort_of(issue).filter(|_| plan.by_effort);
-            if let Some(found) = bar(&BarInput {
-                start,
-                due: end,
-                effort,
-                days: plan.days_of(issue),
-            }) {
-                bars.insert(issue.id, found);
-            }
-        }
+        let (bars, ends) = bars_of(&plan, ask.dates, &values);
         plan.chain = Chain::new(&plan.dependencies, &bars);
         plan.bars = bars;
+        plan.ends = ends;
         plan.warnings = warnings_of(&plan, plan.by_effort);
         Ok(plan)
     }
 
-    /// The releases these issues are planned for that the reader may know: where they may read
-    /// *Planned for release*, of a project they see; one statement for all of them (PERF-N1).
+    /// The releases these issues are planned for, where the reader may read *Planned for release*:
+    /// one statement for all of them (PERF-N1). Which of them the reader may know is
+    /// [`Plan::planned_for`].
     async fn planned_releases(
         &self,
         issues: &[Issue],
         held: &HashMap<ProjectId, Arc<Evaluation>>,
-        sight: &Shown,
     ) -> Result<HashMap<ReleaseId, Release>, AppError> {
-        let mut wanted: Vec<ReleaseId> = issues
+        let wanted: Vec<ReleaseId> = issues
             .iter()
             .filter(|issue| {
                 held.get(&issue.project).is_some_and(|held| {
@@ -522,20 +533,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             })
             .filter_map(|issue| issue.planned_for_release)
             .collect();
-        if wanted.is_empty() {
-            return Ok(HashMap::new());
-        }
-        wanted.sort_unstable();
-        wanted.dedup();
-        Ok(self
-            .store()
-            .releases_by_ids(wanted)
-            .await
-            .map_err(|error| internal::<S>(&error))?
-            .into_iter()
-            .filter(|release| release.deleted_at.is_none() && sight.sees(release.project))
-            .map(|release| (release.id, release))
-            .collect())
+        self.release_records(wanted).await
     }
 
     /// The days of every person on a bar of the plan, in each project, through the one port of
@@ -586,6 +584,40 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
         Ok(())
     }
+}
+
+/// The bars of a plan, from the dates the reader may read in the project and for the type of each
+/// issue (an issue around the page is judged where it is, not where the search looked), and the
+/// end dates people set among them.
+fn bars_of(
+    plan: &Plan,
+    dates: DateTargets,
+    values: &crate::fields::ItemValues,
+) -> (HashMap<IssueId, Bar>, HashMap<IssueId, Date>) {
+    let mut bars = HashMap::new();
+    let mut ends = HashMap::new();
+    for issue in plan.issues.values() {
+        let readable = |target: Option<FieldTarget>| {
+            target
+                .and_then(target_key)
+                .is_some_and(|key| plan.reads(issue, key))
+        };
+        let start = date_from(issue, dates.start, values).filter(|_| readable(dates.start));
+        let end = date_from(issue, dates.end, values).filter(|_| readable(dates.end));
+        if let Some(end) = end {
+            ends.insert(issue.id, end);
+        }
+        let effort = plan.effort_of(issue).filter(|_| plan.by_effort);
+        if let Some(found) = bar(&BarInput {
+            start,
+            due: end,
+            effort,
+            days: plan.days_of(issue),
+        }) {
+            bars.insert(issue.id, found);
+        }
+    }
+    (bars, ends)
 }
 
 /// The minutes each issue of one person on a bar plans on each day.
@@ -646,7 +678,7 @@ fn warnings_of(plan: &Plan, by_effort: bool) -> Vec<(IssueId, Warning)> {
         .collect();
     found.extend(release_delays(&planned, &plan.bars, &release_dates));
     found.extend(loops(&plan.dependencies));
-    found.extend(plan.chain.cannot_fit(&plan.bars));
+    found.extend(plan.chain.cannot_fit(&plan.bars, &plan.ends));
     // *Too much at once* says how much a person can work in the project: only to a reader who may
     // know their work times.
     for ((project, person), mut issue_loads) in loads

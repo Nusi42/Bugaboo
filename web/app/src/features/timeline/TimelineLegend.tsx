@@ -8,18 +8,11 @@ import { daysWithoutWorkOf } from "./use-marks.ts";
 /**
  * The one Legend of the timeline, below its tools (UX §4.7): the tints and the priority marks of the
  * rows, then the bracket of a goal, the diamond of its due date, the Today line, the outline of a
- * deadline driver while *Deadline drivers* is on, and the marks of the
+ * deadline driver (always, so switching *Deadline drivers* moves nothing), and the marks of the
  * people on the timeline: *Away* and *Holiday*, or only the neutral pattern where the bars carry
  * nothing else, and *Plan warning*.
  */
-export function TimelineLegend({
-  rows,
-  drivers,
-}: {
-  readonly rows: readonly TimelineRow[];
-  /** *Deadline drivers* is on: the Legend explains the outline. */
-  readonly drivers: boolean;
-}) {
+export function TimelineLegend({ rows }: { readonly rows: readonly TimelineRow[] }) {
   const days = daysWithoutWorkOf(rows);
   const distinct = days.distinct || !days.neutral;
   return (
@@ -29,9 +22,7 @@ export function TimelineLegend({
           <LegendItem look={legendLook.goal}>{t("timeline.legend-goal")}</LegendItem>
           <LegendItem look={legendLook.due}>{t("timeline.legend-due")}</LegendItem>
           <LegendItem look={legendLook.today}>{t("timeline.today")}</LegendItem>
-          {drivers ? (
-            <LegendItem look={legendLook.driver}>{t("timeline.legend-driver")}</LegendItem>
-          ) : null}
+          <LegendItem look={legendLook.driver}>{t("timeline.legend-driver")}</LegendItem>
           {distinct ? (
             <>
               <LegendItem look={legendLook.away}>{t("timeline.away")}</LegendItem>

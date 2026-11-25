@@ -28,7 +28,7 @@ mod moving;
 mod read;
 mod releases;
 pub(crate) use read::{ReadAhead, changeable_built_in};
-pub(crate) use releases::{release_change_seen, release_json, releases_seen_in};
+pub(crate) use releases::{known_release, release_change_seen, release_json, releases_seen_in};
 mod store;
 mod types;
 mod views;

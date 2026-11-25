@@ -329,21 +329,12 @@ impl<S: AuthStore> Ctx<'_, S> {
             .found_in_of_issues(ids)
             .await
             .map_err(internal)?;
-        let mut wanted: Vec<ReleaseId> = rows
+        let wanted: Vec<ReleaseId> = rows
             .iter()
             .map(|row| row.release)
             .chain(issues.iter().filter_map(|issue| issue.planned_for_release))
             .collect();
-        wanted.sort_unstable();
-        wanted.dedup();
-        let records = if wanted.is_empty() {
-            Vec::new()
-        } else {
-            self.store()
-                .releases_by_ids(wanted)
-                .await
-                .map_err(internal)?
-        };
+        let records = self.release_records(wanted).await?;
         let mut found: HashMap<IssueId, Vec<ReleaseId>> = HashMap::new();
         for row in rows {
             found.entry(row.issue).or_default().push(row.release);
@@ -351,9 +342,43 @@ impl<S: AuthStore> Ctx<'_, S> {
         Ok(PageReleases {
             read: issues.iter().map(|issue| issue.id).collect(),
             found,
-            records: records.into_iter().map(|each| (each.id, each)).collect(),
+            records,
         })
     }
+
+    /// The releases with these IDs, in one statement and none when there are no IDs: what the views
+    /// of issues and the plan of the timeline read, each then showing only a release the reader may
+    /// know ([`known_release`]).
+    pub(crate) async fn release_records(
+        &self,
+        mut ids: Vec<ReleaseId>,
+    ) -> Result<HashMap<ReleaseId, Release>, AppError> {
+        ids.sort_unstable();
+        ids.dedup();
+        if ids.is_empty() {
+            return Ok(HashMap::new());
+        }
+        Ok(self
+            .store()
+            .releases_by_ids(ids)
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .map(|release| (release.id, release))
+            .collect())
+    }
+}
+
+/// The release with this ID among `records`, when the reader may know it: a release of a project
+/// they see (ADR-0049, decision 5). The one rule of which release a view shows.
+pub(crate) fn known_release<'a>(
+    records: &'a HashMap<ReleaseId, Release>,
+    id: ReleaseId,
+    shown: &Shown,
+) -> Option<&'a Release> {
+    records
+        .get(&id)
+        .filter(|release| shown.sees(release.project))
 }
 
 /// The releases of a page of issues.
@@ -390,10 +415,7 @@ impl PageReleases {
         shown: &Shown,
     ) -> (Vec<ReleaseRef>, Option<ReleaseRef>) {
         let seen = |id: &ReleaseId| {
-            self.records
-                .get(id)
-                .filter(|release| shown.sees(release.project))
-                .map(|release| ReleaseRef::of(release, chain))
+            known_release(&self.records, *id, shown).map(|release| ReleaseRef::of(release, chain))
         };
         let found = self
             .found

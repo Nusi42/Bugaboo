@@ -41,7 +41,8 @@ export function groupIdOf(key: GroupKey): string {
 }
 
 /**
- * The lines of the rows: grouped where the rows have groups, each group where its first row is, a
+ * The lines of the rows: grouped where the rows have groups, each group where its first row is, of
+ * every page read so far, and the group without a value last, as in every grouping of a search; a
  * folded group with its head only. Rows without a group stand alone, without a head. An issue that heads a group
  * (a goal) has no row of its own.
  */
@@ -61,8 +62,16 @@ export function linesOf(
     group.rows.push(row);
     groups.set(id, group);
   }
+  // The group without a value comes last: an order of what is shown, the same on a phone.
+  const ids = [...groups.keys()];
+  const isEmpty = (id: string): boolean => groups.get(id)?.key?.type === "empty";
+  const ordered = [...ids.filter((id) => !isEmpty(id)), ...ids.filter((id) => isEmpty(id))];
   const lines: Line[] = [];
-  for (const [id, group] of groups) {
+  for (const id of ordered) {
+    const group = groups.get(id);
+    if (group === undefined) {
+      continue;
+    }
     const open = !folded.includes(id);
     if (group.key !== null) {
       const { key } = group;
@@ -98,7 +107,7 @@ export interface Arrow {
   readonly from: { readonly line: number; readonly day: number };
   /** The line and the first day of the bar that waits. */
   readonly to: { readonly line: number; readonly day: number };
-  /** Both ends are deadline drivers: the arrow is drawn stronger (PLAN-05). */
+  /** A link of a chain of deadline drivers, as the server says: the arrow is drawn stronger (PLAN-05). */
   readonly driver: boolean;
 }
 
@@ -111,7 +120,6 @@ export function arrowsOf(
   dependencies: readonly Schema<"TimelineDependencyBody">[],
   daysOf: (line: IssueLine) => BarDays | undefined,
   span: Span,
-  endsOf: (issue: string) => readonly unknown[],
 ): readonly Arrow[] {
   const at = new Map<string, number>();
   lines.forEach((line, index) => {
@@ -120,7 +128,7 @@ export function arrowsOf(
     }
   });
   const arrows: Arrow[] = [];
-  for (const { first, then } of dependencies) {
+  for (const { first, then, drives } of dependencies) {
     const [fromLine, toLine] = [at.get(first), at.get(then)];
     if (fromLine === undefined || toLine === undefined) {
       continue;
@@ -137,7 +145,7 @@ export function arrowsOf(
       key: `${first}>${then}`,
       from: { line: fromLine, day: placeOf(span, fromDays.last) + 1 },
       to: { line: toLine, day: placeOf(span, toDays.first) },
-      driver: endsOf(first).length > 0 && endsOf(then).length > 0,
+      driver: drives,
     });
   }
   return arrows;

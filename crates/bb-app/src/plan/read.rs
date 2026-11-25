@@ -718,7 +718,7 @@ pub async fn timeline<S: AuthStore + SearchStore>(
         TimelinePart::Rows => ctx.plan_with_surroundings(ask).await?,
         TimelinePart::NotScheduled => ctx.work_out_plan(ask, &[], &[]).await?,
     };
-    let mut rows = ctx
+    let rows = ctx
         .timeline_rows(
             &plan,
             &found.issues,
@@ -727,8 +727,6 @@ pub async fn timeline<S: AuthStore + SearchStore>(
             (query.part, span),
         )
         .await?;
-    // The group without a value comes last, as in every grouping of a search (`GroupKey::place`).
-    rows.sort_by_key(|row| matches!(row.group, Some(ShownKey::Other(GroupKey::Empty))));
     let dependencies = page_dependencies(&plan, &page);
     let marks = if query.part == TimelinePart::Rows {
         ctx.page_marks(&plan, &page, &prepared.looked.seen, drivers_on)
@@ -754,5 +752,6 @@ pub async fn timeline<S: AuthStore + SearchStore>(
         planned_by_effort: plan.by_effort,
         releases: marks.releases,
         drivers: marks.drivers,
+        driving: marks.driving,
     }))
 }

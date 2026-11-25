@@ -107,6 +107,7 @@ mod plan_card_http;
 mod plan_dates_http;
 mod plan_dependencies_http;
 mod plan_drivers_http;
+mod plan_drivers_sight_http;
 mod plan_factor_http;
 mod plan_hatched_http;
 mod plan_paging_http;

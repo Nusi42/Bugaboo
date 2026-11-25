@@ -55,6 +55,22 @@ test("plan_05_the_switch_outlines_the_drivers_and_the_card_says_what_they_set", 
   await expect(page).toHaveURL(/drivers=(%22)?1/u);
 });
 
+test("plan_05_switching_deadline_drivers_on_moves_nothing_in_a_narrow_window", async ({ page }) => {
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await signIn(page, ada);
+  await openPlan(page);
+  const first = barOf(page, planned.first);
+  const marks = [
+    await landmarkOf(first, "first bar"),
+    await landmarkOf(barOf(page, planned.dragged), "a bar below"),
+  ];
+  const switching = await movementWhile(page, marks, async () => {
+    await switchDriversOn(page);
+    await expect(first).toHaveAttribute("data-state", /\bdriver\b/u);
+  });
+  expectStill(switching);
+});
+
 test("plan_05_the_outline_is_seen_in_forced_colours_and_read_by_a_screen_reader", async ({
   page,
 }) => {
