@@ -144,6 +144,15 @@ pub(crate) enum StartingRolesMadeRow {
     MadeAt,
 }
 
+/// The permissions that came after the starting roles were made, still to give once (migration
+/// 65).
+#[derive(Clone, Copy, Iden)]
+pub(crate) enum StartingPermissionDueRow {
+    #[iden = "starting_permission_due"]
+    Table,
+    Permission,
+}
+
 /// The starting roles that came after the others were made, still to make once (migration 32).
 #[derive(Clone, Copy, Iden)]
 pub(crate) enum StartingRoleDueRow {
@@ -214,6 +223,9 @@ stored_tables! {
     },
     StartingRoleDueRow => bb_core::access::StartingRoleDue {
         Key => key,
+    },
+    StartingPermissionDueRow => bb_core::access::StartingPermissionDue {
+        Permission => permission,
     },
     AccessKeyRow => bb_core::access_key::AccessKey {
         Id => id,

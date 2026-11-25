@@ -323,6 +323,20 @@ impl PolicyStore for FakeStore {
             .any(|record| record.role.starting.as_ref() == Some(&key)))
     }
 
+    async fn starting_permissions_due_in(
+        tx: &mut Tx,
+    ) -> Result<Vec<bb_core::technical::TechnicalName>, FakeError> {
+        Ok(tx.state.starting_permissions_due.clone())
+    }
+
+    async fn clear_starting_permission_due(
+        tx: &mut Tx,
+        key: &bb_core::technical::TechnicalName,
+    ) -> Result<(), FakeError> {
+        tx.state.starting_permissions_due.retain(|due| due != key);
+        Ok(())
+    }
+
     async fn clear_starting_role_due(
         tx: &mut Tx,
         key: &bb_core::technical::TechnicalName,

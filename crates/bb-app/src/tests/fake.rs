@@ -214,6 +214,7 @@ pub(crate) struct State {
     pub(crate) time_entries: Vec<bb_core::time::entry::TimeEntry>,
     pub(crate) starter_fields: Vec<bb_core::time::entry::StarterFieldMark>,
     pub(crate) starting_roles_due: Vec<bb_core::technical::TechnicalName>,
+    pub(crate) starting_permissions_due: Vec<bb_core::technical::TechnicalName>,
     pub(crate) work_days: Vec<bb_core::working_time::record::StoredDay>,
     pub(crate) usual_days: Vec<(UserId, bb_core::work_times::StoredUsualDays)>,
     pub(crate) shares: Vec<(UserId, ProjectId, bb_core::work_times::Share)>,

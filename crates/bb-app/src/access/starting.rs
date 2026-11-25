@@ -6,17 +6,19 @@
 //! person who was an administrator in M1 the Administrator role for the whole organization, one
 //! change, one event and one log entry each. A starting role that came later (*HR*, ADR-0025,
 //! amendment M6) is made once on a server whose roles were made before it, when its migration left
-//! a row that says so. It runs at every start and does only what is still to do, so it can be
+//! a row that says so, and a permission that came later (*Manage releases*) is given to the copies
+//! of the starting roles that hold it at the start, the same way (below). It runs at
+//! every start and does only what is still to do, so it can be
 //! stopped half way and run again.
 
 use bb_core::access::{AppliesTo, Assignment, Role};
-use bb_core::event::{Actor, RecordKind};
+use bb_core::event::{Actor, FieldChange, RecordKind};
 use bb_core::id::{AssignmentId, RoleId};
 use bb_core::message::Message;
 use bb_core::sign_in::SecurityAction;
 use bb_core::technical::TechnicalName;
 use bb_core::version::FIRST_VERSION;
-use bb_policy::StartingRole;
+use bb_policy::{Permission, StartingRole};
 use serde_json::json;
 
 use crate::auth::{
@@ -31,7 +33,7 @@ pub struct CreateStartingRoles;
 /// The role of a starting role, ready to be stored: the role, with the levels it starts with.
 pub(crate) struct NewRole {
     pub(crate) role: Role,
-    pub(crate) permissions: Vec<bb_policy::Permission>,
+    pub(crate) permissions: Vec<Permission>,
     pub(crate) fields: Vec<(bb_core::fields::FieldKey, bb_core::access::FieldLevel)>,
     pub(crate) people: Vec<(
         bb_core::people_kinds::PeopleKind,
@@ -154,6 +156,7 @@ pub async fn create_starting_roles<S: AuthStore>(
         }
     }
     create_the_roles_that_are_due(ctx).await?;
+    give_the_permissions_that_are_due(ctx).await?;
     give_the_old_administrators_their_role(ctx).await
 }
 
@@ -326,6 +329,113 @@ async fn give_the_old_administrators_their_role<S: AuthStore>(
             Some(entity(RecordKind::Assignment, id)),
         )
         .await;
+    }
+    Ok(())
+}
+
+/// The permission keys of a role, in the order of the catalogue.
+fn keys(permissions: &[Permission]) -> Vec<&'static str> {
+    permissions
+        .iter()
+        .map(|permission| permission.code())
+        .collect()
+}
+
+/// The copies of the starting roles that hold `permission` at the start, by ID.
+fn holders(roles: &[crate::access::RoleRecord], permission: Permission) -> Vec<RoleId> {
+    roles
+        .iter()
+        .filter(|record| {
+            record
+                .role
+                .starting
+                .as_ref()
+                .and_then(|key| StartingRole::from_code(key.as_str()))
+                .is_some_and(|starting| starting.permissions().contains(&permission))
+        })
+        .map(|record| record.role.id)
+        .collect()
+}
+
+/// Gives each permission that is due to the copies of the starting roles whose definition holds it,
+/// once, and takes the row that said it was due away in the same change.
+///
+/// # Errors
+/// Fails when the store fails.
+async fn give_the_permissions_that_are_due<S: AuthStore>(ctx: &Ctx<'_, S>) -> Result<(), AppError> {
+    let due = ctx
+        .store()
+        .starting_permissions_due()
+        .await
+        .map_err(|error| internal::<S>(&error))?;
+    for key in due {
+        let roles = ctx
+            .store()
+            .roles()
+            .await
+            .map_err(|error| internal::<S>(&error))?;
+        let candidates = match Permission::from_code(key.as_str()) {
+            Some(permission) => holders(&roles, permission),
+            None => Vec::new(),
+        };
+        let maker = ctx.event_maker(Actor::System);
+        // One change: the permission to each copy that lacks it, an event for each, and the row
+        // taken away. Judged after the lock, on what is stored: another server that started at
+        // the same moment may have given it already.
+        let given = ctx
+            .store()
+            .record_changes(&[], move |transaction| {
+                Box::pin(async move {
+                    S::lock_policy(transaction).await?;
+                    if !S::starting_permissions_due_in(transaction)
+                        .await?
+                        .contains(&key)
+                    {
+                        return Ok(Vec::new());
+                    }
+                    let mut given = Vec::new();
+                    if let Some(permission) = Permission::from_code(key.as_str()) {
+                        for id in candidates {
+                            let Some(record) = S::role_in(transaction, id).await? else {
+                                continue;
+                            };
+                            if record.permissions.contains(&permission) {
+                                continue;
+                            }
+                            let before: Vec<Permission> =
+                                record.permissions.iter().copied().collect();
+                            let mut after = before.clone();
+                            after.push(permission);
+                            after.sort();
+                            S::replace_role_permissions(transaction, id, &after).await?;
+                            let event = maker
+                                .create(
+                                    entity(RecordKind::Role, id),
+                                    vec![FieldChange {
+                                        field: member::role::PERMISSIONS.to_owned(),
+                                        before: Some(json!(keys(&before))),
+                                        after: Some(json!(keys(&after))),
+                                    }],
+                                )
+                                .map_err(|_| S::aborted())?;
+                            S::append_follow_up_event(transaction, &event).await?;
+                            given.push(id);
+                        }
+                    }
+                    S::clear_starting_permission_due(transaction, &key).await?;
+                    Ok(given)
+                })
+            })
+            .await
+            .map_err(|error| change_failed::<S>(&error, Stops::NONE))?;
+        for role in given {
+            ctx.note(
+                SecurityAction::RoleChanged,
+                None,
+                Some(entity(RecordKind::Role, role)),
+            )
+            .await;
+        }
     }
     Ok(())
 }

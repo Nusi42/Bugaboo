@@ -347,6 +347,7 @@ fn whole_project(
         first_day: FirstDay::default(),
         projects: Vec::new(),
         names: Names::default(),
+        releases_known: Vec::new(),
         status_groups: Vec::new(),
         blocking_kinds: Vec::new(),
         own_reach: Vec::new(),

@@ -1,0 +1,235 @@
+//! What a reader is told of a release they may not know (ISS-08, ADR-0049, decisions 1, 7 and 8): a
+//! release of a project they do not see, or of a project kept from AI, is in no preview of a tool,
+//! in no answer to the AI, and a change of theirs neither takes it away nor reorders it.
+
+use bb_core::given::SetTo;
+use bb_core::id::{IssueId, ReleaseId};
+use bb_policy::StartingRole;
+use serde_json::{Value, json};
+
+use super::ai_tools::{call, mark};
+use super::releases::{a_release, a_sub_project, previewing, seen, set_releases};
+use super::scenarios::{a_project, text, token};
+use super::scenarios_issues::an_issue;
+use super::scenarios_searches::with_role;
+use super::world::{Outcome, World};
+use crate::ai::NeverSentTarget;
+use crate::ai::tools::call_tool;
+use crate::auth::Started;
+use crate::issues::{ChangeIssue, IssueView, MoveIssue, change_issue, move_issue};
+
+/// A project APP with a sub-project WEB, a release of each, an issue of WEB that Ada put into both
+/// fields with the release of APP, and Tea, who sees only WEB.
+struct Split {
+    world: World,
+    issue: IssueId,
+    top: ReleaseId,
+    web: ReleaseId,
+    tea: Started,
+}
+
+async fn split() -> Result<Split, String> {
+    let world = World::new().await?;
+    let app = a_project(&world, "APP").await?;
+    let web_project = a_sub_project(&world, app, "WEB").await?;
+    let top = a_release(&world, "APP", "Moonbeam").await?.id;
+    let web = a_release(&world, "WEB", "2.4").await?.id;
+    let issue = an_issue(&world, web_project).await?;
+    set_releases(&world, issue, Some(vec![top]), Some(SetTo::Value(top)))
+        .await
+        .map_err(text)?;
+    let tea = world.person("tea@example.test").await.map_err(text)?;
+    with_role(&world, &tea, StartingRole::TeamMember, Some(web_project)).await?;
+    Ok(Split {
+        world,
+        issue,
+        top,
+        web,
+        tea,
+    })
+}
+
+/// Changes the releases of the issue as Tea.
+async fn as_tea(
+    split: &Split,
+    found: Option<Vec<ReleaseId>>,
+    planned: Option<SetTo<ReleaseId>>,
+) -> Result<IssueView, String> {
+    let version = seen(&split.world, split.issue).await?.version;
+    Ok(change_issue::<_, IssueView>(
+        &split.world.ctx(),
+        ChangeIssue {
+            found_in_release: found,
+            planned_for_release: planned,
+            ..ChangeIssue::of(&split.tea.session_token, split.issue.to_string(), version)
+        },
+    )
+    .await
+    .map_err(text)?
+    .into_value())
+}
+
+#[tokio::test]
+async fn iss_08_a_tool_preview_tells_nothing_of_a_release_the_reader_may_not_see() -> Outcome {
+    let split = split().await?;
+    let version = seen(&split.world, split.issue).await?.version;
+    let preview = call_tool(
+        &split.world.ctx(),
+        previewing(
+            &split.tea.session_token,
+            "update_issue",
+            json!({
+                "issue": split.issue.to_string(),
+                "version": version,
+                "found_in_release": [split.web.to_string()],
+                "planned_for_release": split.web.to_string(),
+            }),
+        ),
+    )
+    .await
+    .map_err(text)?
+    .into_value();
+    let said = serde_json::to_string(&preview).map_err(text)?;
+    assert!(!said.contains("Moonbeam"), "{said}");
+    assert!(!said.contains(&split.top.to_string()), "{said}");
+    // Both fields change for her, from nothing she sees to the release she named.
+    let fields: Vec<&str> = preview
+        .changes
+        .iter()
+        .map(|change| change.field.as_str())
+        .collect();
+    assert_eq!(fields, ["found-in-release", "planned-for-release"]);
+    let found = preview
+        .changes
+        .iter()
+        .find(|change| change.field == "found-in-release")
+        .ok_or("no change of found in release")?;
+    assert_eq!(found.before, Some(json!([])));
+    // A change she makes of nothing she sees is no change to tell.
+    let nothing = call_tool(
+        &split.world.ctx(),
+        previewing(
+            &split.tea.session_token,
+            "update_issue",
+            json!({"issue": split.issue.to_string(), "version": version, "found_in_release": []}),
+        ),
+    )
+    .await
+    .map_err(text)?
+    .into_value();
+    assert!(nothing.changes.is_empty(), "{:?}", nothing.changes);
+    Ok(())
+}
+
+#[tokio::test]
+async fn iss_08_a_change_keeps_a_release_the_person_may_not_see_and_its_place() -> Outcome {
+    let split = split().await?;
+    // She sees neither field's release, and her list keeps it first.
+    let view = as_tea(&split, Some(vec![split.web]), Some(SetTo::Nothing)).await?;
+    assert_eq!(view.found_in_release.clone().unwrap_or_default().len(), 1);
+    assert!(view.planned_for_release.is_none());
+    let ada = seen(&split.world, split.issue).await?;
+    let ids = |view: &IssueView| -> Vec<ReleaseId> {
+        view.found_in_release
+            .clone()
+            .unwrap_or_default()
+            .iter()
+            .map(|each| each.id)
+            .collect()
+    };
+    assert_eq!(ids(&ada), [split.top, split.web]);
+    // Setting no planned release kept the one she cannot see.
+    assert_eq!(ada.planned_for_release.map(|each| each.id), Some(split.top));
+    // Naming one she sees takes its place.
+    as_tea(&split, None, Some(SetTo::Value(split.web))).await?;
+    let ada = seen(&split.world, split.issue).await?;
+    assert_eq!(ada.planned_for_release.map(|each| each.id), Some(split.web));
+    // Taking hers away leaves the hidden one where it was.
+    as_tea(&split, Some(Vec::new()), None).await?;
+    assert_eq!(ids(&seen(&split.world, split.issue).await?), [split.top]);
+    Ok(())
+}
+
+/// The names of the releases in what a tool answered.
+fn told(answer: &Value) -> String {
+    answer.to_string()
+}
+
+#[tokio::test]
+async fn iss_08_the_ai_is_told_nothing_of_a_release_of_a_project_kept_from_it() -> Outcome {
+    let world = World::new().await?;
+    let sec = a_project(&world, "SEC").await?;
+    a_project(&world, "APP").await?;
+    let secret = a_release(&world, "SEC", "Classified").await?.id;
+    let issue = an_issue(&world, sec).await?;
+    set_releases(
+        &world,
+        issue,
+        Some(vec![secret]),
+        Some(SetTo::Value(secret)),
+    )
+    .await
+    .map_err(text)?;
+    let version = seen(&world, issue).await?.version;
+    move_issue(
+        &world.ctx(),
+        MoveIssue {
+            session_token: token(&world),
+            issue: issue.to_string(),
+            version,
+            project: "APP".to_owned(),
+        },
+    )
+    .await
+    .map_err(text)?;
+    mark(&world, NeverSentTarget::Project("SEC".to_owned())).await?;
+    // The issue as the AI reads it names neither field's release.
+    let read = call_tool(
+        &world.ctx(),
+        call(
+            &token(&world),
+            "get_issue",
+            json!({"issue": issue.to_string()}),
+        ),
+    )
+    .await
+    .map_err(text)?
+    .into_value();
+    let said = told(&serde_json::to_value(&read).map_err(text)?);
+    assert!(!said.contains("Classified"), "{said}");
+    // The releases of that project are not there for the AI.
+    let listed = call_tool(
+        &world.ctx(),
+        call(&token(&world), "list_releases", json!({"project": "SEC"})),
+    )
+    .await;
+    assert!(
+        matches!(
+            listed,
+            Err(crate::auth::AppError::Refused(bb_core::ErrorCode::NotFound))
+        ),
+        "{listed:?}"
+    );
+    // A change the AI proposes neither shows nor takes away what it may not know.
+    let version = seen(&world, issue).await?.version;
+    let preview = call_tool(
+        &world.ctx(),
+        previewing(
+            &token(&world),
+            "update_issue",
+            json!({
+                "issue": issue.to_string(),
+                "version": version,
+                "found_in_release": [],
+                "planned_for_release": "",
+            }),
+        ),
+    )
+    .await
+    .map_err(text)?
+    .into_value();
+    assert!(preview.changes.is_empty(), "{:?}", preview.changes);
+    let still = seen(&world, issue).await?;
+    assert_eq!(still.planned_for_release.map(|each| each.id), Some(secret));
+    Ok(())
+}

@@ -169,7 +169,10 @@ async fn iss_08_every_release_change_is_an_event_with_old_and_new_values() -> Ou
         (Some(json!("2.4")), Some(json!("2.4.0")))
     );
     let date = change("release-date").ok_or("no date")?;
-    assert_eq!((date.before, date.after), (None, Some(json!("2026-12-01"))));
+    assert_eq!(
+        (date.before, date.after),
+        (Some(json!(null)), Some(json!("2026-12-01")))
+    );
     assert!(change("version").is_some());
     // A change that changes nothing writes nothing.
     let before = world.store.event_count();

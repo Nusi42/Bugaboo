@@ -27,6 +27,56 @@ pub(crate) fn release_json(release: &Release) -> Value {
     })
 }
 
+/// The releases a value of either release member of an event holds (an array, or one release)
+/// whose project `seen` allows: the one reading of such a value, for the history and for what a
+/// tool shows of a change.
+pub(crate) fn releases_seen_in(value: &Value, seen: impl Fn(ProjectId) -> bool) -> Vec<Value> {
+    let items: Vec<&Value> = match value {
+        Value::Array(items) => items.iter().collect(),
+        Value::Object(_) => vec![value],
+        _ => Vec::new(),
+    };
+    items
+        .into_iter()
+        .filter(|item| {
+            item.get("project")
+                .and_then(Value::as_str)
+                .and_then(|text| text.parse::<ProjectId>().ok())
+                .is_some_and(&seen)
+        })
+        .cloned()
+        .collect()
+}
+
+/// A change of either release member as a reader whose sight is `seen` may read it: the releases
+/// they may not know left out of both sides, and no change at all when both sides read the same
+/// then. Any other change as it is.
+pub(crate) fn release_change_seen(
+    change: FieldChange,
+    seen: impl Fn(ProjectId) -> bool,
+) -> Option<FieldChange> {
+    let several = change.field == member::FOUND_IN_RELEASE;
+    if !several && change.field != member::PLANNED_FOR_RELEASE {
+        return Some(change);
+    }
+    let side = |value: Option<&Value>| {
+        let found = value
+            .map(|value| releases_seen_in(value, &seen))
+            .unwrap_or_default();
+        if several {
+            Some(Value::Array(found))
+        } else {
+            found.into_iter().next()
+        }
+    };
+    let (before, after) = (side(change.before.as_ref()), side(change.after.as_ref()));
+    (before != after).then_some(FieldChange {
+        field: change.field,
+        before,
+        after,
+    })
+}
+
 /// The releases an issue names before and after a change, with the records of all of them.
 #[derive(Clone, Default)]
 pub(crate) struct IssueReleases {
@@ -90,7 +140,7 @@ impl IssueReleases {
         self,
         issue: IssueId,
         planned: (Option<ReleaseId>, Option<ReleaseId>),
-    ) -> ReleaseWrite {
+    ) -> IssueReleaseWrite {
         let (planned_now, planned_next) = planned;
         let mut new: Vec<ReleaseId> = self
             .found_next
@@ -103,7 +153,7 @@ impl IssueReleases {
         {
             new.push(release);
         }
-        ReleaseWrite {
+        IssueReleaseWrite {
             found_rows: (self.found_now != self.found_next)
                 .then(|| found_in_rows(issue, &self.found_next)),
             chain: self.chain,
@@ -114,7 +164,7 @@ impl IssueReleases {
 
 /// What a change of an issue writes of its releases.
 #[derive(Clone, Default)]
-pub(crate) struct ReleaseWrite {
+pub(crate) struct IssueReleaseWrite {
     chain: Vec<ProjectId>,
     /// The releases the issue names newly.
     new: Vec<ReleaseId>,
@@ -122,7 +172,7 @@ pub(crate) struct ReleaseWrite {
     found_rows: Option<Vec<IssueFoundIn>>,
 }
 
-impl ReleaseWrite {
+impl IssueReleaseWrite {
     /// Inside the change: the new releases are still offered and not retired or deleted, and the
     /// rows of *Found in release* are written.
     pub(crate) async fn write_in<S: AuthStore>(

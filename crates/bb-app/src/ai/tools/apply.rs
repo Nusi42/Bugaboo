@@ -169,7 +169,7 @@ pub(super) fn update_issue<'a, S: AuthStore>(
 ) -> Boxed<'a, Result<Vec<Part>, AppError>> {
     Box::pin(async move {
         let mut shown = preview::update_issue(ctx, run).await?;
-        let request = requests::update_issue(&run)?;
+        let request = ctx.update_request(&run).await?;
         let asked = request.version;
         let changed = change_issue::<_, IssueView>(ctx, request).await?;
         shown.push(issue_changed(&changed, asked)?);

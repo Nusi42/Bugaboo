@@ -128,6 +128,10 @@ pub struct ReleaseRef {
     /// The ID.
     #[masked(open)]
     pub id: ReleaseId,
+    /// The project it was made in: what decides who may know it, also for the AI (a release of a
+    /// project kept from AI is not told to it).
+    #[masked(open)]
+    pub project: bb_core::id::ProjectId,
     /// What it is called.
     #[masked(open)]
     pub name: String,
@@ -149,6 +153,7 @@ impl ReleaseRef {
     pub fn of(release: &Release, chain: &[bb_core::id::ProjectId]) -> Self {
         Self {
             id: release.id,
+            project: release.project,
             name: release.name.clone(),
             state: release.state,
             release_date: release.release_date,

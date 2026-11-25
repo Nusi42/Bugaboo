@@ -56,7 +56,7 @@ pub(crate) struct IssueViews {
     /// The releases the issues shown so far name (ISS-08): read for the whole page at once when
     /// the page asks for them, or for one issue when it is shown on its own; `None` for a page that
     /// did not ask, whose views do not hold them.
-    releases: Option<Box<PageReleases>>,
+    releases: Option<Arc<PageReleases>>,
     /// The projects the viewer sees, which decide the releases they are shown; read once.
     shown: Option<Arc<Shown>>,
 }
@@ -115,8 +115,8 @@ impl IssueViews {
     }
 
     /// Gives the views the releases of the issues of the page, and the projects the viewer sees.
-    fn with_releases(mut self, releases: Option<&PageReleases>, shown: &Arc<Shown>) -> Self {
-        self.releases = releases.cloned().map(Box::new);
+    fn with_releases(mut self, releases: Option<&Arc<PageReleases>>, shown: &Arc<Shown>) -> Self {
+        self.releases = releases.map(Arc::clone);
         self.shown = Some(Arc::clone(shown));
         self
     }
@@ -182,10 +182,10 @@ impl<S: AuthStore> Ctx<'_, S> {
         // One statement for the releases the page names and one for the releases themselves, when
         // they are asked for.
         let releases = if extras.releases == super::types::WithReleases::Yes {
-            Some(
+            Some(Arc::new(
                 self.releases_of_page(&issues.iter().collect::<Vec<_>>())
                     .await?,
-            )
+            ))
         } else {
             None
         };
@@ -321,7 +321,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             labels: None,
             agents: None,
             spent: None,
-            releases: Some(Box::default()),
+            releases: Some(Arc::default()),
             shown: None,
         })
     }
@@ -479,7 +479,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         if !page.has(issue) {
             let read = self.releases_of_page(&[issue]).await?;
             if let Some(page) = &mut views.releases {
-                page.merge(read);
+                Arc::make_mut(page).merge(read);
             }
         }
         let shown = if let Some(shown) = &views.shown {

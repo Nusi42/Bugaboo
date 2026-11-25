@@ -9,7 +9,7 @@ use bb_app::search::FieldTarget;
 use bb_app::search::OwnReach;
 use bb_core::agent_work::AgentWorkState;
 use bb_core::event::{EntityKind, RecordKind};
-use bb_core::id::FieldId;
+use bb_core::id::{FieldId, ReleaseId};
 use bb_core::own_fields::FieldType;
 use bb_core::people_kinds::PeopleKind;
 use bb_core::tags::IssueSight;
@@ -248,6 +248,7 @@ pub(super) fn subject_of(
     target: FieldTarget,
     sight: &IssueSight,
     reach: &[OwnReach],
+    releases: &[ReleaseId],
 ) -> (Subject, Domain) {
     use FieldTarget as T;
     let linked = Subject::Linked;
@@ -302,7 +303,9 @@ pub(super) fn subject_of(
             ),
             Domain::Label,
         ),
-        T::FoundInRelease | T::PlannedForRelease => (release_subject(target), Domain::Release),
+        T::FoundInRelease | T::PlannedForRelease => {
+            (release_subject(target, releases), Domain::Release)
+        }
         T::Parent => (
             reading_the_other_end(
                 linked(
@@ -348,15 +351,31 @@ pub(super) fn subject_of(
 }
 
 /// What *Found in release* (the rows of the issue, any number) or *Planned for release* (a column
-/// of the issue) reads: the IDs of the releases.
-fn release_subject(target: FieldTarget) -> Subject {
+/// of the issue) reads: the IDs of the releases the person may know (ADR-0049, decision 4). A
+/// release of a project they do not see is no value for them, as the issue shows none: `is
+/// empty` finds it, it sorts with the issues without one, and it is in the group of none, never in
+/// a group of its own.
+fn release_subject(target: FieldTarget, known: &[ReleaseId]) -> Subject {
+    let one_of = |column: Expr| -> Cond {
+        if known.is_empty() {
+            Cond::all().add(Expr::val(1).eq(2))
+        } else {
+            Cond::all().add(column.is_in(known.iter().map(|id| id.stored())))
+        }
+    };
     if target == FieldTarget::FoundInRelease {
+        let value = Expr::col((IssueFoundInRow::Table, IssueFoundInRow::Release));
         Subject::Linked(
-            Rows::keyed(IssueFoundInRow::Table, IssueFoundInRow::Issue),
-            Expr::col((IssueFoundInRow::Table, IssueFoundInRow::Release)),
+            Rows::keyed(IssueFoundInRow::Table, IssueFoundInRow::Issue).and(one_of(value.clone())),
+            value,
         )
     } else {
-        Subject::Column(issue_column(IssueRow::PlannedForRelease))
+        let column = issue_column(IssueRow::PlannedForRelease);
+        Subject::Column(
+            Expr::case(one_of(column.clone()), column)
+                .finally(Expr::null())
+                .into(),
+        )
     }
 }
 

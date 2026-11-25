@@ -8,12 +8,11 @@ use bb_core::version::Version;
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{Row, StoredId, Transaction, to_micros};
+use crate::db::{Row, StoredId, Transaction, sorted_chunks, to_micros};
 use crate::error::StoreError;
 use crate::issues::{read_day, stored_day};
 use crate::locks::LockClass;
 use crate::schema::{IssueFoundInRow, IssueRow, ReleaseRow};
-use crate::tags::sorted_chunks;
 
 fn select() -> SelectStatement {
     let mut select = Query::select();

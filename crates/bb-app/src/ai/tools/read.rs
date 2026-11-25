@@ -27,6 +27,9 @@ use bb_core::history::HistoryTab;
 
 /// How many issues a search tool answers with when it is not told.
 const ISSUES_DEFAULT: u32 = 20;
+/// How many releases `list_releases` answers with when it is not told: a project rarely offers
+/// more, and the AI asks for more when it does.
+const RELEASES_DEFAULT: u32 = 50;
 /// How many comments `get_issue` reads.
 const COMMENTS_MAX: u32 = 20;
 /// The searches of `get_my_work`, in the search language, from the one that says the most to the one
@@ -67,6 +70,26 @@ fn keep_next_statuses(value: &mut Value) {
         .map(|key| serde_json::json!({ "key": key }))
         .collect();
     object.insert(NEXT_STATUSES.to_owned(), Value::Array(keys));
+}
+
+/// Takes the releases of projects kept from AI out of the two release members of an issue
+/// (ADR-0049, decision 8): the AI is told nothing of such a project, also not the name of its
+/// releases.
+fn drop_withheld_releases(value: &mut Value, withheld: &Withheld) {
+    let kept = |item: &Value| project_of_release(item).is_some_and(|id| withheld.hides_project(id));
+    if let Some(Value::Array(items)) = value.get_mut("found_in_release") {
+        items.retain(|item| !kept(item));
+    }
+    if value.get("planned_for_release").is_some_and(kept)
+        && let Some(object) = value.as_object_mut()
+    {
+        object.remove("planned_for_release");
+    }
+}
+
+/// The project of a release in the masked value of an issue.
+fn project_of_release(item: &Value) -> Option<ProjectId> {
+    item.get("project")?.as_str()?.parse().ok()
 }
 
 fn drop_html(value: &mut Value) {
@@ -126,6 +149,7 @@ impl<S: AuthStore> Ctx<'_, S> {
         // The author is told before *Reported by* may be taken out.
         let author = self.author_in(&value, "reported_by", project).await?;
         drop_withheld::<IssueView>(&mut value, withheld);
+        drop_withheld_releases(&mut value, withheld);
         keep_next_statuses(&mut value);
         drop_html(&mut value);
         Ok(Some(Part {
@@ -348,13 +372,18 @@ impl<S: AuthStore> Ctx<'_, S> {
         input: &ListReleasesInput,
         withheld: &Withheld,
     ) -> Result<Vec<Part>, AppError> {
+        // A project kept from AI is not there for it, as one that does not exist.
+        let asked = self.find_project(&input.project).await?;
+        if asked.is_some_and(|found| withheld.hides_project(found.project.id)) {
+            return Err(AppError::Refused(ErrorCode::NotFound));
+        }
         let page = crate::releases::releases(
             self,
             crate::releases::ReleasesQuery {
                 session_token: session_token.to_owned(),
                 project: input.project.clone(),
                 cursor: None,
-                limit: limit_within(input.limit.as_ref())?.unwrap_or(ISSUES_DEFAULT),
+                limit: limit_within(input.limit.as_ref())?.unwrap_or(RELEASES_DEFAULT),
             },
         )
         .await?;

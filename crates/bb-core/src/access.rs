@@ -285,6 +285,16 @@ pub struct StartingRolesMade {
     pub made_at: Timestamp,
 }
 
+/// A permission that came after the starting roles were made, still to be given once on this
+/// server to the copies of the starting roles that hold it at the start (*Manage releases*,
+/// ADR-0025, amendment 2026-11-24): the next start gives it and takes the row away.
+#[derive(Clone, Debug, PartialEq, Eq, Entity)]
+pub struct StartingPermissionDue {
+    /// The key of the permission.
+    #[not_personal]
+    pub permission: TechnicalName,
+}
+
 /// A starting role that came after the starting roles were made, still to be made once on this
 /// server (the role *HR*, ADR-0025, amendment M6): the next start makes it and takes the row away.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]

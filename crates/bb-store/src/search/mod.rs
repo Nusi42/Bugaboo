@@ -124,7 +124,12 @@ impl<'a> Compiler<'a> {
 
     /// What the target reads, with the sight and the reach of the own fields of this request.
     fn subject_of(&self, target: FieldTarget) -> (source::Subject, source::Domain) {
-        source::subject_of(target, &self.request.sight, &self.request.own_reach)
+        source::subject_of(
+            target,
+            &self.request.sight,
+            &self.request.own_reach,
+            &self.request.releases_known,
+        )
     }
 
     /// The number the next walk is named with (`walk0`, `walk1`, …).

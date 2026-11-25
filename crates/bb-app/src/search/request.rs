@@ -159,6 +159,10 @@ pub struct SearchRequest {
     pub projects: Vec<ProjectLink>,
     /// What the names of statuses, types and choices stand for.
     pub names: Names,
+    /// The releases the person may know, those of the projects they see (ADR-0049, decision 4): a
+    /// release field reads only these, so another release is no value for them. Read only for a
+    /// search that names a release field (in its filter, its order or its groups); empty else.
+    pub releases_known: Vec<ReleaseId>,
     /// The keys of the statuses of each status group, in the order of the groups.
     pub status_groups: Vec<(StatusGroup, Vec<String>)>,
     /// The kinds of relation that mean *blocks*.

@@ -15,7 +15,7 @@ use jiff::Timestamp;
 use sea_query::{Expr, ExprTrait as _, Order, Query, SelectStatement};
 
 use crate::auth::AuthStorage;
-use crate::db::{Row, STATEMENT_ITEMS, StoredId, Transaction, to_micros};
+use crate::db::{Row, StoredId, Transaction, sorted_chunks, to_micros};
 use crate::error::StoreError;
 use crate::schema::{
     IssueLabelRow, IssueRow, IssueTagRow, LabelGroupRow, LabelRow, TagProjectRow, TagRow,
@@ -159,16 +159,6 @@ fn read_issue_label(row: &Row) -> Result<IssueLabel, StoreError> {
 /// The key a label holds for its group: the group's ID, or nothing.
 fn group_key(group: Option<LabelGroupId>) -> String {
     group.map(|group| group.to_string()).unwrap_or_default()
-}
-
-/// The IDs in order and once each, cut into chunks that one statement can bind
-/// ([`STATEMENT_ITEMS`]); asking about the chunks one after the other, each ordered by issue,
-/// gives the same order as one statement would.
-pub(crate) fn sorted_chunks<T: StoredId>(ids: &[T]) -> Vec<Vec<Vec<u8>>> {
-    let mut stored: Vec<Vec<u8>> = ids.iter().map(|id| id.stored()).collect();
-    stored.sort();
-    stored.dedup();
-    stored.chunks(STATEMENT_ITEMS).map(<[_]>::to_vec).collect()
 }
 
 impl TagStore for AuthStorage {

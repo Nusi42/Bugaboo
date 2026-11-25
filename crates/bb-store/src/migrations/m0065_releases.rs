@@ -9,21 +9,21 @@
 //! release (to refuse the delete of a release that issues name, and to search by it), and each
 //! column that names a person, which the walk of a person's data asks (ADR-0044).
 //!
-//! Last, the starting roles *Administrator* and *Project lead* of an existing server get the new
-//! permission *Manage releases* (ADR-0025, amendment 2026-11-24). The roles are found by the key
-//! of their `starting` mark, which a rename keeps; the keys and the permission are written out here,
+//! Last, a server whose starting roles were made already gets a row that *Manage releases* is due
+//! (ADR-0025, amendment 2026-11-24): like a starting role that came later (migration 32), the
+//! permission is given by the use case of the starting roles at the next start, with its events
+//! and its line in the security log, never here. The key of the permission is written out here,
 //! not read from the program, so the migration stays what it was.
 
-use sea_query::{ColumnDef, Expr, ExprTrait as _, ForeignKey, Index, Query, Table};
+use sea_query::{ColumnDef, Expr, ForeignKey, Index, Query, Table};
 
 use super::{Step, id_column};
-use crate::schema::{IssueFoundInRow, IssueRow, ReleaseRow, RolePermissionRow, RoleRow};
+use crate::schema::{
+    IssueFoundInRow, IssueRow, ReleaseRow, StartingPermissionDueRow, StartingRolesMadeRow,
+};
 
 /// The key of the permission *Manage releases*, as it is stored.
 const MANAGE_RELEASES: &str = "manage-releases";
-
-/// The keys of the starting roles that hold it at the start.
-const HOLDERS: [&str; 2] = ["administrator", "project-lead"];
 
 /// The table of the releases and its indexes, one of them for each column that names a person.
 fn release_table() -> Vec<Step> {
@@ -58,7 +58,7 @@ fn release_table() -> Vec<Step> {
                 .col(id_column(ReleaseRow::ChangedBy))
                 .col(moment(ReleaseRow::ChangedAt))
                 .col(ColumnDef::new(ReleaseRow::DeletedAt).big_integer())
-                .col(moment(ReleaseRow::Version))
+                .col(ColumnDef::new(ReleaseRow::Version).big_integer().not_null())
                 .to_owned(),
         ),
         Step::Index(
@@ -129,22 +129,37 @@ fn issue_releases() -> Vec<Step> {
 }
 
 pub(super) fn steps() -> Result<Vec<Step>, sea_query::error::Error> {
-    let grants = Query::insert()
-        .into_table(RolePermissionRow::Table)
-        .columns([RolePermissionRow::Role, RolePermissionRow::Permission])
-        .select_from(
-            Query::select()
-                .column(RoleRow::Id)
-                .expr(Expr::val(MANAGE_RELEASES))
-                .from(RoleRow::Table)
-                .and_where(Expr::col(RoleRow::Starting).is_in(HOLDERS))
-                .to_owned(),
-        )?
-        .to_owned();
     let mut steps = release_table();
     steps.extend(issue_releases());
-    steps.push(Step::Seed(grants));
+    steps.extend(due_permission()?);
     Ok(steps)
+}
+
+/// The table of the permissions still to give to the starting roles, with *Manage releases* in
+/// it when the starting roles were made already: the next start gives it (`access/starting.rs`).
+fn due_permission() -> Result<Vec<Step>, sea_query::error::Error> {
+    let mut made = Query::select();
+    made.expr(Expr::val(MANAGE_RELEASES))
+        .from(StartingRolesMadeRow::Table)
+        .limit(1);
+    let mut due = Query::insert();
+    due.into_table(StartingPermissionDueRow::Table)
+        .columns([StartingPermissionDueRow::Permission])
+        .select_from(made)?;
+    Ok(vec![
+        Step::Table(
+            Table::create()
+                .table(StartingPermissionDueRow::Table)
+                .col(
+                    ColumnDef::new(StartingPermissionDueRow::Permission)
+                        .text()
+                        .not_null()
+                        .primary_key(),
+                )
+                .to_owned(),
+        ),
+        Step::Seed(due),
+    ])
 }
 
 #[cfg(test)]
@@ -152,67 +167,72 @@ mod tests {
     use bb_core::id::RoleId;
     use bb_testing::{TestResult, each_database};
     use jiff::Timestamp;
-    use sea_query::{Expr, ExprTrait as _, IntoIden as _, Order, Query};
+    use sea_query::{Expr, ExprTrait as _, IntoIden as _, Query};
 
     use super::super::old_rows::{insert, old_role};
     use super::super::{Database, latest_version};
     use super::MANAGE_RELEASES;
-    use crate::db::StoredId as _;
-    use crate::schema::{RolePermissionRow, RoleRow};
+    use crate::schema::{RolePermissionRow, StartingPermissionDueRow, StartingRolesMadeRow};
     use crate::test_support::at;
 
+    /// The keys of the permissions that are due, and how many roles hold *Manage releases*.
+    async fn due_and_held(
+        database: &Database,
+    ) -> Result<(Vec<String>, usize), bb_testing::Failure> {
+        let mut due = Query::select();
+        due.column(StartingPermissionDueRow::Permission)
+            .from(StartingPermissionDueRow::Table);
+        let keys = database
+            .fetch_all(&due)
+            .await?
+            .iter()
+            .map(|row| row.get::<String>(StartingPermissionDueRow::Permission))
+            .collect::<Result<Vec<_>, _>>()?;
+        let mut held = Query::select();
+        held.column(RolePermissionRow::Role)
+            .from(RolePermissionRow::Table)
+            .and_where(Expr::col(RolePermissionRow::Permission).eq(MANAGE_RELEASES));
+        Ok((keys, database.fetch_all(&held).await?.len()))
+    }
+
     #[tokio::test]
-    async fn iss_08_migration_65_gives_manage_releases_to_the_starting_administrator_and_project_lead()
+    async fn iss_08_migration_65_marks_manage_releases_due_where_the_starting_roles_were_made()
     -> TestResult {
         each_database("migration_65_releases", async |db| {
             let database = Database::connect(db.url()).await?;
             database.migrate_until(64, at(0)).await?;
-            let roles: Vec<RoleId> = (1..=4_u8)
-                .map(|byte| RoleId::from_parts(Timestamp::UNIX_EPOCH, [byte; 10]))
-                .collect::<Result<_, _>>()?;
-            // Three starting roles, one renamed, and a role somebody made.
-            for (place, (role, starting)) in roles
-                .iter()
-                .zip([
-                    Some("administrator"),
-                    Some("project-lead"),
-                    Some("team-member"),
-                    None,
-                ])
-                .enumerate()
-            {
-                old_role(&database, *role, i64::try_from(place)?).await?;
-                let mut mark = Query::update();
-                mark.table(RoleRow::Table)
-                    .value(RoleRow::Starting, starting)
-                    .and_where(Expr::col(RoleRow::Id).eq(role.stored()));
-                database.execute(&mark).await?;
-            }
+            old_role(
+                &database,
+                RoleId::from_parts(Timestamp::UNIX_EPOCH, [1; 10])?,
+                0,
+            )
+            .await?;
             insert(
                 &database,
-                RolePermissionRow::Table,
-                [
-                    RolePermissionRow::Role.into_iden(),
-                    RolePermissionRow::Permission.into_iden(),
-                ],
-                [Expr::val(roles[0].stored()), Expr::val("manage-labels")],
+                StartingRolesMadeRow::Table,
+                [StartingRolesMadeRow::MadeAt.into_iden()],
+                [Expr::val(0_i64)],
             )
             .await?;
             let applied = database.migrate_until(65, at(1)).await?;
             assert_eq!(applied.last(), Some(&65));
             assert!(latest_version() >= 65);
-            let mut read = Query::select();
-            read.column(RolePermissionRow::Role)
-                .from(RolePermissionRow::Table)
-                .and_where(Expr::col(RolePermissionRow::Permission).eq(MANAGE_RELEASES))
-                .order_by(RolePermissionRow::Role, Order::Asc);
-            let holders: Vec<RoleId> = database
-                .fetch_all(&read)
-                .await?
-                .iter()
-                .map(|row| row.id::<RoleId>(RolePermissionRow::Role))
-                .collect::<Result<_, _>>()?;
-            assert_eq!(holders, roles[..2]);
+            // The permission is due and given by the next start, never by the migration.
+            assert_eq!(
+                due_and_held(&database).await?,
+                (vec![MANAGE_RELEASES.to_owned()], 0)
+            );
+            Ok(())
+        })
+        .await
+    }
+
+    #[tokio::test]
+    async fn iss_08_migration_65_marks_nothing_due_on_a_new_server() -> TestResult {
+        each_database("migration_65_new_server", async |db| {
+            let database = Database::connect(db.url()).await?;
+            database.migrate_until(65, at(0)).await?;
+            assert_eq!(due_and_held(&database).await?, (Vec::new(), 0));
             Ok(())
         })
         .await

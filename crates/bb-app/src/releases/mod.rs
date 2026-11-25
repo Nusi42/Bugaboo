@@ -10,6 +10,7 @@ mod manage;
 mod read;
 mod store;
 mod types;
+mod write;
 
 pub(crate) use choose::{ReleaseChoice, ensure_still_choosable_in};
 pub(crate) use manage::member;

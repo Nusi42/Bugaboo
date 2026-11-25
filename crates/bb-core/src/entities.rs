@@ -28,6 +28,7 @@ crate::entities! {
     crate::access::RolePermission,
     crate::access::RoleTypeFieldLevel,
     crate::access::StartingRoleDue,
+    crate::access::StartingPermissionDue,
     crate::access::StartingRolesMade,
     crate::access_key::AccessKey,
     crate::backup::run::BackupRun,

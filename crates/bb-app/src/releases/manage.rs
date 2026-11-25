@@ -10,17 +10,19 @@
 use bb_core::ErrorCode;
 use bb_core::event::{FieldChange, RecordKind};
 use bb_core::given::SetTo;
-use bb_core::id::{ProjectId, ReleaseId, UserId};
-use bb_core::names::{is_new_or_changed, same_name};
+use bb_core::id::{ProjectId, ReleaseId};
+use bb_core::names::is_new_or_changed;
 use bb_core::project::Project;
 use bb_core::project_release::{Release, ReleaseState};
-use bb_core::version::{FIRST_VERSION, Version, counted_up, next};
+use bb_core::version::{FIRST_VERSION, counted_up, next};
 use bb_policy::{Authorized, Evaluation, Permission, Place};
-use serde_json::{Value, json};
+use serde_json::json;
 
 use super::types::{ChangeRelease, CreateRelease, DeleteRelease, ReleaseView};
+use super::write::{ReleaseWrite, name_taken};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal, set_to};
+use crate::event_members::difference;
 use crate::input::{clean_name, given_reason};
 use crate::projects::{ProjectRef, Why};
 use std::sync::Arc;
@@ -37,113 +39,13 @@ pub(crate) mod member {
     pub(crate) const DELETED_AT: &str = "deleted-at";
 }
 
-/// Whether another release of the same project than `except`, not in the trash, has the name.
-fn name_taken(releases: &[Release], name: &str, except: Option<ReleaseId>) -> bool {
-    releases
-        .iter()
-        .any(|found| Some(found.id) != except && same_name(&found.name, name))
-}
-
-/// A change from `before` to `after`, when they differ.
-fn difference(field: &str, before: Value, after: Value) -> Option<FieldChange> {
-    (before != after).then(|| FieldChange {
-        field: field.to_owned(),
-        before: Some(before).filter(|value| !value.is_null()),
-        after: Some(after).filter(|value| !value.is_null()),
-    })
-}
-
-/// A release as a change writes it, judged again inside the change after the lock of the
-/// releases: the name, and for a delete whether an issue names it.
-#[derive(Clone)]
-struct ReleaseWrite {
-    /// The release as it will be.
-    written: Release,
-    /// The version the change is made on.
-    version: i64,
-    /// Whether the change is refused while an issue names the release (a delete).
-    unused_only: bool,
-}
-
-impl ReleaseWrite {
-    /// The write of `written` on `version`.
-    fn of(written: &Release, version: i64, unused_only: bool) -> Self {
-        Self {
-            written: written.clone(),
-            version,
-            unused_only,
-        }
-    }
-
-    async fn write_in<S: AuthStore>(
-        &self,
-        transaction: &mut S::Transaction,
-        stopped: &Why,
-    ) -> Result<(), S::Error> {
-        let written = &self.written;
-        S::lock_releases(transaction).await?;
-        if written.deleted_at.is_none() {
-            let others = S::releases_of_projects_in(transaction, vec![written.project]).await?;
-            if name_taken(&others, &written.name, Some(written.id)) {
-                return Err(stopped.stop::<S>(ErrorCode::ReleaseNameTaken));
-            }
-        }
-        if self.unused_only && S::release_named_in(transaction, written.id).await? {
-            return Err(stopped.stop::<S>(ErrorCode::ReleaseInUse));
-        }
-        if S::update_release(transaction, written, Version::new(self.version)).await? {
-            Ok(())
-        } else {
-            Err(stopped.stop::<S>(ErrorCode::VersionChanged))
-        }
-    }
-
-    /// The change that writes it, for `record_change`.
-    fn change<S: AuthStore>(
-        &self,
-        stopped: &Why,
-    ) -> impl for<'t> FnOnce(
-        &'t mut S::Transaction,
-    ) -> crate::ports::BoxFuture<'t, Result<(), S::Error>>
-    + Send
-    + 'static {
-        let (writing, stopped) = (self.clone(), stopped.clone());
-        move |transaction| {
-            Box::pin(async move { writing.write_in::<S>(transaction, &stopped).await })
-        }
-    }
-
-    /// What the person is told when the write was refused or failed.
-    fn refused<S: AuthStore>(&self, why: &Why, error: &S::Error, editor: UserId) -> AppError {
-        why.answer::<S>(error, ErrorCode::VersionChanged).about(
-            &entity(RecordKind::Release, self.written.id),
-            Place::Project(self.written.project),
-            editor,
-        )
-    }
-
-    /// The event of the change, by `actor`.
-    fn event<S: AuthStore>(
-        &self,
-        ctx: &Ctx<'_, S>,
-        actor: &Actor,
-        changes: Vec<FieldChange>,
-    ) -> Result<bb_core::event::DomainEvent, AppError> {
-        ctx.event(
-            by(actor.person.id),
-            entity(RecordKind::Release, self.written.id),
-            changes,
-        )
-    }
-}
-
 impl<S: AuthStore> Ctx<'_, S> {
     /// The day it is now for the person, in the zone of their *Region*: the day a release they
     /// mark *Released* keeps as *Released on*.
     async fn today_of(&self, actor: &Actor) -> Result<jiff::civil::Date, AppError> {
         let layers = self.setting_layers_of(Some(actor.person.id)).await?;
         let region = bb_core::wording::Region::of(&layers);
-        Ok(self.now().to_zoned(region.zone().clone()).date())
+        Ok(bb_core::time::day::date_of(self.now(), region.zone()))
     }
 
     /// The project a person names, when they see it, with what they hold there: one they do not
@@ -279,7 +181,7 @@ fn planned_change(
         .release_date
         .map_or(current.release_date, SetTo::into_option);
     let state = input.state.unwrap_or(current.state);
-    let reason = if current.state.needs_reason(state) {
+    let reason = if current.needs_reason(state) {
         Some(given_reason(
             Some(input.reason.as_deref().unwrap_or_default()),
             ErrorCode::ReleaseReasonNeeded,
@@ -290,9 +192,7 @@ fn planned_change(
     let released_on = if state == current.state {
         current.released_on
     } else {
-        current
-            .state
-            .released_on_after(state, current.released_on, today)
+        state.released_on(current.released_on, today)
     };
     let after = Release {
         name,

@@ -79,6 +79,11 @@ pub trait PolicyStore: ChangeStore + 'static {
         /// The keys of the starting roles that came after the others were made and are still
         /// to make on this server (the role *HR*, ADR-0025, amendment M6).
         fn starting_roles_due() -> Vec<bb_core::technical::TechnicalName> = starting_roles_due_in;
+        /// The keys of the permissions that came after the starting roles were made and are still
+        /// to give to their copies on this server (*Manage releases*, ADR-0025, amendment
+        /// 2026-11-24).
+        fn starting_permissions_due() -> Vec<bb_core::technical::TechnicalName>
+            = starting_permissions_due_in;
         /// Whether a role carries the mark of the starting role with this key.
         fn starting_role_there(key: bb_core::technical::TechnicalName) -> bool
             = starting_role_there_in;
@@ -143,6 +148,8 @@ pub trait PolicyStore: ChangeStore + 'static {
         fn mark_starting_roles_made(at: Timestamp) -> ();
         /// Notes that a starting role that was due is made.
         fn clear_starting_role_due(key: &bb_core::technical::TechnicalName) -> ();
+        /// Notes that a permission that was due is given.
+        fn clear_starting_permission_due(key: &bb_core::technical::TechnicalName) -> ();
         /// Forgets a person of the list of M1 administrators.
         fn delete_legacy_administrator(person: UserId) -> ();
         /// Adds a role with its permissions and its levels.

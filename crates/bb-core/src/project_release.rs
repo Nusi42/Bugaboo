@@ -31,21 +31,14 @@ words! {
 words_in_api!(ReleaseState, "The state of a release.");
 
 impl ReleaseState {
-    /// Whether a change from this state to `next` needs a reason: a release marked *Released*
-    /// that goes back to *Planned* (ADR-0049, decision 2). The history shows the reason.
+    /// The day kept as *Released on* once a release is in this state, given the day it kept and
+    /// the day of the change: every move into *Released* keeps a day it has (a release retired
+    /// after it was out and marked *Released* again was out on its first day) and else takes
+    /// today, *Planned* clears it, *Retired* keeps what there is.
     #[must_use]
-    pub fn needs_reason(self, next: Self) -> bool {
-        self == Self::Released && next == Self::Planned
-    }
-
-    /// The day kept as *Released on* after a change to `next` made on `today`, given the day kept
-    /// before: entering *Released* keeps today (a release that is released already keeps its
-    /// day), going back to *Planned* clears it, retiring keeps what there is.
-    #[must_use]
-    pub fn released_on_after(self, next: Self, kept: Option<Date>, today: Date) -> Option<Date> {
-        match next {
-            Self::Released if self == Self::Released => kept.or(Some(today)),
-            Self::Released => Some(today),
+    pub fn released_on(self, kept: Option<Date>, today: Date) -> Option<Date> {
+        match self {
+            Self::Released => kept.or(Some(today)),
             Self::Planned => None,
             Self::Retired => kept,
         }
@@ -104,6 +97,13 @@ pub struct Release {
 }
 
 impl Release {
+    /// Whether a change of the release to `next` needs a reason, which the history shows: it goes
+    /// back to *Planned* after it was out, from *Released* or from *Retired* (ADR-0049, decision 2).
+    #[must_use]
+    pub fn needs_reason(&self, next: ReleaseState) -> bool {
+        next == ReleaseState::Planned && self.state != next && self.released_on.is_some()
+    }
+
     /// Whether the release is offered where an issue is, given the projects from the top down to
     /// the issue's project: it was made in one of them. The one rule of where a release is
     /// offered (ADR-0049, decision 1), for forms, the API, many changes and the tools.
@@ -156,35 +156,54 @@ mod tests {
         text.parse().unwrap()
     }
 
+    fn a_release(state: ReleaseState, released_on: Option<Date>) -> Release {
+        let mut ids = SequentialIds::default();
+        let person = UserId::generate(&mut ids);
+        Release {
+            id: ReleaseId::generate(&mut ids).unwrap(),
+            project: ProjectId::generate(&mut ids).unwrap(),
+            name: "2.4".to_owned(),
+            release_date: None,
+            state,
+            released_on,
+            made_by: person,
+            made_at: Timestamp::UNIX_EPOCH,
+            changed_by: person,
+            changed_at: Timestamp::UNIX_EPOCH,
+            deleted_at: None,
+            version: 1,
+        }
+    }
+
     #[test]
     fn iss_08_a_release_moves_planned_released_retired_and_keeps_the_day_released() {
         let today = day("2026-11-24");
         let earlier = day("2026-11-02");
-        let planned = ReleaseState::Planned;
-        let released = ReleaseState::Released;
-        let retired = ReleaseState::Retired;
-        assert_eq!(
-            planned.released_on_after(released, None, today),
-            Some(today)
+        let (planned, released, retired) = (
+            ReleaseState::Planned,
+            ReleaseState::Released,
+            ReleaseState::Retired,
         );
-        assert_eq!(
-            released.released_on_after(released, Some(earlier), today),
-            Some(earlier)
-        );
-        assert_eq!(
-            released.released_on_after(retired, Some(earlier), today),
-            Some(earlier)
-        );
-        assert_eq!(planned.released_on_after(retired, None, today), None);
-        assert_eq!(
-            released.released_on_after(planned, Some(earlier), today),
-            None
-        );
-        assert!(released.needs_reason(planned));
-        assert!(!planned.needs_reason(released));
-        assert!(!retired.needs_reason(planned));
+        assert_eq!(released.released_on(None, today), Some(today));
+        // Every move into Released keeps the day it was first out: also from Retired.
+        assert_eq!(released.released_on(Some(earlier), today), Some(earlier));
+        assert_eq!(retired.released_on(Some(earlier), today), Some(earlier));
+        assert_eq!(retired.released_on(None, today), None);
+        assert_eq!(planned.released_on(Some(earlier), today), None);
         assert!(!retired.takes_new_choices());
         assert!(planned.takes_new_choices() && released.takes_new_choices());
+    }
+
+    #[test]
+    fn iss_08_back_to_planned_after_it_was_out_needs_a_reason_also_from_retired() {
+        let earlier = Some(day("2026-11-02"));
+        let planned = ReleaseState::Planned;
+        assert!(a_release(ReleaseState::Released, earlier).needs_reason(planned));
+        assert!(a_release(ReleaseState::Retired, earlier).needs_reason(planned));
+        // Retired before it was ever out, or staying planned: no reason.
+        assert!(!a_release(ReleaseState::Retired, None).needs_reason(planned));
+        assert!(!a_release(planned, None).needs_reason(planned));
+        assert!(!a_release(planned, None).needs_reason(ReleaseState::Released));
     }
 
     #[test]

@@ -260,6 +260,11 @@ impl<S: AuthStore> Ctx<'_, S> {
             .retain(|project| looked.projects.contains(project));
         let region = Region::of(&self.setting_layers_of(Some(actor.person.id)).await?);
         let blocking = self.blocking_kinds().await?;
+        let releases_known = if names_a_release(&checked, &looked) {
+            self.releases_known(&looked).await?
+        } else {
+            Vec::new()
+        };
         let request = SearchRequest {
             search: checked,
             fields: looked.fields.clone(),
@@ -273,6 +278,7 @@ impl<S: AuthStore> Ctx<'_, S> {
             first_day: region.first_day(),
             projects: looked.seen.links(&looked.projects),
             names,
+            releases_known,
             status_groups: status_groups(&looked),
             blocking_kinds: blocking,
             own_reach: looked.own_reach.clone(),
@@ -295,6 +301,54 @@ pub(crate) fn narrow_by(search: &mut bb_searchlang::Search, extra: Expr) {
         },
         None => extra,
     });
+}
+
+/// Whether a field of the search is a release field, in its filter or its order: only then does the
+/// request read the releases the person may know.
+fn names_a_release(checked: &bb_searchlang::CheckedSearch, looked: &Looked) -> bool {
+    fn in_filter(node: &Expr, looked: &Looked) -> bool {
+        match node {
+            Expr::Or { items, .. } | Expr::And { items, .. } => {
+                items.iter().any(|item| in_filter(item, looked))
+            }
+            Expr::Not { item, .. } => in_filter(item, looked),
+            Expr::Field { field, .. } => is_release(looked, &field.word),
+            _ => false,
+        }
+    }
+    let search = checked.search();
+    search
+        .filter
+        .as_ref()
+        .is_some_and(|filter| in_filter(filter, looked))
+        || search
+            .sort
+            .iter()
+            .any(|key| is_release(looked, &key.field.word))
+}
+
+/// Whether the word is the word of a release field.
+fn is_release(looked: &Looked, word: &str) -> bool {
+    matches!(
+        super::target::target_of(&looked.fields, word),
+        Some(super::FieldTarget::FoundInRelease | super::FieldTarget::PlannedForRelease)
+    )
+}
+
+impl<S: AuthStore> Ctx<'_, S> {
+    /// The IDs of the releases the person may know where the search looks: those of the projects
+    /// they see (and the AI may see), also the retired ones.
+    async fn releases_known(
+        &self,
+        looked: &Looked,
+    ) -> Result<Vec<bb_core::id::ReleaseId>, AppError> {
+        Ok(self
+            .releases_seen(&looked.seen)
+            .await?
+            .into_iter()
+            .map(|release| release.id)
+            .collect())
+    }
 }
 
 /// What a person is answered when a search did not run.
@@ -530,6 +584,10 @@ pub async fn search_groups<S: AuthStore + SearchStore>(
     // totals group people by how they are shown (ADR-0050, decision 7).
     if super::target::target_of(&prepared.looked.fields, &query.by).is_none() {
         return Err(AppError::Refused(ErrorCode::InvalidRequest));
+    }
+    // The groups by a release are those of the releases the person may know, and of none.
+    if is_release(&prepared.looked, &query.by) && prepared.request.releases_known.is_empty() {
+        prepared.request.releases_known = ctx.releases_known(&prepared.looked).await?;
     }
     let grouping = ctx
         .grouping_of(&actor, &mut prepared, &query.by, None)

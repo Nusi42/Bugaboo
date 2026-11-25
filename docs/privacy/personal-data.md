@@ -1754,6 +1754,16 @@ Defined in `crates/bb-core/src/time/entry.rs`.
 | `starter` | No            | –        | –           | The mark.               |
 | `field`   | No            | –        | –           | The own field it marks. |
 
+### StartingPermissionDue
+
+A permission that came after the starting roles were made, still to be given once on this server to the copies of the starting roles that hold it at the start (*Manage releases*, ADR-0025, amendment 2026-11-24): the next start gives it and takes the row away.
+
+Defined in `crates/bb-core/src/access.rs`.
+
+| Field        | Personal data | Category | Legal basis | What it holds              |
+| ------------ | ------------- | -------- | ----------- | -------------------------- |
+| `permission` | No            | –        | –           | The key of the permission. |
+
 ### StartingRoleDue
 
 A starting role that came after the starting roles were made, still to be made once on this server (the role *HR*, ADR-0025, amendment M6): the next start makes it and takes the row away.

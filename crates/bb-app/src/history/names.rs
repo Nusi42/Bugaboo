@@ -60,24 +60,15 @@ impl<S: AuthStore> Ctx<'_, S> {
         reading: &mut Reading<'_>,
         value: &Value,
     ) -> Result<Option<ChangeValue>, AppError> {
-        let items: Vec<&Value> = match value {
-            Value::Array(items) => items.iter().collect(),
-            Value::Object(_) => vec![value],
-            _ => Vec::new(),
-        };
         let shown = self.shown_for(reading).await?;
-        let names: Vec<String> = items
-            .iter()
-            .filter(|item| {
-                item.get("project")
-                    .and_then(Value::as_str)
-                    .and_then(|text| text.parse::<bb_core::id::ProjectId>().ok())
-                    .is_some_and(|project| shown.sees(project))
-            })
-            .filter_map(|item| item.get("name").and_then(Value::as_str))
-            .map(str::to_owned)
-            .collect();
-        Ok((names.is_empty() == items.is_empty()).then_some(ChangeValue::Names { names }))
+        let any_named = !crate::issues::releases_seen_in(value, |_| true).is_empty();
+        let names: Vec<String> =
+            crate::issues::releases_seen_in(value, |project| shown.sees(project))
+                .iter()
+                .filter_map(|item| item.get("name").and_then(Value::as_str))
+                .map(str::to_owned)
+                .collect();
+        Ok((names.is_empty() != any_named).then_some(ChangeValue::Names { names }))
     }
 
     /// The value of a change to the tags: the names of the tags the reader may know (a tag only

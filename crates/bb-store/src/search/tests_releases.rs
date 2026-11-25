@@ -63,28 +63,34 @@ fn release(
 
 /// Three releases of ACME: *2.4* on December 1, *2.5* on November 1, *3.0* with no date.
 /// Printer jams is planned for 2.4 and was found in 2.4 and 2.5, Login broken is planned for 2.5
-/// and found in 2.5, Docs typo is planned for 3.0; the others name none.
+/// and found in 2.5, Docs typo is planned for 3.0. Slow page names *Secret* in both fields, a
+/// release the person may not know (of a project they do not see: not among the releases the
+/// request knows); the others name none.
 async fn with_releases(storage: &AuthStorage, data: &mut Data) -> Result<Vec<Release>, Failure> {
     let made = vec![
         release(data, "2.4", Some("2026-12-01"), data.me)?,
         release(data, "2.5", Some("2026-11-01"), data.me)?,
         release(data, "3.0", None, data.me)?,
     ];
+    let secret = release(data, "Secret", Some("2026-10-01"), data.me)?;
     let mut planned = data.issues.clone();
     planned[0].planned_for_release = Some(made[0].id);
     planned[1].planned_for_release = Some(made[1].id);
     planned[2].planned_for_release = Some(made[2].id);
+    planned[3].planned_for_release = Some(secret.id);
     let found = vec![
         found_in_rows(data.issues[0].id, &[made[0].id, made[1].id]),
         found_in_rows(data.issues[1].id, &[made[1].id]),
+        found_in_rows(data.issues[3].id, &[secret.id]),
     ];
-    let releases = made.clone();
+    let mut releases = made.clone();
+    releases.push(secret);
     ChangeStore::record_change(storage, &event(&mut data.source, 7), move |tx| {
         Box::pin(async move {
             for each in &releases {
                 AuthStorage::insert_release(tx, each).await?;
             }
-            for issue in &planned[..3] {
+            for issue in &planned[..4] {
                 AuthStorage::update_issue(tx, issue, Version::new(issue.version)).await?;
             }
             for rows in &found {
@@ -107,6 +113,7 @@ fn asked(data: &Data, made: &[Release], text: &str) -> SearchRequest {
         .iter()
         .map(|each| (name_key(&each.name), vec![each.id]))
         .collect();
+    request.releases_known = made.iter().map(|each| each.id).collect();
     request
 }
 
@@ -180,6 +187,17 @@ async fn iss_08_search_filters_sorts_and_groups_by_both_release_fields() -> Test
         assert_eq!(count(GroupKey::Release(made[0].id)), Some(1));
         assert_eq!(count(GroupKey::Release(made[1].id)), Some(2));
         assert_eq!(count(GroupKey::Empty), Some(4));
+        // A release the person may not know is no value: Slow page has none for them, in the
+        // filter, the order and the groups, and no group is keyed by that release.
+        assert!(
+            some("planned for release is empty sort by title")
+                .await?
+                .contains(&"Slow page".to_owned())
+        );
+        assert!(groups.iter().all(|group| match group.key {
+            GroupKey::Release(id) => made.iter().any(|each| each.id == id),
+            _ => true,
+        }));
         let planned = storage
             .search_groups(&asked(&data, &made, ""), "planned for release")
             .await
@@ -200,7 +218,7 @@ async fn iss_08_the_store_keeps_a_release_and_tells_only_that_an_issue_names_it(
         let read = storage.release(made[0].id).await?.ok_or("no release")?;
         assert_eq!(read, made[0]);
         let of_acme = storage.releases_of_projects(vec![data.project]).await?;
-        assert_eq!(of_acme.len(), 3, "{of_acme:?}");
+        assert_eq!(of_acme.len(), 4, "{of_acme:?}");
         assert!(storage.release_named(made[0].id).await?);
         assert!(storage.release_named(made[2].id).await?);
         let me = data.me;

@@ -17,7 +17,7 @@ use serde::Serialize;
 use serde_json::json;
 
 use super::fields::{Given, clean_title, ensure_dates_in_order, ensure_may_change, member};
-use super::releases::{IssueReleases, ReleaseWrite};
+use super::releases::{IssueReleaseWrite, IssueReleases};
 use super::types::{ChangeIssue, IssueView};
 use crate::access::Actor;
 use crate::auth::{AppError, AuthStore, Ctx, by, entity, internal};
@@ -431,7 +431,7 @@ pub(crate) struct IssueWrite {
     /// The values of own fields that change.
     own_writes: Vec<(bb_core::id::FieldId, Vec<bb_core::own_fields_value::Cell>)>,
     /// What the change writes of the releases the issue names; boxed, as most changes name none.
-    releases: Box<ReleaseWrite>,
+    releases: Box<IssueReleaseWrite>,
     /// The people assigned by the change: they start following it.
     newly_assigned: Vec<UserId>,
     /// When it is made.

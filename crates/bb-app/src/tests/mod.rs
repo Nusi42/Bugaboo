@@ -135,6 +135,7 @@ mod prompt_injection_assistant;
 mod recurring_jobs;
 mod relation_map_sight;
 mod release_fields;
+mod release_sight;
 mod releases;
 mod removal;
 mod removal_plan;

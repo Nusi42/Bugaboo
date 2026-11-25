@@ -5,7 +5,8 @@
 //! release the issue names already stays, whatever happened to it since, so an issue that moved out
 //! of the tree keeps its releases. A release the person may not know is refused like one that does
 //! not exist (`release.not-offered`), and one the issue names that the person may not know is kept
-//! when they set the others, so a change never takes away what they cannot see.
+//! at its place when they set the others, and *Planned for release* keeps one they may not know when
+//! they set none, so a change never takes away or reorders what they cannot see.
 
 use bb_core::ErrorCode;
 use bb_core::id::{ProjectId, ReleaseId};
@@ -71,36 +72,50 @@ impl<S: AuthStore> Ctx<'_, S> {
         }
     }
 
-    /// The releases the issue was found in after the person sets `wanted`: each once in the order
-    /// given, then those the issue names that the person may not know (kept). `release.too-many`
-    /// past the limit, `release.not-offered` for a new one that is not offered.
+    /// The releases of `ids` the person may not know: of a project they do not see.
+    async fn hidden_of(
+        &self,
+        shown: &Shown,
+        ids: &[ReleaseId],
+    ) -> Result<Vec<ReleaseId>, AppError> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        Ok(self
+            .store()
+            .releases_by_ids(ids.to_vec())
+            .await
+            .map_err(|error| internal::<S>(&error))?
+            .into_iter()
+            .filter(|release| !shown.sees(release.project))
+            .map(|release| release.id)
+            .collect())
+    }
+
+    /// The releases the issue was found in after the person sets `wanted`: the ones they may know
+    /// in the order given, each once, with every one they may not know kept at its place, so an
+    /// order the person cannot see never changes. `release.too-many` when they name more than the
+    /// limit (the ones they may not know are not counted, so the refusal tells nothing of them),
+    /// `release.not-offered` for a new one that is not offered.
     pub(crate) async fn found_in_after(
         &self,
         shown: &Shown,
         choice: &ReleaseChoice<'_>,
         wanted: &[ReleaseId],
     ) -> Result<Vec<ReleaseId>, AppError> {
-        let mut after = once_each(wanted);
-        self.ensure_choosable(shown, choice, &after).await?;
-        if !choice.found_now.is_empty() {
-            let named = self
-                .store()
-                .releases_by_ids(choice.found_now.to_vec())
-                .await
-                .map_err(|error| internal::<S>(&error))?;
-            for kept in &named {
-                if !shown.sees(kept.project) && !after.contains(&kept.id) {
-                    after.push(kept.id);
-                }
-            }
-        }
-        if after.len() > FOUND_IN_RELEASES_MAX {
+        let hidden = self.hidden_of(shown, choice.found_now).await?;
+        let mut visible = once_each(wanted);
+        visible.retain(|release| !hidden.contains(release));
+        if visible.len() > FOUND_IN_RELEASES_MAX {
             return Err(ErrorCode::ReleasesTooMany.into());
         }
-        Ok(after)
+        self.ensure_choosable(shown, choice, &visible).await?;
+        Ok(kept_in_place(choice.found_now, &hidden, visible))
     }
 
-    /// The release the issue is planned for after the person sets `wanted` (none takes it away):
+    /// The release the issue is planned for after the person sets `wanted`: one they may know, or
+    /// none. A release the issue is planned for that they may not know stays when they set none,
+    /// as they see none either way; naming one they may know takes its place.
     /// `release.not-offered` for a new one that is not offered.
     pub(crate) async fn planned_for_after(
         &self,
@@ -110,9 +125,33 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Option<ReleaseId>, AppError> {
         if let Some(release) = wanted {
             self.ensure_choosable(shown, choice, &[release]).await?;
+            return Ok(Some(release));
         }
-        Ok(wanted)
+        let now: Vec<ReleaseId> = choice.planned_now.into_iter().collect();
+        Ok(self.hidden_of(shown, &now).await?.into_iter().next())
     }
+}
+
+/// The list after a change: the releases the person may not know at the places they had in `now`,
+/// the ones of `visible` in the other places in their order, the rest of `visible` after them.
+fn kept_in_place(
+    now: &[ReleaseId],
+    hidden: &[ReleaseId],
+    visible: Vec<ReleaseId>,
+) -> Vec<ReleaseId> {
+    let mut given = visible.into_iter();
+    let mut after: Vec<ReleaseId> = now
+        .iter()
+        .filter_map(|release| {
+            if hidden.contains(release) {
+                Some(*release)
+            } else {
+                given.next()
+            }
+        })
+        .collect();
+    after.extend(given);
+    after
 }
 
 /// Inside the change that writes an issue's releases, after the lock of the releases: every
@@ -154,5 +193,21 @@ mod tests {
             ReleaseId::generate(&mut ids).unwrap(),
         );
         assert_eq!(once_each(&[two, one, two]), [two, one]);
+    }
+
+    #[test]
+    fn iss_08_a_release_the_person_may_not_know_keeps_its_place() {
+        let mut ids = SequentialIds::default();
+        let [a, hidden, b, c] = std::array::from_fn(|_| ReleaseId::generate(&mut ids).unwrap());
+        // The hidden one stays second; the ones the person knows fill the other places in order.
+        assert_eq!(
+            kept_in_place(&[a, hidden, b], &[hidden], vec![b, a]),
+            [b, hidden, a]
+        );
+        assert_eq!(kept_in_place(&[a, hidden], &[hidden], vec![]), [hidden]);
+        assert_eq!(
+            kept_in_place(&[hidden], &[hidden], vec![a, c]),
+            [hidden, a, c]
+        );
     }
 }

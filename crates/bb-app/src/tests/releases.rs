@@ -531,3 +531,63 @@ async fn iss_08_a_release_an_issue_names_cannot_be_deleted_and_the_refusal_count
     set_releases(&world, other, Some(vec![unused.id]), None).await?;
     Ok(())
 }
+
+#[tokio::test]
+async fn iss_08_manage_releases_is_given_once_at_the_next_start_where_the_roles_were_made()
+-> Outcome {
+    use bb_core::technical::TechnicalName;
+    use bb_policy::Permission;
+
+    use crate::access::{CreateStartingRoles, create_starting_roles};
+
+    let world = World::new().await?;
+    let key = TechnicalName::new(Permission::ManageReleases.code()).map_err(text)?;
+    let starting = |record: &crate::access::RoleRecord, role: StartingRole| {
+        record.role.starting.as_ref().map(TechnicalName::as_str) == Some(role.code())
+    };
+    // A server of before: no copy holds the permission, and the migration made it due.
+    {
+        let mut shared = world.store.lock();
+        for record in &mut shared.state.roles {
+            record.permissions.remove(&Permission::ManageReleases);
+        }
+        shared.state.starting_permissions_due.push(key.clone());
+    }
+    let (events, log) = (world.store.event_count(), world.store.lock().log.len());
+    create_starting_roles(&world.ctx(), CreateStartingRoles)
+        .await
+        .map_err(text)?;
+    let holders: Vec<bool> = [
+        StartingRole::Administrator,
+        StartingRole::ProjectLead,
+        StartingRole::TeamMember,
+    ]
+    .iter()
+    .map(|role| {
+        world.store.read(|state| {
+            state.roles.iter().any(|record| {
+                starting(record, *role) && record.permissions.contains(&Permission::ManageReleases)
+            })
+        })
+    })
+    .collect();
+    assert_eq!(holders, [true, true, false]);
+    assert_eq!(
+        world.store.event_count() - events,
+        2,
+        "an event of each role"
+    );
+    assert_eq!(world.store.lock().log.len() - log, 2, "a line of each role");
+    assert!(
+        world
+            .store
+            .read(|state| state.starting_permissions_due.is_empty())
+    );
+    // Another start gives nothing, and a row that comes back finds the copies holding it.
+    world.store.lock().state.starting_permissions_due.push(key);
+    create_starting_roles(&world.ctx(), CreateStartingRoles)
+        .await
+        .map_err(text)?;
+    assert_eq!(world.store.event_count() - events, 2);
+    Ok(())
+}

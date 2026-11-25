@@ -245,7 +245,8 @@ impl<S: AuthStore> Ctx<'_, S> {
     ) -> Result<Vec<Part>, AppError> {
         ensure_agent(run)?;
         self.agent_issue_in_reach(run, address).await?;
-        Ok(preview_parts(run, planned.await?, AuthorKind::Agent))
+        let changes = self.changes_seen(run, planned.await?).await?;
+        Ok(preview_parts(run, changes, AuthorKind::Agent))
     }
 
     /// A call that changes the work of an agent, made: the plan is judged as the use case will judge
@@ -456,6 +457,7 @@ pub(super) fn preview_propose<'a, S: AuthStore>(
         let request = propose_request(&run)?;
         ctx.agent_issue_in_reach(&run, &request.issue).await?;
         let changes = ctx.preview_propose_change(&request).await?;
+        let changes = ctx.changes_seen(&run, changes).await?;
         Ok(preview_parts(&run, changes, AuthorKind::Agent))
     })
 }

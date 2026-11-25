@@ -34,7 +34,10 @@ use crate::db::{Reader, StoredId, Transaction, to_micros};
 use crate::error::StoreError;
 use crate::locks::LockClass;
 use crate::projects::{chain_of, insert_project, project_by_short_name, project_in};
-use crate::schema::{LegacyAdministratorRow, RoleRow, StartingRoleDueRow, StartingRolesMadeRow};
+use crate::schema::{
+    LegacyAdministratorRow, RoleRow, StartingPermissionDueRow, StartingRoleDueRow,
+    StartingRolesMadeRow,
+};
 
 /// The IDs as a list of values to bind to a query.
 pub(crate) fn in_list<T: StoredId>(ids: &[T]) -> Vec<Vec<u8>> {
@@ -113,6 +116,25 @@ impl PolicyStore for AuthStorage {
             .map(|row| {
                 TechnicalName::new(&row.get::<String>(StartingRoleDueRow::Key)?)
                     .map_err(|_| StoreError::Corrupt("the key of a starting role"))
+            })
+            .collect()
+    }
+
+    async fn starting_permissions_due_in(
+        transaction: &mut Transaction,
+    ) -> Result<Vec<TechnicalName>, StoreError> {
+        let mut select = Query::select();
+        select
+            .column(StartingPermissionDueRow::Permission)
+            .from(StartingPermissionDueRow::Table)
+            .order_by(StartingPermissionDueRow::Permission, Order::Asc);
+        transaction
+            .fetch_all(&select)
+            .await?
+            .iter()
+            .map(|row| {
+                TechnicalName::new(&row.get::<String>(StartingPermissionDueRow::Permission)?)
+                    .map_err(|_| StoreError::Corrupt("the key of a permission"))
             })
             .collect()
     }
@@ -287,6 +309,17 @@ impl PolicyStore for AuthStorage {
         delete
             .from_table(StartingRoleDueRow::Table)
             .and_where(Expr::col(StartingRoleDueRow::Key).eq(key.as_str()));
+        transaction.execute(&delete).await.map(|_| ())
+    }
+
+    async fn clear_starting_permission_due(
+        transaction: &mut Transaction,
+        key: &TechnicalName,
+    ) -> Result<(), StoreError> {
+        let mut delete = Query::delete();
+        delete
+            .from_table(StartingPermissionDueRow::Table)
+            .and_where(Expr::col(StartingPermissionDueRow::Permission).eq(key.as_str()));
         transaction.execute(&delete).await.map(|_| ())
     }
 

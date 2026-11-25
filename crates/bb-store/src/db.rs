@@ -58,6 +58,16 @@ pub(crate) const BIND_LIMIT: usize = 32_000;
 /// How many things one statement names when each is one bound value (people, items).
 pub(crate) const STATEMENT_ITEMS: usize = BIND_LIMIT;
 
+/// The IDs in order and once each, cut into chunks that one statement can bind
+/// ([`STATEMENT_ITEMS`]); asking about the chunks one after the other, each ordered by issue,
+/// gives the same order as one statement would.
+pub(crate) fn sorted_chunks<T: StoredId>(ids: &[T]) -> Vec<Vec<Vec<u8>>> {
+    let mut stored: Vec<Vec<u8>> = ids.iter().map(|id| id.stored()).collect();
+    stored.sort();
+    stored.dedup();
+    stored.chunks(STATEMENT_ITEMS).map(<[_]>::to_vec).collect()
+}
+
 /// How many rows one insert writes at most when each row binds `columns` values.
 pub(crate) const fn rows_per_insert(columns: usize) -> usize {
     BIND_LIMIT / columns
