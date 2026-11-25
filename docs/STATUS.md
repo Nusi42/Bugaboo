@@ -6,7 +6,7 @@ The lead updates this file after every step (builder started, report in, review 
 
 - **Milestone:** M10, board, calendar, relation map and dashboards ([roadmap](04-milestones.md#m10--board-calendar-relation-map-and-dashboards), plan in `docs/milestones/M10/`). The maintainer answered M10-Q1 to Q22 on 2026-11-24, all as recommended; the release state is called *Retired* (the glossary has no *Archived*). M9 is done and tagged `m9-done`; 0.6.0 is the first release (GitHub release `v0.6.0`, since 2026-11-24 with six files and one signature, ADR-0047 amendment).
 - **Done:** M0 to M9 (`m0-done` to `m9-done`; M9 tagged on 2026-11-24). Version 0.6.0 (ADR-0040: 157 of 225 features, the minor number rises to 6). The M9 review page is published (link outside the repository).
-- **Wave:** M10 wave 0 (WP-01, docs) is done (2026-11-24); wave 1 (WP-02 to WP-05) is building. M9 is complete (all of its packages merged).
+- **Wave:** M10 waves 0 and 1 (WP-01 to WP-05) are done (2026-11-25); wave 2 (WP-06 to WP-09) is next. M9 is complete (all of its packages merged).
 - **`main`:** fast-forwarded to the last green `WIN1`.
 
 ## Work packages (M10)
@@ -14,10 +14,10 @@ The lead updates this file after every step (builder started, report in, review 
 | WP | Name | State | Folder / branch | Notes |
 |----|------|-------|-----------------|-------|
 | WP-01 | Decision records, words and the answers | done (2026-11-24; one review round) | `win1` / `WIN1` | Wave 0; docs only; ADR-0049, ADR-0050 |
-| WP-02 | Releases on the server | building (2026-11-24) | `win2` / `WIN2` | Wave 1; Opus |
-| WP-03 | Totals on the server | building (2026-11-24) | `win3` / `WIN3` | Wave 1; Opus |
-| WP-04 | Board and calendar on the server | building (2026-11-24) | `win4` / `WIN4` | Wave 1; Opus |
-| WP-05 | The relation map on the server | building (2026-11-24) | `win5` / `WIN5` | Wave 1; Opus |
+| WP-02 | Releases on the server | merged (2026-11-25; two fix rounds, then one for the upgrade of saved issue pages) | `win2` / `WIN2` | Wave 1; Opus; migration 65 |
+| WP-03 | Totals on the server | merged (2026-11-25) | `win3` / `WIN3` | Wave 1; Opus |
+| WP-04 | Board and calendar on the server | merged (2026-11-25; one more commit after the review: one way to group a total, the board cursor) | `win4` / `WIN4` | Wave 1; Opus; the board by release waits for WP-07 (M10-F205) |
+| WP-05 | The relation map on the server | merged (2026-11-25) | `win5` / `WIN5` | Wave 1; Opus; the screen's points M10-F201 to F203 go to WP-12 |
 | WP-06 to WP-15 | Waves 2 to 4 | waiting | | See the plan |
 
 ## Work packages (M9)
@@ -99,7 +99,7 @@ Recorded with their target package in the follow-up tables of the milestone fold
 
 ## Next action
 
-M10 wave 1 is building: WP-02 to WP-05 in `win2` to `win5`, each based on the decided plan. The lead lands each package after a green `cargo xtask ci`, then starts wave 2 (WP-06 to WP-09; WP-09 lands after WP-06). Open points of M9 that wait for later packages: M9-F135, F136, F142, F143, F160, F161, F200 to F204, F209, F210.
+M10 wave 1 is merged. Next: start wave 2 (WP-06 to WP-09; WP-09 lands after WP-06), each builder on the last `WIN1`. The open points of M10 are in [`milestones/M10/follow-ups.md`](milestones/M10/follow-ups.md). Open points of M9 that wait for later packages: M9-F135, F136, F142, F143, F160, F161, F200 to F204, F209, F210.
 
 The repository is public on GitHub, with GitHub Actions switched off and private reporting of security problems switched on (`SECURITY.md`). Before the push, every folder moved onto the one rewrite of the history; the old history is kept outside the repository. The push of a whole history reads every version of every file, so one old made-up example that a later rule reads as a profile path is listed as an old version in `tools/checks/private-exemptions.toml`.
 

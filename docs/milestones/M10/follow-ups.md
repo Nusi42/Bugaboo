@@ -13,3 +13,4 @@ Points found while building M10 that were accepted for later. Each names where i
 | M10-F202 | The lists of the relation map are named in `tools/checks/lean-exemptions.toml` under the reason of M1-F44 (a hard cap and `truncated`); give the map a reason of its own | Wording only; the rule holds | WP-12 |
 | M10-F203 | *Kinds shown* of the relation map chosen on screen are not kept with a saved search | Keeping them is part of the screen of the map | WP-12 |
 | M10-F204 | The speed scenarios of M10 (the board of the biggest project, the totals and the relation map) are measured by the lead on a quiet computer | No measurement while other folders build | WP-15 (milestone exit) |
+| M10-F205 | A board refuses columns and rows by *Found in release* or *Planned for release* today; once it groups by them, a test must show both fields as columns and as rows | The board by release comes with the release screens | WP-07 |
