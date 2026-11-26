@@ -9,9 +9,9 @@ import {
 } from "../features/shell/index.ts";
 import { paths } from "../shared/paths.ts";
 import { rememberReturn } from "../shared/return-to.ts";
-import { loadMySettings } from "../shared/my-settings.ts";
 import { currentPerson, type Person } from "../shared/session.ts";
 import { OnlyWith } from "./OnlyWith.tsx";
+import { joinTheShell } from "./joined.ts";
 import { loadsScreen } from "./preload.ts";
 import { Root } from "./Root.tsx";
 import { loadStatus, startPath } from "./start.ts";
@@ -51,113 +51,6 @@ export const guestRoute = createRoute({
   component: GuestLayout,
 });
 
-/** Whether the projects have joined the sidebar and quick search. */
-let projectsJoined = false;
-
-/**
- * The projects join the sidebar and quick search once somebody is signed in, so the pages before
- * sign-in do not carry them. Only the first time waits: a page that waited on every step would
- * show the next page a moment later, and the focus would have moved to the old one by then.
- */
-async function joinProjects(): Promise<void> {
-  if (projectsJoined) {
-    return;
-  }
-  const [projects, pins] = await Promise.all([
-    import("../features/projects/index.ts"),
-    import("../features/pins/index.ts"),
-  ]);
-  // Marked only now: when the import fails, the next page tries again. Two pages that waited
-  // together join once.
-  if (!projectsJoined) {
-    projectsJoined = true;
-    // *Pinned* stands above the project tree, so it joins first.
-    pins.registerPins();
-    projects.registerProjects();
-  }
-}
-
-let timeJoined = false;
-
-/** The timer and the work day join the shell once somebody is signed in, like the projects do. */
-async function joinTime(): Promise<void> {
-  if (timeJoined) {
-    return;
-  }
-  const time = await import("../features/time/index.ts");
-  if (!timeJoined) {
-    timeJoined = true;
-    time.registerTime();
-  }
-}
-
-let assistantJoined = false;
-
-/** The assistant joins the shell once somebody is signed in; its panel loads when it is first opened. */
-async function joinAssistant(): Promise<void> {
-  if (assistantJoined) {
-    return;
-  }
-  const assistant = await import("../features/assistant-entry/index.ts");
-  if (!assistantJoined) {
-    assistantJoined = true;
-    assistant.registerAssistant();
-  }
-}
-
-/** Whether the issues have joined the shell (the new-issue dialog and its key). */
-let issuesJoined = false;
-
-/** The issues join the shell once somebody is signed in, like the projects do. */
-async function joinIssues(): Promise<void> {
-  if (issuesJoined) {
-    return;
-  }
-  const [
-    issues,
-    fields,
-    relations,
-    history,
-    follow,
-    labels,
-    manyChanges,
-    agentWork,
-    agents,
-    files,
-    search,
-    dashboards,
-  ] = await Promise.all([
-    import("../features/issues/index.ts"),
-    import("../features/fields/index.ts"),
-    import("../features/relations/index.ts"),
-    import("../features/history/index.ts"),
-    import("../features/follow/index.ts"),
-    import("../features/labels/index.ts"),
-    import("../features/many-changes/index.ts"),
-    import("../features/agent-work/index.ts"),
-    import("../features/agents/index.ts"),
-    import("../features/files/index.ts"),
-    import("../features/search/index.ts"),
-    import("../features/dashboards/index.ts"),
-  ]);
-  if (!issuesJoined) {
-    issuesJoined = true;
-    issues.registerIssues();
-    // The blocks of the issue page, all put into the slots of `features/issues/slots.ts`.
-    fields.registerFields();
-    relations.registerRelationBlocks();
-    history.registerHistoryBlock();
-    follow.registerFollowersBlock();
-    labels.registerLabelBlocks();
-    manyChanges.registerManyChanges();
-    agentWork.registerAgentWork();
-    agents.registerAgents();
-    files.registerFileBlocks();
-    search.registerSearch();
-    dashboards.registerDashboards();
-  }
-}
-
 /**
  * Pages of somebody who is signed in. Everybody else goes to sign in, or to the setup; somebody
  * who has to set up a second step first goes to that screen and can open nothing else.
@@ -181,11 +74,7 @@ export const appRoute = createRoute({
       throw redirect({ to: paths.setUpSecondStep });
     }
     // The person's own settings come before the first page, so the look is theirs from the start.
-    await loadMySettings();
-    await joinProjects();
-    await joinIssues();
-    await joinTime();
-    await joinAssistant();
+    await joinTheShell();
     return { person };
   },
   component: AppLayout,

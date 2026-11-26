@@ -5,6 +5,7 @@ import { defineConfig } from "vite";
 
 import { catalogWords } from "./catalog-words.ts";
 import { firstLook } from "./first-look.ts";
+import { joinedGroup } from "./joined-chunk.ts";
 import { readPorts, repoRoot } from "./ports.ts";
 import { serverPathPattern } from "./server-paths.ts";
 
@@ -32,5 +33,11 @@ export default defineConfig({
   preview: { host, port: ports.webPreview, strictPort: true },
   css: { modules: { localsConvention: "camelCaseOnly" } },
   // The manifest lists what the first page loads; PERF-BUNDLE measures it.
-  build: { outDir: "dist", emptyOutDir: true, manifest: true },
+  build: {
+    outDir: "dist",
+    emptyOutDir: true,
+    manifest: true,
+    // The features every signed-in first page waits for are one file (`joined-chunk.ts`).
+    rolldownOptions: { output: { codeSplitting: { groups: [joinedGroup()] } } },
+  },
 });
