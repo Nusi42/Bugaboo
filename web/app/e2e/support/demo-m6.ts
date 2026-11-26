@@ -7,7 +7,7 @@ import { ana, good } from "./demo-m6-common.ts";
 import { openIssueWithDetails, signIn } from "./flows.ts";
 import { giveTheIssueItsDefaults, startedTheDayEarlier } from "./demo-m6-setup.ts";
 import { type Instance } from "./server.ts";
-import { chipOf } from "./time-scene.ts";
+import { chipOf, openTimerPage } from "./time-scene.ts";
 import { startedMinutesAgoWithinTheDay } from "./time.ts";
 
 // The steps of the exit demo of M6 (`m6-exit-demo.spec.ts`) on the sample organization: Ana's work
@@ -44,7 +44,7 @@ export async function anaStartsHerDayAndStopsATimer(page: Page, server: Instance
   const key = String(found.items[0]?.readable_id);
   await giveTheIssueItsDefaults(server, key);
   await signIn(page, ana());
-  await page.goto("/");
+  await openTimerPage(page);
   await tap(page, "time.work-day.start");
   await expect(
     page.getByRole("button", { name: t("time.work-day.end"), exact: true }),
@@ -80,7 +80,7 @@ export async function anaStartsHerDayAndStopsATimer(page: Page, server: Instance
 /** Step 2: Ana takes a break and ends her day. */
 export async function anaTakesABreakAndEndsTheDay(page: Page): Promise<void> {
   await signIn(page, ana());
-  await page.goto("/");
+  await openTimerPage(page);
   await tap(page, "time.work-day.break-start");
   await expect(
     page.getByRole("button", { name: t("time.work-day.break-end"), exact: true }),

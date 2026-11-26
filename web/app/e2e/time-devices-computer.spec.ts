@@ -7,7 +7,7 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { createIssue, prepareWeb } from "./support/issues.ts";
-import { chipOf } from "./support/time-scene.ts";
+import { chipOf, openTimerPage } from "./support/time-scene.ts";
 import { clearTimer, timerRunsOn } from "./support/time.ts";
 
 // One timer for every device (TIME-01): it is started on a phone and shows on a computer. The test
@@ -37,6 +37,8 @@ test("time_01 the timer started on the phone shows on the computer", async ({
     await browser.newContext({ ...options, viewport: viewports.phone, hasTouch: true })
   ).newPage();
   await signIn(computer, ada);
+  // *Home* of a computer holds the box *My timer* beside the timer of the sidebar: the computer shows a page with one.
+  await openTimerPage(computer);
   await signIn(phone, ada);
   await expect(chipOf(computer, issue.key)).toHaveCount(0);
   await openIssueWithDetails(phone, issue.key);

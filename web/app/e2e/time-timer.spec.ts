@@ -5,7 +5,7 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { createIssue, prepareWeb } from "./support/issues.ts";
-import { chipOf } from "./support/time-scene.ts";
+import { chipOf, openTimerPage } from "./support/time-scene.ts";
 import { entriesBookedOn, giveDefaults, startedMinutesAgo, startTimerOn } from "./support/time.ts";
 
 // The timer on screen (TIME-01): one timer per person that every device shows, *Stop timer* with the
@@ -23,7 +23,7 @@ test("time_01 stop timer shows activity and cost center from the issue", async (
   await startTimerOn(admin, issue);
   await startedMinutesAgo(admin, 42);
   await signIn(page, ada);
-  await page.goto("/");
+  await openTimerPage(page);
   await chipOf(page, issue.key).click();
   await page.getByRole("button", { name: t("time.timer.stop"), exact: true }).click();
   const window = page.getByRole("dialog", { name: t("time.stop.title", { issue: issue.key }) });

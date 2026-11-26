@@ -5,7 +5,7 @@ import { ada } from "./support/accounts.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { createIssue, prepareWeb } from "./support/issues.ts";
-import { chipOf } from "./support/time-scene.ts";
+import { chipOf, openTimerPage } from "./support/time-scene.ts";
 import {
   clearTimer,
   entriesBookedOn,
@@ -27,7 +27,7 @@ test("time_01 switch issue from the timer keeps one running timer", async ({ pag
   await startTimerOn(admin, first);
   await startedMinutesAgo(admin, 30);
   await signIn(page, ada);
-  await page.goto("/");
+  await openTimerPage(page);
   await chipOf(page, first.key).click();
   await page.getByRole("button", { name: t("time.timer.switch"), exact: true }).click();
   const window = page.getByRole("dialog", { name: t("time.switch.title") });
