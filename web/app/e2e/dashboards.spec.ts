@@ -3,7 +3,7 @@ import { t } from "@bugaboo/messages";
 import { expect } from "@playwright/test";
 
 import { paths } from "../src/shared/paths.ts";
-import { dashboardAddress } from "../src/shared/dashboard-address.ts";
+import { dashboardAddress } from "../src/shared/places.ts";
 import { ada } from "./support/accounts.ts";
 import { boxOnScreen, createDashboard, dashboardOf, readyMadeTitle } from "./support/dashboards.ts";
 import { test } from "./support/fixtures.ts";

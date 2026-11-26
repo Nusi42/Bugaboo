@@ -1,10 +1,12 @@
 import { t } from "@bugaboo/messages";
-import { useNavigate } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { lazyRouteComponent, useNavigate } from "@tanstack/react-router";
+import { Suspense, useState, type ReactNode } from "react";
 
-import { dashboardAddress } from "../../shared/dashboard-address.ts";
+import { dashboardAddress } from "../../shared/places.ts";
 import { useCreateDashboard, type Dashboard } from "./dashboards.ts";
-import { NameDialog } from "./NameDialog.tsx";
+
+/** The window that asks for the name, loaded when it is first opened: the sidebar joins the first page without it. */
+const NameDialog = lazyRouteComponent(() => import("./NameDialog.tsx"), "NameDialog");
 
 /** A new dashboard has no name until the person types one. */
 const noName = "";
@@ -22,24 +24,26 @@ export function useCreateDashboardWindow(onMade?: () => void): {
   const [isOpen, setOpen] = useState(false);
   const create = useCreateDashboard();
   const navigate = useNavigate();
-  const window = (
-    <NameDialog
-      isOpen={isOpen}
-      onOpenChange={setOpen}
-      title={t("dashboards.create")}
-      text={t("dashboards.create-text")}
-      confirm={t("dashboards.create-confirm")}
-      start={noName}
-      onConfirm={(name) => {
-        create.mutate(name, {
-          onSuccess: (made: Dashboard) => {
-            onMade?.();
-            void navigate({ href: dashboardAddress(made.id) });
-          },
-        });
-      }}
-    />
-  );
+  const window = isOpen ? (
+    <Suspense fallback={null}>
+      <NameDialog
+        isOpen={isOpen}
+        onOpenChange={setOpen}
+        title={t("dashboards.create")}
+        text={t("dashboards.create-text")}
+        confirm={t("dashboards.create-confirm")}
+        start={noName}
+        onConfirm={(name) => {
+          create.mutate(name, {
+            onSuccess: (made: Dashboard) => {
+              onMade?.();
+              void navigate({ href: dashboardAddress(made.id) });
+            },
+          });
+        }}
+      />
+    </Suspense>
+  ) : null;
   return {
     open: () => {
       setOpen(true);

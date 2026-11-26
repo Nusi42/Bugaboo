@@ -3,13 +3,21 @@ import { iconName } from "@bugaboo/ui/icons";
 
 import { organizationPlaces } from "./organization-places.ts";
 import { ownPlaces } from "./own-places.ts";
-import { partsOfAddress, paths, type Path } from "./paths.ts";
+import { filled, partsOfAddress, paths, routeParam, type Path } from "./paths.ts";
 import { isAtOrUnder } from "./paths-within.ts";
 import type { Permissions } from "./permissions.ts";
 import type { Area, Place } from "./place.ts";
 import { projectPlaces } from "./project-places.ts";
 
 export type { Place } from "./place.ts";
+
+/**
+ * The address of a dashboard, `/d/<ID>`: its own address, which is shared (ADR-0050, decision 1). It stands with the
+ * places, which every page loads, so the sidebar and the pins take it without a file of its own.
+ */
+export function dashboardAddress(id: string): string {
+  return filled(paths.dashboard, routeParam.dashboard, id);
+}
 
 /** Every screen of the signed-in app, in the order the menus list them. */
 export const places: readonly Place[] = [

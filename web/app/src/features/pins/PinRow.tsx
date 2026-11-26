@@ -2,8 +2,7 @@ import { iconName, part, partOf, type IconName } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 
 import { projectAddress, savedSearchAddress } from "../../shared/paths.ts";
-import { dashboardAddress } from "../../shared/dashboard-address.ts";
-import { howCurrent, placeCurrent } from "../../shared/places.ts";
+import { dashboardAddress, howCurrent, placeCurrent } from "../../shared/places.ts";
 import { NavLink, type SidebarSectionView } from "../shell/index.ts";
 import { PinMenu } from "./PinMenu.tsx";
 import { pinKind, type Pin } from "./pins.ts";

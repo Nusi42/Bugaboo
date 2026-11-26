@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { undoStore } from "../../shared/optimistic-undo.ts";
 import { paths } from "../../shared/paths.ts";
-import { dashboardAddress } from "../../shared/dashboard-address.ts";
+import { dashboardAddress } from "../../shared/places.ts";
 import {
   restoreDashboard,
   useCopyDashboard,

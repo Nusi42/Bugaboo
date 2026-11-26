@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { iconName } from "@bugaboo/ui";
 
 import { itemsOf } from "../../shared/paged.ts";
-import { dashboardAddress } from "../../shared/dashboard-address.ts";
+import { dashboardAddress } from "../../shared/places.ts";
 import {
   madeListShown,
   MineAndShared,

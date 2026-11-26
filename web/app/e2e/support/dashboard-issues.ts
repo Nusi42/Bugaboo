@@ -1,8 +1,8 @@
 import { dataOf, type Schema } from "@bugaboo/api-client";
 
-import { dashboardAddress } from "../../src/shared/dashboard-address.ts";
+import { dashboardAddress } from "../../src/shared/places.ts";
 
-export { dashboardAddress } from "../../src/shared/dashboard-address.ts";
+export { dashboardAddress } from "../../src/shared/places.ts";
 import { ada, signInThroughApi, type ApiSession, type Instance } from "./accounts.ts";
 import { createDashboard, type AskedBox } from "./dashboards.ts";
 import { firstIssueType, taskIssueType } from "./issues.ts";
