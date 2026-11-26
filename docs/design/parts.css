@@ -12967,6 +12967,9 @@ textarea,
 }
 
 [data-part="calendar-weekday"] {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
   padding: var(--space-2);
   border-inline-end: var(--border-width) solid var(--border);
   border-bottom: var(--border-width) solid var(--border);

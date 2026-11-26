@@ -1088,7 +1088,8 @@ mixin "edge-shadow" {
     pointer-events none
     box-shadow "0 0 $space-3 $border-width $cue"
     animation-fill-mode both
-    animation-timing-function linear    // Forced colors drop every shadow: a line of the text color stands in its place, at the end where the shadow
+    animation-timing-function linear
+    // Forced colors drop every shadow: a line of the text color stands in its place, at the end where the shadow
     // would be. It comes with the shadow, so every end that has one has its line (M10-F208).
     forced {
         outline "$border-width solid CanvasText"
@@ -19911,7 +19912,11 @@ part "calendar-grid" {
     border-radius "$r-ctl"
 }
 
+// The weekdays stay at the top of the box while the weeks of a month scroll under them, as the scale of the timeline does.
 part "calendar-weekday" {
+    position sticky
+    top 0
+    z-index "$z-sticky"
     padding "$space-2"
     border-inline-end "$border-width solid $border"
     border-bottom "$border-width solid $border"
