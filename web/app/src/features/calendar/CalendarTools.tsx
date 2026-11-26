@@ -23,7 +23,7 @@ export interface CalendarToolsProps {
   readonly onView: (view: ListView) => void;
   readonly fields: SearchFieldsAnswer;
   readonly model: Pick<CalendarModel, "window" | "own" | "onStep" | "onToday">;
-  /** A phone lists the days to come: it has no month or week and no steps; *Show as* is in the sheet of the filters. */
+  /** A phone lists the days from a day on: it steps them, but has no month or week; *Show as* is in the sheet of the filters. */
   readonly phone: boolean;
 }
 
@@ -43,8 +43,11 @@ function periodTitle(window: CalendarToolsProps["model"]["window"], span: SpanWo
       });
 }
 
-/** *‹ October 2026 ›*, *Today* and *Month · Week* (UX §4.16). */
-function Period({ view, onView, model }: Omit<CalendarToolsProps, "fields" | "phone">) {
+/**
+ * *‹ October 2026 ›*, *Today* and *Month · Week* (UX §4.16). A phone has the steps and *Today* over its list,
+ * which is named by its first and last day as a week is, and no *Month · Week*.
+ */
+function Period({ view, onView, model, phone }: Omit<CalendarToolsProps, "fields">) {
   const { span } = view.calendar;
   return (
     <>
@@ -56,7 +59,7 @@ function Period({ view, onView, model }: Omit<CalendarToolsProps, "fields" | "ph
         }}
       />
       <h2 {...partOf(part.calendarTitle)} aria-live={live.polite}>
-        {periodTitle(model.window, span)}
+        {periodTitle(model.window, phone ? spanOf.week : span)}
       </h2>
       <IconButton
         icon={iconName.next}
@@ -68,14 +71,16 @@ function Period({ view, onView, model }: Omit<CalendarToolsProps, "fields" | "ph
       <Button look={buttonLook.quiet} onPress={model.onToday}>
         {t("calendar.today")}
       </Button>
-      <ChoiceGroup
-        legend={t("calendar.span")}
-        choices={spanWords.map((word) => ({ value: word, label: t(spanNames[word]) }))}
-        value={span}
-        onChange={(next) => {
-          onView({ ...view, calendar: { ...view.calendar, span: next } });
-        }}
-      />
+      {phone ? null : (
+        <ChoiceGroup
+          legend={t("calendar.span")}
+          choices={spanWords.map((word) => ({ value: word, label: t(spanNames[word]) }))}
+          value={span}
+          onChange={(next) => {
+            onView({ ...view, calendar: { ...view.calendar, span: next } });
+          }}
+        />
+      )}
     </>
   );
 }
@@ -83,7 +88,7 @@ function Period({ view, onView, model }: Omit<CalendarToolsProps, "fields" | "ph
 /**
  * The tools over the calendar (UX §4.16): *Show as*, *Dates from*, the steps through time with *Today*
  * and *Month · Week*. Every choice is part of the view, kept in the address and saved with the search.
- * A phone has no month or week and no steps, and its *Show as* is in the sheet of the filters.
+ * A phone has the steps but no month or week, and its *Show as* is in the sheet of the filters.
  */
 export function CalendarTools(props: CalendarToolsProps) {
   const { view, onView, fields, model, phone } = props;
@@ -93,7 +98,7 @@ export function CalendarTools(props: CalendarToolsProps) {
         <ViewChoices view={view} fields={fields} onView={onView} look={selectLook.inline} />
       )}
       <DatesFromChoice view={view} onView={onView} names={fields.names} own={model.own} />
-      {phone ? null : <Period view={view} onView={onView} model={model} />}
+      <Period view={view} onView={onView} model={model} phone={phone} />
     </div>
   );
 }
