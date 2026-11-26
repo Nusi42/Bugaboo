@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook, part, partOf, Window, ItemActions } from "@bugaboo/ui";
 import { useId, useState } from "react";
 
+import { itemActionsWords } from "../../shared/item-actions-words.ts";
 import { windowLabels } from "../../shared/window-labels.ts";
 import type { BoardCard, BoardColumn } from "./board-data.ts";
 import { columnId, columnName, keyOf, mayGo, moveOf, reasonOf } from "./card-moves.ts";
@@ -61,7 +62,7 @@ export function MoveTo({ card, column }: { readonly card: BoardCard; readonly co
   return (
     <>
       <ItemActions
-        name={key}
+        {...itemActionsWords(key)}
         actions={[
           {
             id: "move-to",

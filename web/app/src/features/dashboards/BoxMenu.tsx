@@ -1,6 +1,8 @@
 import { t } from "@bugaboo/messages";
 import { ItemActions, type MenuAction } from "@bugaboo/ui";
 
+import { itemActionsWords } from "../../shared/item-actions-words.ts";
+
 /** What the menu of a box can do; a phone moves a box up and down, a computer by *Move …* and *Resize …*. */
 export interface BoxActions {
   readonly onMove?: (() => void) | undefined;
@@ -43,5 +45,5 @@ export function BoxMenu({
   readonly title: string;
   readonly actions: BoxActions;
 }) {
-  return <ItemActions name={title} actions={actionsOf(actions)} />;
+  return <ItemActions {...itemActionsWords(title)} actions={actionsOf(actions)} />;
 }

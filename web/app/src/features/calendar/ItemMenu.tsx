@@ -1,4 +1,5 @@
 import { ItemActions } from "@bugaboo/ui";
+import { itemActionsWords } from "../../shared/item-actions-words.ts";
 import type { CalendarEntry } from "./calendar-data.ts";
 import { useCalendar } from "./calendar-context.ts";
 
@@ -19,7 +20,7 @@ export function ItemMenu({
   const { model, onChangeDay } = useCalendar();
   return (
     <ItemActions
-      name={issueKey}
+      {...itemActionsWords(issueKey)}
       actions={[
         {
           id: changeDay,
