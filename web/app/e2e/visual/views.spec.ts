@@ -17,19 +17,24 @@ import { createDashboardOfPictures, dashboard, sizeOf } from "./scene.ts";
 // caret hidden; a picture that differs from its reference by more than the allowed share fails,
 // with the difference in `.work/visual/`. `cargo xtask visual update` takes the changed ones again.
 
-/** The kinds of picture: every kind of view (the compiler asks for a new one) and a dashboard. */
-type Kind = ShownAs | "dashboard";
-
-/** Where each picture opens. */
-const opens: Readonly<Record<Kind, Opening>> = {
+/** Where each view opens: every kind of view, which the compiler asks for when the API names a new one. */
+const views: Readonly<Record<ShownAs, Opening>> = {
   list: { address: () => viewOf("list") },
   board: { address: () => viewOf("board") },
   timeline: { address: () => viewOf("timeline") },
   calendar: { address: () => `${viewOf("calendar")}&span=month`, settle: monthAtItsIssues },
   map: { address: () => viewOf("map") },
-  dashboard: { address: () => dashboard },
 };
 
+/** Where each picture opens: the views, and the kinds beyond them that the settings name (the dashboard). */
+const opens: Readonly<Record<string, Opening>> = {
+  ...views,
+  ...Object.fromEntries(visual.kinds.map((kind) => [kind, { address: () => dashboard }])),
+};
+
+// Skipped for the whole file before any fixture runs: elsewhere the server of the file would ask for the fixed
+// sample, which only a run on Windows makes.
+test.skip(process.platform !== "win32", onlyOnWindows);
 test.use({ sample: "fixed", preparation: { run: createDashboardOfPictures } });
 
 /** Opens a picture's page at the fixed moment and waits until everything on it is read and drawn. */
@@ -50,7 +55,6 @@ for (const device of visual.devices) {
     for (const [kind, opening] of Object.entries(opens)) {
       for (const theme of themes) {
         test(`ux_visual_${kind}_${theme.id}_${device}`, async ({ page }) => {
-          test.skip(process.platform !== "win32", onlyOnWindows);
           await open(page, opening);
           await putOnTheme(page, theme);
           await drawn(page);
