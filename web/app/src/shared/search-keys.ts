@@ -30,6 +30,16 @@ export const searchKeys = {
     "timeline",
     ...about,
   ],
+  /**
+   * A relation map: of an issue, or of a search. It starts with the keys of the lists, so a change
+   * of an issue reads it again.
+   */
+  map: (...about: readonly (string | number | boolean | null)[]) => [
+    "issues",
+    "list",
+    "map",
+    ...about,
+  ],
   /** How many issues a search finds. */
   foundCount: (text: string, within?: string) => ["issues", "list", "count", within ?? null, text],
   /** How many issues a search finds in each group of a field. */

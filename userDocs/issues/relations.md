@@ -16,6 +16,7 @@ A **relation** links two issues in words that you choose from a list, for exampl
 - You can add a relation from either issue, and take it away from either issue. An issue is related to another by one kind once.
 - An issue you may not see is not shown, and nothing says that it exists.
 - Adding and taking away a relation is in the history of both issues.
+- **Show relation map** under *Related issues* draws everything connected to the issue, step by step: see [The relation map](relation-map.md).
 
 ## Kinds of relation
 

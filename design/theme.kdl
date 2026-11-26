@@ -243,6 +243,16 @@ tokens {
     // room before the end of the chart, the label stands before the bar (UX §4.7, the person on the bar).
     size "size-timeline-person" "calc(176px * $text-scale)"
     size "size-timeline-label" "calc(264px * $text-scale)"
+    // The relation map (UX §4.15): a card, the room between two columns where the lines and their words run, the room
+    // between two cards of a column, the line of the names of the columns, and the side beside the picture.
+    size "size-map-card-width" "calc(208px * $text-scale)"
+    size "size-map-card-height" "calc(64px * $text-scale)"
+    size "size-map-gap" "calc(160px * $text-scale)"
+    size "size-map-row-gap" "$space-4"
+    size "size-map-head" "calc(32px * $text-scale)"
+    size "size-map-side" "280px"
+    // The most the box of the picture is high: a taller picture scrolls inside it, the page stays put.
+    size "size-map-box" "calc(560px * $text-scale)"
     // Where the screen puts things on the timeline, set by the code (UX §4.7, M3-F163): the width of a day at the
     // zoom, how many days and rows the chart has, and for one thing on it its row, its first day counted from the
     // first day of the chart, its length in days and how much of a bar is done. Only numbers come from code; the
@@ -262,6 +272,15 @@ tokens {
     size "hold-left" "0" run-time="true"
     size "hold-width" "0" run-time="true"
     size "hold-height" "0" run-time="true"
+    // Where the relation map puts things (UX §4.15, ADR-0009 amendment 2026-11-24, M10-Q10): the place of a card, of the
+    // word of a line or of the name of a column, in pixels from the corner of the picture; the size of the picture; and
+    // its zoom (1 is the size of the text). The picture is laid out once for an answer, so these numbers change only with
+    // the answer, the size of the text or the zoom. Only numbers come from code; the rules turn them into places.
+    size "map-x" "0" run-time="true"
+    size "map-y" "0" run-time="true"
+    size "map-width" "0" run-time="true"
+    size "map-height" "0" run-time="true"
+    size "map-zoom" "1" run-time="true"
     // One pixel and one percent: the numbers above become lengths in the rules (`calc(n * $size-px)`), where they
     // are used, so a number set on a bar is never read at the root.
     size "size-px" "1px"
@@ -781,6 +800,7 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
     selector "search-help.title" role="section"
     selector "search-mail.legend" role="section"
     selector "timeline-side.heading" role="title"
+    selector "map-chain.heading" role="title"
     selector "priority[variant=critical]" role="priority"
     selector "priority[variant=high]" role="priority"
     selector "[data-part=markdown] h1" role="own"
@@ -2756,23 +2776,23 @@ part "quick-search.item[focused]" {
     use "ring-inside"
 }
 
-part "list-row[state=group-not-started]" "issue-row[state=group-not-started]" "quick-search.item[state=group-not-started]" "timeline-bar[state=group-not-started]" "timeline-phone.item[state=group-not-started]" {
+part "list-row[state=group-not-started]" "issue-row[state=group-not-started]" "quick-search.item[state=group-not-started]" "timeline-bar[state=group-not-started]" "timeline-phone.item[state=group-not-started]" "map-card[state=group-not-started]" {
     background "$tint-ns"
 }
 
-part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "quick-search.item[state=group-in-progress]" "timeline-bar[state=group-in-progress]" "timeline-phone.item[state=group-in-progress]" {
+part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "quick-search.item[state=group-in-progress]" "timeline-bar[state=group-in-progress]" "timeline-phone.item[state=group-in-progress]" "map-card[state=group-in-progress]" {
     background "$tint-ip"
 }
 
-part "list-row[state=group-done]" "issue-row[state=group-done]" "quick-search.item[state=group-done]" "timeline-bar[state=group-done]" "timeline-phone.item[state=group-done]" {
+part "list-row[state=group-done]" "issue-row[state=group-done]" "quick-search.item[state=group-done]" "timeline-bar[state=group-done]" "timeline-phone.item[state=group-done]" "map-card[state=group-done]" {
     background "$tint-done"
 }
 
-part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "quick-search.item[state=priority-critical]" "timeline-bar[state=priority-critical]" {
+part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "quick-search.item[state=priority-critical]" "timeline-bar[state=priority-critical]" "map-card[state=priority-critical]" {
     border-inline-start "$size-edge solid $danger"
 }
 
-part "list-row[state=priority-high]" "issue-row[state=priority-high]" "quick-search.item[state=priority-high]" "timeline-bar[state=priority-high]" {
+part "list-row[state=priority-high]" "issue-row[state=priority-high]" "quick-search.item[state=priority-high]" "timeline-bar[state=priority-high]" "map-card[state=priority-high]" {
     border-inline-start "$size-edge solid $edge-high"
 }
 
@@ -2781,14 +2801,14 @@ part "list-row[state=priority-high]" "issue-row[state=priority-high]" "quick-sea
 // says `Canvas` for it. There the edge is told by its pattern (R5, M5 exit A15): Critical a double bar, High a single bar, every other row
 // and the head of the list none (the color of the canvas, so the width stays); a bar of the timeline has a thin edge
 // like its other sides.
-part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "quick-search.item[state=priority-critical]" "timeline-bar[state=priority-critical]" {
+part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "quick-search.item[state=priority-critical]" "timeline-bar[state=priority-critical]" "map-card[state=priority-critical]" {
     forced {
         border-inline-start-style double
         border-inline-start-color CanvasText
     }
 }
 
-part "list-row[state=priority-high]" "issue-row[state=priority-high]" "quick-search.item[state=priority-high]" "timeline-bar[state=priority-high]" {
+part "list-row[state=priority-high]" "issue-row[state=priority-high]" "quick-search.item[state=priority-high]" "timeline-bar[state=priority-high]" "map-card[state=priority-high]" {
     forced {
         border-inline-start-color CanvasText
     }
@@ -4469,6 +4489,389 @@ part "timeline-canvas[state=over]" {
     background "$accent-soft"
 }
 
+// ───────────── Relation map (ISS-16, UX §4.15) ─────────────
+//
+// The picture is laid out once for an answer (ADR-0009, amendment 2026-11-24): the start on the left and a column for each
+// step away. Cards, words and the names of the columns stand on the places the code gives as numbers (`map-x`, `map-y`);
+// pointing at a card and choosing one change colors only, never a place or a size, so nothing moves under the cursor
+// (UX §6.4). Each kind of line has its own color and its own pattern, and its words beside it (R5).
+
+part "map" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+part "map-tools" {
+    display flex
+    flex-wrap wrap
+    align-items flex-end
+    gap "$space-2" "$space-4"
+}
+
+// *Kinds shown* is a group of choices (`choice-group`) whose choices are chips: each kind of relation with the line it
+// is drawn with.
+part "map-kind" {
+    display inline-flex
+    align-items center
+    gap "$space-2"
+    min-height "$size-control"
+    padding-inline "$space-3"
+    border "$border-width solid $border-control"
+    border-radius "$r-pill"
+    background "$bg-raised"
+    color "$fg-muted"
+    font-family inherit
+    font-size "$fs-sm"
+    cursor pointer
+}
+
+part "map-kind[selected]" {
+    border-color "$accent"
+    background "$bg-selected"
+    color "$fg"
+}
+
+part "map-kind[focus-visible]" {
+    use "ring"
+}
+
+part "map-kind[selected]" {
+    forced {
+        border-color Highlight
+        outline "$border-width solid Highlight"
+    }
+}
+
+part "map-zoom" {
+    display inline-flex
+    align-items center
+    gap "$space-1"
+}
+
+part "map-note" {
+    margin 0
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+// The picture and the side beside it; the side keeps its room whether a chain is shown or not, so choosing a card moves
+// nothing in the picture.
+part "map-body" {
+    display grid
+    grid-template-columns "minmax(0, 1fr) $size-map-side"
+    align-items start
+    gap "$space-4"
+    media "(max-width: calc($bp-computer - 1px))" {
+        grid-template-columns "minmax(0, 1fr)"
+    }
+}
+
+part "map-scroll" {
+    position relative
+    min-height "$size-list-scroll-least"
+    max-height "$size-map-box"
+    overflow auto
+    border "$border-width solid $border"
+    border-radius "$r-card"
+    background "$bg-canvas"
+    overscroll-behavior contain
+    cursor grab
+}
+
+part "map-scroll[state=dragging]" {
+    cursor grabbing
+    user-select none
+}
+
+// What the scroll box holds: the picture at its zoom, with the room of a box around it.
+part "map-canvas" {
+    position relative
+    width "calc($map-width * $map-zoom * $size-px + $space-5 * 2)"
+    height "calc($map-height * $map-zoom * $size-px + $space-5 * 2)"
+}
+
+part "map-stage" {
+    position absolute
+    margin 0
+    top "$space-5"
+    inset-inline-start "$space-5"
+    width "calc($map-width * $size-px)"
+    height "calc($map-height * $size-px)"
+    transform "scale($map-zoom)"
+    transform-origin "0 0"
+}
+
+part "map-lines" {
+    position absolute
+    inset 0
+    width "100%"
+    height "100%"
+    overflow visible
+    pointer-events none
+}
+
+part "map-line" {
+    fill none
+    stroke "$fg-subtle"
+    stroke-width "calc($border-width * 2)"
+}
+
+part "map-line.head" {
+    fill "$fg-subtle"
+    stroke none
+}
+
+// A kind without direction (*related to*): grey, and no arrow.
+part "map-line[variant=alike]" {
+    stroke "$fg-subtle"
+}
+
+part "map-line[variant=dependency]" {
+    stroke "$warning"
+}
+
+part "map-line[variant=dependency] map-line.head" {
+    fill "$warning"
+}
+
+part "map-line[variant=part-of]" {
+    stroke "$accent"
+}
+
+part "map-line[variant=part-of] map-line.head" {
+    fill "$accent"
+}
+
+part "map-line[variant=other-1]" {
+    stroke-dasharray "$space-2 $space-1"
+}
+
+part "map-line[variant=other-2]" {
+    stroke "$danger"
+}
+
+part "map-line[variant=other-2] map-line.head" {
+    fill "$danger"
+}
+
+part "map-line[state=faded]" {
+    stroke "$border"
+}
+
+part "map-line[state=faded] map-line.head" {
+    fill "$border"
+}
+
+part "map-line[state=on-chain]" {
+    stroke-width "calc($border-width * 4)"
+}
+
+// Forced colors draw every line in the color of text: the kinds are told by their patterns and their words (R5).
+part "map-line" {
+    forced {
+        stroke CanvasText
+    }
+}
+
+part "map-line.head" {
+    forced {
+        fill CanvasText
+    }
+}
+
+part "map-line[variant=part-of]" {
+    forced {
+        stroke-dasharray "$space-3 $space-1"
+    }
+}
+
+part "map-line[variant=other-2]" {
+    forced {
+        stroke-dasharray "$space-1 $space-1"
+    }
+}
+
+part "map-line[state=on-chain]" {
+    forced {
+        stroke Highlight
+    }
+}
+
+part "map-line[state=on-chain] map-line.head" {
+    forced {
+        fill Highlight
+    }
+}
+
+// The word of a line stands on its middle, on the color of the picture with room around it, so no text touches a line
+// (R3).
+part "map-label" {
+    position absolute
+    top "calc($map-y * $size-px)"
+    inset-inline-start "calc($map-x * $size-px)"
+    transform "translate(-50%, -50%)"
+    padding "$space-1" "$space-2"
+    border-radius "$r-ctl"
+    background "$bg-canvas"
+    color "$fg-muted"
+    font-size "$fs-xs"
+    line-height "$lh-tight"
+    white-space nowrap
+    pointer-events none
+}
+
+part "map-label[state=on-chain]" {
+    color "$fg"
+}
+
+part "map-head" {
+    position absolute
+    top "calc($map-y * $size-px)"
+    inset-inline-start "calc($map-x * $size-px)"
+    margin 0
+    color "$fg-muted"
+    font-size "$fs-sm"
+    font-weight "$weight-regular"
+}
+
+// A card: the row state of an issue (R4, R9), its status icon, ID, type and title.
+part "map-card" {
+    position absolute
+    top "calc($map-y * $size-px)"
+    inset-inline-start "calc($map-x * $size-px)"
+    box-sizing border-box
+    display grid
+    grid-template-columns "auto auto minmax(0, 1fr)"
+    grid-template-rows "auto auto"
+    align-content center
+    align-items center
+    gap "$space-1" "$space-2"
+    width "$size-map-card-width"
+    height "$size-map-card-height"
+    margin 0
+    padding "$space-2" "$space-3"
+    border "$border-width solid $border-control"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+    color "$fg"
+    font-family inherit
+    font-size "$fs-sm"
+    text-align start
+    cursor pointer
+}
+
+part "map-card:focus-visible" {
+    use "ring-keyboard"
+}
+
+part "map-card.title" {
+    grid-column "1 / -1"
+    overflow hidden
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+// The start: an accent edge and a small tab with its word.
+part "map-card[state=start]" {
+    border-color "$accent"
+}
+
+part "map-card.tab" {
+    position absolute
+    bottom "100%"
+    inset-inline-start "$space-3"
+    padding "0 $space-2"
+    border-radius "$r-ctl $r-ctl 0 0"
+    background "$accent"
+    color "$on-accent"
+    font-size "$fs-xs"
+    line-height "$lh-tight"
+}
+
+part "map-card[state=faded]" {
+    border-color "$border"
+    background "$bg-canvas"
+    color "$fg-muted"
+}
+
+part "map-card[state=on-chain]" {
+    border-color "$accent"
+}
+
+part "map-card[state=chosen]" {
+    outline "calc($border-width * 2) solid $accent"
+}
+
+part "map-card[state=on-chain]" "map-card[state=chosen]" {
+    forced {
+        border-color Highlight
+        outline "$border-width solid Highlight"
+    }
+}
+
+part "map-card[state=faded]" {
+    forced {
+        border-color GrayText
+        color GrayText
+    }
+}
+
+part "map-side" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+part "map-chain" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    padding "$space-3"
+    border "$border-width solid $border"
+    border-radius "$r-card"
+    background "$bg-raised"
+}
+
+part "map-chain.heading" {
+    margin 0
+    color "$fg"
+    font-family "$font-display"
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+}
+
+part "map-chain.steps" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    margin 0
+    padding-inline-start "$space-4"
+}
+
+part "map-chain.actions" {
+    display flex
+    flex-wrap wrap
+    gap "$space-2"
+}
+
+// The list form: the chains as sentences, grouped by steps away.
+part "map-list" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+part "map-list.heading" {
+    margin 0
+    color "$fg-muted"
+    font-size "$fs-sm"
+    font-weight "$weight-regular"
+}
+
 // ───────────── Name and value (Details, UX §4.4) ─────────────
 
 // The rows of the Details share two columns: the names, as wide as the longest name (never wider than
@@ -4667,6 +5070,59 @@ part "legend.swatch[variant=critical]" {
 
 part "legend.swatch[variant=high]" {
     background "$edge-high"
+}
+
+// The lines of the relation map: a short line in the color and the pattern of its kind (UX §4.15).
+part "legend.swatch[variant=line-dependency]" "legend.swatch[variant=line-part-of]" "legend.swatch[variant=line-alike]" "legend.swatch[variant=line-other-1]" "legend.swatch[variant=line-other-2]" {
+    width "$space-5"
+    height 0
+    border 0
+    border-top "calc($border-width * 2) solid $fg-subtle"
+    border-radius 0
+    background none
+}
+
+part "legend.swatch[variant=line-dependency]" {
+    border-top-color "$warning"
+}
+
+part "legend.swatch[variant=line-part-of]" {
+    border-top-color "$accent"
+}
+
+part "legend.swatch[variant=line-other-1]" {
+    border-top-style dashed
+}
+
+part "legend.swatch[variant=line-other-2]" {
+    border-top-color "$danger"
+}
+
+part "legend.swatch[variant=line-dependency]" "legend.swatch[variant=line-part-of]" "legend.swatch[variant=line-alike]" "legend.swatch[variant=line-other-1]" "legend.swatch[variant=line-other-2]" {
+    forced {
+        border-top-color CanvasText
+    }
+}
+
+part "legend.swatch[variant=line-part-of]" {
+    forced {
+        border-top-style double
+    }
+}
+
+part "legend.swatch[variant=line-other-2]" {
+    forced {
+        border-top-style dotted
+    }
+}
+
+// A chip that is off is told by more than its color: its line is drawn only while it is on.
+part "map-kind legend.swatch" {
+    visibility hidden
+}
+
+part "map-kind[selected] legend.swatch" {
+    visibility visible
 }
 
 // Forced colors drop the fill of a bar, so both are drawn in the text color there.
@@ -7256,7 +7712,13 @@ part "sheet-page" {
     display contents
 }
 
-part "app-layout.inner:has(sheet)" "app-layout.inner:has(sheet-page)" {
+// The relation map of an issue is a wide page too, from its first frame (`map-page`), so the picture has the room the
+// window leaves and the column does not widen when the map is read (UX §6.4).
+part "map-page" {
+    display contents
+}
+
+part "app-layout.inner:has(sheet)" "app-layout.inner:has(sheet-page)" "app-layout.inner:has(map-page)" {
     use "page-column-wide"
 }
 

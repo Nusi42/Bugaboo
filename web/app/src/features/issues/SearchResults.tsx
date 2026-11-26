@@ -1,3 +1,4 @@
+import { drawsOwnLegend } from "../../shared/list-view.ts";
 import type { ResultsInput } from "../../shared/use-list-view.ts";
 import { IssueResults } from "./IssueResults.tsx";
 import { useOpenIssuesIn } from "./open-in.ts";
@@ -12,8 +13,8 @@ import { useSelection } from "./use-selection.ts";
 export function SearchResults(input: ResultsInput) {
   return (
     <>
-      {/* The timeline shows the Legend below its own tools: one Legend on the page. */}
-      {input.view.kind === "timeline" ? null : <SearchToolbar />}
+      {/* The timeline and the map show the Legend below their own tools: one Legend on the page. */}
+      {drawsOwnLegend(input.view.kind) ? null : <SearchToolbar />}
       <IssueResults
         {...input}
         within={undefined}

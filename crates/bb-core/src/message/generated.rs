@@ -8612,11 +8612,79 @@ pub const RELATION_KINDS_RETIRED: MessageKey = MessageKey::new("relation-kinds.r
 /// The message `relation-kinds.search`.
 pub const RELATION_KINDS_SEARCH: MessageKey = MessageKey::new("relation-kinds.search");
 
+/// The message `relation-map.chain-hint`.
+pub const RELATION_MAP_CHAIN_HINT: MessageKey = MessageKey::new("relation-map.chain-hint");
+
+/// The message `relation-map.drawn-as`.
+pub const RELATION_MAP_DRAWN_AS: MessageKey = MessageKey::new("relation-map.drawn-as");
+
+/// The message `relation-map.everything`.
+pub const RELATION_MAP_EVERYTHING: MessageKey = MessageKey::new("relation-map.everything");
+
+/// The message `relation-map.first-column`.
+pub const RELATION_MAP_FIRST_COLUMN: MessageKey = MessageKey::new("relation-map.first-column");
+
+/// The message `relation-map.fit`.
+pub const RELATION_MAP_FIT: MessageKey = MessageKey::new("relation-map.fit");
+
 /// The message `relation-map.has-sub-issue`.
 pub const RELATION_MAP_HAS_SUB_ISSUE: MessageKey = MessageKey::new("relation-map.has-sub-issue");
 
+/// The message `relation-map.kind-part-of`.
+pub const RELATION_MAP_KIND_PART_OF: MessageKey = MessageKey::new("relation-map.kind-part-of");
+
+/// The message `relation-map.kinds-shown`.
+pub const RELATION_MAP_KINDS_SHOWN: MessageKey = MessageKey::new("relation-map.kinds-shown");
+
+/// The message `relation-map.legend`.
+pub const RELATION_MAP_LEGEND: MessageKey = MessageKey::new("relation-map.legend");
+
+/// The message `relation-map.legend-part-of`.
+pub const RELATION_MAP_LEGEND_PART_OF: MessageKey = MessageKey::new("relation-map.legend-part-of");
+
+/// The message `relation-map.list`.
+pub const RELATION_MAP_LIST: MessageKey = MessageKey::new("relation-map.list");
+
+/// The message `relation-map.list-label`.
+pub const RELATION_MAP_LIST_LABEL: MessageKey = MessageKey::new("relation-map.list-label");
+
+/// The message `relation-map.nothing-found`.
+pub const RELATION_MAP_NOTHING_FOUND: MessageKey = MessageKey::new("relation-map.nothing-found");
+
+/// The message `relation-map.only-visible`.
+pub const RELATION_MAP_ONLY_VISIBLE: MessageKey = MessageKey::new("relation-map.only-visible");
+
+/// The message `relation-map.open-issue`.
+pub const RELATION_MAP_OPEN_ISSUE: MessageKey = MessageKey::new("relation-map.open-issue");
+
 /// The message `relation-map.part-of`.
 pub const RELATION_MAP_PART_OF: MessageKey = MessageKey::new("relation-map.part-of");
+
+/// The message `relation-map.picture`.
+pub const RELATION_MAP_PICTURE: MessageKey = MessageKey::new("relation-map.picture");
+
+/// The message `relation-map.show`.
+pub const RELATION_MAP_SHOW: MessageKey = MessageKey::new("relation-map.show");
+
+/// The message `relation-map.show-as-list`.
+pub const RELATION_MAP_SHOW_AS_LIST: MessageKey = MessageKey::new("relation-map.show-as-list");
+
+/// The message `relation-map.show-as-picture`.
+pub const RELATION_MAP_SHOW_AS_PICTURE: MessageKey =
+    MessageKey::new("relation-map.show-as-picture");
+
+/// The message `relation-map.start`.
+pub const RELATION_MAP_START: MessageKey = MessageKey::new("relation-map.start");
+
+/// The message `relation-map.start-from-here`.
+pub const RELATION_MAP_START_FROM_HERE: MessageKey =
+    MessageKey::new("relation-map.start-from-here");
+
+/// The message `relation-map.steps-away`.
+pub const RELATION_MAP_STEPS_AWAY: MessageKey = MessageKey::new("relation-map.steps-away");
+
+/// The message `relation-map.zoom`.
+pub const RELATION_MAP_ZOOM: MessageKey = MessageKey::new("relation-map.zoom");
 
 /// The message `release-state.planned`.
 pub const RELEASE_STATE_PLANNED: MessageKey = MessageKey::new("release-state.planned");
@@ -12174,6 +12242,9 @@ pub const TIMELINE_SHOW_AS: MessageKey = MessageKey::new("timeline.show-as");
 
 /// The message `timeline.show-as-list`.
 pub const TIMELINE_SHOW_AS_LIST: MessageKey = MessageKey::new("timeline.show-as-list");
+
+/// The message `timeline.show-as-map`.
+pub const TIMELINE_SHOW_AS_MAP: MessageKey = MessageKey::new("timeline.show-as-map");
 
 /// The message `timeline.show-as-timeline`.
 pub const TIMELINE_SHOW_AS_TIMELINE: MessageKey = MessageKey::new("timeline.show-as-timeline");
@@ -20843,6 +20914,231 @@ pub fn relation_kinds_reads(values: RelationKindsReads<'_>) -> Message {
             ("backward", Value::Text(values.backward.to_string())),
             ("forward", Value::Text(values.forward.to_string())),
         ],
+    )
+}
+
+/// The message `relation-map.back`.
+#[must_use]
+pub fn relation_map_back(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.back"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `relation-map.chain`.
+#[must_use]
+pub fn relation_map_chain(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.chain"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `relation-map.chain-first`.
+#[must_use]
+pub fn relation_map_chain_first(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.chain-first"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `relation-map.chain-start`.
+#[must_use]
+pub fn relation_map_chain_start(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.chain-start"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `relation-map.column`.
+#[must_use]
+pub fn relation_map_column(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.column"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The values of the message `relation-map.lead-first`, by name.
+#[derive(Clone, Copy)]
+pub struct RelationMapLeadFirst<'a> {
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+    /// The value of `{word}`.
+    pub word: &'a dyn std::fmt::Display,
+}
+
+/// The message `relation-map.lead-first`.
+#[must_use]
+pub fn relation_map_lead_first(values: RelationMapLeadFirst<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.lead-first"),
+        vec![
+            ("key", Value::Text(values.key.to_string())),
+            ("word", Value::Text(values.word.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `relation-map.lead-next`, by name.
+#[derive(Clone, Copy)]
+pub struct RelationMapLeadNext<'a> {
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+    /// The value of `{lead}`.
+    pub lead: &'a dyn std::fmt::Display,
+    /// The value of `{word}`.
+    pub word: &'a dyn std::fmt::Display,
+}
+
+/// The message `relation-map.lead-next`.
+#[must_use]
+pub fn relation_map_lead_next(values: RelationMapLeadNext<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.lead-next"),
+        vec![
+            ("key", Value::Text(values.key.to_string())),
+            ("lead", Value::Text(values.lead.to_string())),
+            ("word", Value::Text(values.word.to_string())),
+        ],
+    )
+}
+
+/// The message `relation-map.legend-alike`.
+#[must_use]
+pub fn relation_map_legend_alike(word: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.legend-alike"),
+        vec![("word", Value::Text(word.to_string()))],
+    )
+}
+
+/// The values of the message `relation-map.legend-arrow`, by name.
+#[derive(Clone, Copy)]
+pub struct RelationMapLegendArrow<'a> {
+    /// The value of `{other}`.
+    pub other: &'a dyn std::fmt::Display,
+    /// The value of `{word}`.
+    pub word: &'a dyn std::fmt::Display,
+}
+
+/// The message `relation-map.legend-arrow`.
+#[must_use]
+pub fn relation_map_legend_arrow(values: RelationMapLegendArrow<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.legend-arrow"),
+        vec![
+            ("other", Value::Text(values.other.to_string())),
+            ("word", Value::Text(values.word.to_string())),
+        ],
+    )
+}
+
+/// The message `relation-map.loop`.
+#[must_use]
+pub fn relation_map_loop(sentence: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.loop"),
+        vec![("sentence", Value::Text(sentence.to_string()))],
+    )
+}
+
+/// The message `relation-map.nothing`.
+#[must_use]
+pub fn relation_map_nothing(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.nothing"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The values of the message `relation-map.picture-label`, by name.
+#[derive(Clone, Copy)]
+pub struct RelationMapPictureLabel<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+}
+
+/// The message `relation-map.picture-label`.
+#[must_use]
+pub fn relation_map_picture_label(values: RelationMapPictureLabel<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.picture-label"),
+        vec![
+            ("count", Value::Number(values.count)),
+            ("key", Value::Text(values.key.to_string())),
+        ],
+    )
+}
+
+/// The message `relation-map.search-picture-label`.
+#[must_use]
+pub fn relation_map_search_picture_label(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.search-picture-label"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The values of the message `relation-map.sentence`, by name.
+#[derive(Clone, Copy)]
+pub struct RelationMapSentence<'a> {
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+    /// The value of `{lead}`.
+    pub lead: &'a dyn std::fmt::Display,
+}
+
+/// The message `relation-map.sentence`.
+#[must_use]
+pub fn relation_map_sentence(values: RelationMapSentence<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.sentence"),
+        vec![
+            ("key", Value::Text(values.key.to_string())),
+            ("lead", Value::Text(values.lead.to_string())),
+        ],
+    )
+}
+
+/// The message `relation-map.title`.
+#[must_use]
+pub fn relation_map_title(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.title"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `relation-map.too-many`.
+#[must_use]
+pub fn relation_map_too_many(most: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.too-many"),
+        vec![("most", Value::Text(most.to_string()))],
+    )
+}
+
+/// The message `relation-map.too-many-found`.
+#[must_use]
+pub fn relation_map_too_many_found(most: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.too-many-found"),
+        vec![("most", Value::Text(most.to_string()))],
+    )
+}
+
+/// The message `relation-map.zoom-level`.
+#[must_use]
+pub fn relation_map_zoom_level(percent: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.zoom-level"),
+        vec![("percent", Value::Text(percent.to_string()))],
     )
 }
 

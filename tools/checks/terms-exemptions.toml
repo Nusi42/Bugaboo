@@ -250,8 +250,10 @@ at = [
   "api:schema Zoom",
   "messages/en.json#timeline.zoom",
   "userDocs/planning/timeline.md",
+  "messages/en.json#relation-map.zoom",
+  "userDocs/issues/relation-map.md",
 ]
-reason = "The glossary's own term Zoom (of the timeline): how many days a column of the timeline holds, from a day to a quarter (UX §4.7). Not the size of text, which is Larger text."
+reason = "The glossary's own term Zoom: of the timeline, how many days a column of the timeline holds, from a day to a quarter (UX §4.7); of the relation map, how large its picture is drawn, as a percentage, with Fit (UX §4.15). Not the size of text, which is Larger text."
 
 # The messages of the row and the window of the time factor: only the phrase of the glossary term.
 [[allow]]

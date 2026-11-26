@@ -52,6 +52,15 @@ const zooms: Readonly<Record<ZoomWord, true>> = {
   quarter: true,
 };
 
+/**
+ * Whether a view draws its own Legend below its own tools (the timeline, the relation map), so the
+ * row above the results leaves it out: one Legend on the page.
+ */
+export function drawsOwnLegend(kind: string | undefined): boolean {
+  const own: readonly (string | undefined)[] = ["timeline", "map"] satisfies readonly ShownAs[];
+  return own.includes(kind);
+}
+
 function isViewKind(word: string | undefined): word is ShownAs {
   for (const [kind, shown] of Object.entries(viewKinds)) {
     if (shown && kind === word) {

@@ -1,9 +1,10 @@
 import { t } from "@bugaboo/messages";
 import type { MenuAction } from "@bugaboo/ui";
+import { useNavigate } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
-import { issueAddress } from "../../shared/paths.ts";
+import { issueAddress, issueMapAddress } from "../../shared/paths.ts";
 import { moreEntries } from "./more-entries.ts";
 import type { IssueView } from "./slots.ts";
 import { deleteIssue, type DeleteHandlers } from "./use-delete-issue.ts";
@@ -13,11 +14,11 @@ export function linkTo(key: string): string {
   return `${globalThis.location.origin}${issueAddress(key)}`;
 }
 
-/** What *More* offers: the link, and, for somebody who may, the trash. */
+/** What *More* offers: the link, the relation map, and, for somebody who may, the trash. */
 export function moreActions(
   issue: IssueView,
   mayDelete: boolean,
-  handlers: DeleteHandlers,
+  handlers: DeleteHandlers & { readonly onMap: (key: string) => void },
 ): MenuAction[] {
   const key = issue.readable_id ?? "";
   const copy = {
@@ -27,6 +28,13 @@ export function moreActions(
       copyLink(key);
     },
   };
+  const map = {
+    id: "map",
+    label: t("relation-map.show"),
+    onAction: () => {
+      handlers.onMap(key);
+    },
+  };
   const remove = {
     id: "delete",
     label: t("issues.delete"),
@@ -34,7 +42,7 @@ export function moreActions(
       deleteIssue(issue, handlers);
     },
   };
-  return mayDelete ? [copy, remove] : [copy];
+  return mayDelete ? [copy, map, remove] : [copy, map];
 }
 
 /** The same action, which first forgets the reason of the last refusal. */
@@ -64,7 +72,11 @@ export function useMoreActions(
 } {
   const [refusal, setRefusal] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
+  const navigate = useNavigate();
   const offered = moreActions(issue, mayDelete, {
+    onMap: (key) => {
+      void navigate({ href: issueMapAddress(key) });
+    },
     onDeleted: onClose,
     onRefused: (error) => {
       setRefusal(messageOf(error));

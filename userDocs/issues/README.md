@@ -7,6 +7,7 @@ An **issue** is anything that is being tracked: a bug, a task, an idea. Every is
 - [Issue IDs](issue-ids.md): `WEB-K7Q2X` or `WEB-142`, and what happens when a project changes from one to the other
 - [Issue types](issue-types.md): Bug, Task, Feature and Goal, and how an administrator changes them
 - [Sub-issues and relations](relations.md): parts of an issue, *blocks* and *duplicate of*, and the kinds of relation
+- [The relation map](relation-map.md): everything connected to an issue or to the results of a search, step by step, as a picture or a list
 - [Changing many issues at once](change-many.md): tick issues, read what would change, apply, and undo
 - [Searching for issues](search.md): Simple and Advanced search, looking for words, lengths of time, saved searches and sharing, the list and Quick search
 - [Limits of a search](search-limits.md): how many filters, words and steps a search may have

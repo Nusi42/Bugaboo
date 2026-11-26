@@ -108,7 +108,8 @@ describe("ux_4_2 a row says what it is", () => {
         cells={{}}
       />,
     );
-    expect(phone).toContain('data-variant="phone"');
+    // A row of this list has no box to tick, so its card takes the lines without that column.
+    expect(phone).toContain('data-variant="phone plain"');
     expect(phone).toContain('data-state="group-done"');
   });
 

@@ -255,6 +255,7 @@ export const messages = {
   "timeline.show-as": "Show as",
   "timeline.show-as-list": "List",
   "timeline.show-as-timeline": "Timeline",
+  "timeline.show-as-map": "Map",
 } as const;
 
 register(messages);

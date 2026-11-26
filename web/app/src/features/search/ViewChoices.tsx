@@ -49,6 +49,7 @@ function groupChoicesOf(
 const shownAsChoices = [
   { value: "list", label: "timeline.show-as-list" },
   { value: "timeline", label: "timeline.show-as-timeline" },
+  { value: "map", label: "timeline.show-as-map" },
 ] as const satisfies readonly { readonly value: ShownAs; readonly label: string }[];
 
 /**
@@ -80,15 +81,18 @@ export function ViewChoices({
           onView({ ...view, kind, groupBy: starts ? timelineStartGroup : view.groupBy });
         }}
       />
-      <SelectField
-        label={t("issues.group-by")}
-        look={look}
-        choices={[{ value: noGrouping, label: t("issues.group-by-none") }, ...groups]}
-        value={grouped ? (view.groupBy ?? noGrouping) : noGrouping}
-        onChange={(value) => {
-          onView({ ...view, groupBy: value === noGrouping ? null : value });
-        }}
-      />
+      {/* The map stands in columns by steps away: it has no groups. */}
+      {view.kind === "map" ? null : (
+        <SelectField
+          label={t("issues.group-by")}
+          look={look}
+          choices={[{ value: noGrouping, label: t("issues.group-by-none") }, ...groups]}
+          value={grouped ? (view.groupBy ?? noGrouping) : noGrouping}
+          onChange={(value) => {
+            onView({ ...view, groupBy: value === noGrouping ? null : value });
+          }}
+        />
+      )}
       {end}
     </>
   );

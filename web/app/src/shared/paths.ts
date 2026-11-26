@@ -79,6 +79,7 @@ export const paths = {
   projectCheckAccess: "/p/$project/settings/check-access",
   projectIssues: "/p/$project/issues",
   issue: appPaths.issue,
+  issueMap: "/issues/$issue/map",
   run: "/runs/$run",
   search: "/search",
   savedSearch: appPaths.savedSearch,
@@ -242,6 +243,11 @@ export function roleAddress(id: string): string {
 /** The address of an issue, `/issues/WEB-142`: the focus view, and the link that is shared. */
 export function issueAddress(key: string): string {
   return filled(paths.issue, routeParam.issue, key);
+}
+
+/** The address of the relation map of an issue, `/issues/WEB-142/map` (UX §2.1, §4.15). */
+export function issueMapAddress(key: string): string {
+  return filled(paths.issueMap, routeParam.issue, key);
 }
 
 /** The address of a run, `/runs/<id>`: its changes and *Undo the run*. */

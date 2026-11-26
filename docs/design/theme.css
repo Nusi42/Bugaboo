@@ -108,6 +108,13 @@
   --size-timeline-side: 240px;
   --size-timeline-person: calc(176px * var(--text-scale));
   --size-timeline-label: calc(264px * var(--text-scale));
+  --size-map-card-width: calc(208px * var(--text-scale));
+  --size-map-card-height: calc(64px * var(--text-scale));
+  --size-map-gap: calc(160px * var(--text-scale));
+  --size-map-row-gap: var(--space-4);
+  --size-map-head: calc(32px * var(--text-scale));
+  --size-map-side: 280px;
+  --size-map-box: calc(560px * var(--text-scale));
   --timeline-day: 0;
   --timeline-days: 0;
   --timeline-rows: 0;
@@ -119,6 +126,11 @@
   --hold-left: 0;
   --hold-width: 0;
   --hold-height: 0;
+  --map-x: 0;
+  --map-y: 0;
+  --map-width: 0;
+  --map-height: 0;
+  --map-zoom: 1;
   --size-px: 1px;
   --size-percent: 1%;
   --size-bar-least: 6px;

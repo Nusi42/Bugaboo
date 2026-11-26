@@ -18,6 +18,7 @@ import {
 import {
   fieldRoute,
   fieldsRoute,
+  issueMapRoute,
   issueRoute,
   issueTypesRoute,
   labelsRoute,
@@ -112,6 +113,7 @@ export const routeTree = rootRoute.addChildren([
     projectRoute,
     projectIssuesRoute,
     issueRoute,
+    issueMapRoute,
     runRoute,
     myAgentsRoute,
     agentRoute,

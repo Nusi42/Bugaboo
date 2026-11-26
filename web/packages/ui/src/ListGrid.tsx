@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { iconColumns, listColumns, type ListColumn } from "./list-columns.ts";
 import { partOf } from "./parts.ts";
-import { iconSize, type ListRowLook } from "./props.ts";
+import { iconSize, listRowLook, type ListRowLook } from "./props.ts";
 import { rowStates, type RowStateInput } from "./row-state.ts";
 import type { StatusGroup } from "./status.ts";
 import { StatusIcon } from "./StatusIcon.tsx";
@@ -74,7 +74,8 @@ export function ListRow({
   return (
     <RowBox
       look={partOf(part.listRow, {
-        variants: [variant],
+        // These rows have no box to tick: a card of a phone takes the lines without its column.
+        variants: [variant, variant === listRowLook.phone && "plain"],
         states: [...rowStates({ group, priority }), selected && "selected", current && "current"],
       })}
       selected={selected}

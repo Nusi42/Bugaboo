@@ -21,5 +21,16 @@ export function nameStandingTwice(names: readonly string[], keyOf: NameKey): str
   );
 }
 
+/**
+ * Whether the two ends of a kind of relation read alike (*related to*), by the same rule: such a kind
+ * is offered once and has no direction.
+ */
+export function readsAlike(
+  kind: { readonly forward: string; readonly backward: string },
+  keyOf: NameKey,
+): boolean {
+  return keyOf(kind.forward) === keyOf(kind.backward);
+}
+
 /** The key for names while the rule of the server is not there yet: names are the same only when they are alike letter for letter. */
 export const exactName: NameKey = (name) => name;

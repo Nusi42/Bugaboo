@@ -2,6 +2,7 @@ import { t } from "@bugaboo/messages";
 import { Button, buttonLook, part, partOf, useLayout } from "@bugaboo/ui";
 import { useEffect } from "react";
 
+import { drawsOwnLegend } from "../../shared/list-view.ts";
 import { LegendButton } from "./LegendButton.tsx";
 import { IssueLegend } from "./IssueLegend.tsx";
 import { openNewIssue, rememberProject } from "./new-issue-state.ts";
@@ -10,7 +11,7 @@ export interface ProjectToolbarProps {
   readonly shortName: string;
   /** An issue is open beside the list, which leaves the toolbar little room. */
   readonly beside: boolean;
-  /** How the address shows the results (`timeline`: the timeline has its own Legend). */
+  /** How the address shows the results (`timeline` and `map` have their own Legend). */
   readonly shownAs: string | undefined;
 }
 
@@ -57,8 +58,8 @@ export function ProjectToolbar({ shortName, beside, shownAs }: ProjectToolbarPro
   return (
     <div {...partOf(part.listToolbar)}>
       <NewIssue shortName={shortName} />
-      {/* The timeline shows the Legend below its own tools: one Legend on the page. */}
-      {shownAs === "timeline" ? null : layout === "computer" && !beside ? (
+      {/* The timeline and the map show the Legend below their own tools: one Legend on the page. */}
+      {drawsOwnLegend(shownAs) ? null : layout === "computer" && !beside ? (
         <IssueLegend />
       ) : (
         <LegendButton />

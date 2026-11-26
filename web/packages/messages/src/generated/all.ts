@@ -27,6 +27,7 @@ export { messages as people } from "./people.ts";
 export { messages as pins } from "./pins.ts";
 export { messages as projects } from "./projects.ts";
 export { messages as relationKinds } from "./relation-kinds.ts";
+export { messages as relationMap } from "./relation-map.ts";
 export { messages as relations } from "./relations.ts";
 export { messages as roles } from "./roles.ts";
 export { messages as runs } from "./runs.ts";

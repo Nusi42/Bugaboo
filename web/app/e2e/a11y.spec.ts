@@ -11,6 +11,7 @@ import {
   roleAddress,
   addressInProject,
   issueAddress,
+  issueMapAddress,
   runAddress,
   savedSearchAddress,
 } from "../src/shared/paths.ts";
@@ -257,6 +258,7 @@ const visits: readonly Visit[] = [
     guest: false,
   },
   { address: paths.issue, open: signedInAt(() => issueAddress(someIssue)), guest: false },
+  { address: paths.issueMap, open: signedInAt(() => issueMapAddress(someIssue)), guest: false },
   { address: paths.run, open: signedInAt(() => runAddress(someRun)), guest: false },
   { address: paths.search, open: signedIn(paths.search), guest: false },
   {

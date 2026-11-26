@@ -20,6 +20,7 @@ export function registerRelationBlocks(): void {
   });
 }
 export { IssueRefLine } from "./IssueRefLine.tsx";
+export { IssueRefRow } from "./IssueRefRow.tsx";
 export {
   createRelation,
   deleteRelation,

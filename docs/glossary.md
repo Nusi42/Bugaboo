@@ -305,6 +305,7 @@ Rules:
 | **Larger text**          | All text a step bigger                                             | zoom, font scale (in UI)           |
 | **Swipe** (on a row)     | A finger moved sideways over a row of a list on a phone: it brings in one or two actions at the edge it moves away from (*Follow*, *Change status or priority…*). Each of them is in the row's *More* too, so nothing needs a swipe; a row that shows all its actions as buttons has no swipe | swipe-to-action, gesture menu (in UI) |
 | **Zoom** (of the timeline) | How many days one column of the timeline holds: *Days*, *Weeks*, *Months* or *Quarters*. It changes the span the screen shows, never the size of text (that is *Larger text*) | —                                  |
+| **Zoom** (of the relation map) | How large the picture of the relation map is drawn, as a percentage; *Fit* makes the whole map fit its box. It changes only the picture, never the size of text (that is *Larger text*) | —                                  |
 | **Window**               | Where a form opens on a computer: it can be minimized, maximized, resized; on a phone it is a full screen | modal, popup (in UI) |
 | **Minimize**             | Park a window as a bar at the bottom of the page; its draft waits there | — |
 | **Maximize**             | Let a window fill the whole page, the menu included                | full screen (for a window)         |

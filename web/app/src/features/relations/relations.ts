@@ -3,6 +3,7 @@ import { dataOf, type Schema } from "@bugaboo/api-client";
 import { api } from "../../shared/api.ts";
 import { fieldList, pageSize, usePaged } from "../../shared/paged.ts";
 import { queryKeys, reread, rereadNow, routeStartsWith } from "../../shared/query-keys.ts";
+import { readsAlike } from "../../shared/same-name.ts";
 import type { RelationKindLine } from "../relation-kinds/index.ts";
 import type { NameKey } from "@bugaboo/wasm";
 
@@ -150,7 +151,7 @@ export function relationChoices(
         direction: "forward",
         name: kind.forward,
       };
-      return keyOf(kind.backward) === keyOf(kind.forward)
+      return readsAlike(kind, keyOf)
         ? [forward]
         : [
             forward,

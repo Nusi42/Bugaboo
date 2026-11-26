@@ -26,6 +26,7 @@ import type { messages as people } from "./people.ts";
 import type { messages as pins } from "./pins.ts";
 import type { messages as projects } from "./projects.ts";
 import type { messages as relationKinds } from "./relation-kinds.ts";
+import type { messages as relationMap } from "./relation-map.ts";
 import type { messages as relations } from "./relations.ts";
 import type { messages as roles } from "./roles.ts";
 import type { messages as runs } from "./runs.ts";
@@ -69,6 +70,7 @@ export type MessageKey =
   | keyof typeof pins
   | keyof typeof projects
   | keyof typeof relationKinds
+  | keyof typeof relationMap
   | keyof typeof relations
   | keyof typeof roles
   | keyof typeof runs
@@ -735,6 +737,24 @@ export interface MessageArguments {
   "relation-kinds.created": { name: string | number };
   "relation-kinds.date-effect-kinds": { kinds: string | number };
   "relation-kinds.reads": { backward: string | number; forward: string | number };
+  "relation-map.back": { key: string | number };
+  "relation-map.chain": { key: string | number };
+  "relation-map.chain-first": { key: string | number };
+  "relation-map.chain-start": { key: string | number };
+  "relation-map.column": { count: number };
+  "relation-map.lead-first": { key: string | number; word: string | number };
+  "relation-map.lead-next": { key: string | number; lead: string | number; word: string | number };
+  "relation-map.legend-alike": { word: string | number };
+  "relation-map.legend-arrow": { other: string | number; word: string | number };
+  "relation-map.loop": { sentence: string | number };
+  "relation-map.nothing": { key: string | number };
+  "relation-map.picture-label": { count: number; key: string | number };
+  "relation-map.search-picture-label": { count: number };
+  "relation-map.sentence": { key: string | number; lead: string | number };
+  "relation-map.title": { key: string | number };
+  "relation-map.too-many": { most: string | number };
+  "relation-map.too-many-found": { most: string | number };
+  "relation-map.zoom-level": { percent: string | number };
   "removal.comments": { name: string | number };
   "removal.confirm": { name: string | number };
   "removal.no-fixed-end": { kind: string | number };
