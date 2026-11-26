@@ -75,7 +75,7 @@ pub const ACCESS_KEYS: [(&str, KeyChoice); 3] = [
 
 /// The time zone of the administrator who runs the demos: the zone the pictures of the views are
 /// taken in, so what she sees is what the pictures show.
-pub const DEMO_TIME_ZONE: &str = "Europe/Berlin";
+pub(crate) const DEMO_TIME_ZONE: &str = "Europe/Berlin";
 
 /// The time zones the people of the sample live in: spread over the world.
 pub const TIME_ZONES: [&str; 10] = [
