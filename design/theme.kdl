@@ -8549,7 +8549,9 @@ part "dashboard.actions" {
 part "dashboard-grid" {
     display grid
     grid-template-columns "repeat($dashboard-columns, minmax(0, 1fr))"
-    grid-auto-rows "$size-dashboard-row"
+    // A row is at least the height of a step of the grid and grows with what its boxes hold: a box never scrolls on its
+    // own, the main column scrolls the page (one way to scroll, UX §6.5).
+    grid-auto-rows "minmax($size-dashboard-row, auto)"
     gap "$space-4"
     position relative
     use "list-reset"
@@ -8567,15 +8569,12 @@ part "dashboard-box" {
     flex-direction column
     gap "$space-2"
     min-width 0
-    min-height 0
     padding "$pad-box"
     border-radius "$r-card"
     color "$fg"
     grid-column "$box-column / span $box-width"
     grid-row "$box-row / span $box-height"
     position relative
-    // What does not fit scrolls inside the body: nothing is drawn over the next box.
-    overflow hidden
 }
 
 part "dashboard-grid[variant=phone] dashboard-box" {
@@ -8627,14 +8626,10 @@ part "dashboard-box.handle" {
     user-select none
 }
 
+// What a box shows: as high as it is; the height of a box is the least it takes (one way to scroll, UX §6.5).
 part "dashboard-box.body" {
     flex 1
-    min-height 0
-    overflow auto
-}
-
-part "dashboard-grid[variant=phone] dashboard-box.body" {
-    overflow visible
+    min-width 0
 }
 
 // The corner a pointer drags to resize a box: a target of its own at the end of the bottom edge.

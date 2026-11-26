@@ -10,7 +10,6 @@ import {
   partOf,
   usePlace,
 } from "@bugaboo/ui";
-import { useKeyboardScroll } from "@bugaboo/ui/scroll-reach";
 import {
   useEffect,
   useEffectEvent,
@@ -138,17 +137,11 @@ function BoxHead({
 }
 
 /**
- * What a box shows: it scrolls when it holds more than its place, and then takes the focus itself while nothing in it
- * does, so the keyboard scrolls it too (WCAG 2.1.1).
+ * What a box shows, as high as it is: the box grows with it and the main column scrolls the page, so a box never has a
+ * scroll box of its own (one way to scroll, UX §6.5).
  */
 function BoxBody({ children }: { readonly children: ReactNode }) {
-  const body = useRef<HTMLDivElement>(null);
-  const reach = useKeyboardScroll(body);
-  return (
-    <div ref={body} {...partOf(part.dashboardBoxBody)} {...(reach ? { tabIndex: 0 } : {})}>
-      {children}
-    </div>
-  );
+  return <div {...partOf(part.dashboardBoxBody)}>{children}</div>;
 }
 
 export interface BoxFrameProps {

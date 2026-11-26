@@ -85,6 +85,7 @@ export async function gridSteps(page: Page): Promise<GridSteps> {
       columnGap: style.columnGap,
       rowHeight: style.gridAutoRows,
       rowGap: style.rowGap,
+      rows: style.gridTemplateRows,
     };
   });
   return stepsFrom(measure);

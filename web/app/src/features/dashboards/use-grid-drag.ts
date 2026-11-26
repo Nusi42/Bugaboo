@@ -4,7 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { dragKinds } from "../../shared/drag-kinds.ts";
 import { usePointerDrag, type DragDistance, type DragHandlers } from "../../shared/pointer-drag.ts";
 import { droppedAt, resizedTo, samePlaces, type GridPlace } from "./grid-layout.ts";
-import { measureOf, stepsFrom, type GridSteps } from "../../shared/dashboard-grid-steps.ts";
+import {
+  measureOf,
+  rowsCrossed,
+  stepsFrom,
+  type GridSteps,
+} from "../../shared/dashboard-grid-steps.ts";
 
 export type { DragHandlers } from "../../shared/pointer-drag.ts";
 
@@ -36,7 +41,9 @@ function placesAfter(
     return places;
   }
   const columns = Math.round(distance.x / steps.column);
-  const rows = Math.round(distance.y / steps.row);
+  // A move starts from the top edge of the box, a resize from its bottom edge.
+  const edge = part.gesture === dragKinds.dashboardBox.kind ? place.row : place.row + place.height;
+  const rows = rowsCrossed(steps, edge, distance.y);
   return part.gesture === dragKinds.dashboardBox.kind
     ? droppedAt(places, part.at, { column: place.column + columns, row: place.row + rows }, pack)
     : resizedTo(
@@ -87,7 +94,7 @@ export function useGridDrag({ places, pack, gridOf, onDrop }: GridDragInput): {
   readonly handlers: (at: number, gesture: Gesture) => DragHandlers;
 } {
   const [placing, setPlacing] = useState<Placing | null>(null);
-  const steps = useRef<GridSteps>({ column: 1, row: 1 });
+  const steps = useRef<GridSteps>({ column: 1, row: 1, rowGap: 0, rows: [] });
   const parts = useRef(new Map<string, Part>());
   const partOf = (at: number, gesture: Gesture): Part => {
     const name = `${gesture} ${String(at)}`;

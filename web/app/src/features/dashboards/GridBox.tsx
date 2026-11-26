@@ -1,3 +1,5 @@
+import { useHoldWhileReading } from "@bugaboo/ui";
+
 import { dragKinds } from "../../shared/drag-kinds.ts";
 import { BoxContent } from "./BoxContent.tsx";
 import { BoxFrame } from "./BoxFrame.tsx";
@@ -17,6 +19,8 @@ export interface GridBoxProps {
 /** One box of the grid with what its read answers for the person who looks at it, and in *Change* its menu. */
 export function GridBox({ dashboard, box, at, changing, grid, onChangeBox }: GridBoxProps) {
   const read = useBoxAnswer(dashboard.id, box.id);
+  // A box grows with what it holds: the page shows the boxes once their first reads are in, so none pushes another.
+  useHoldWhileReading(read.isLoading);
   return (
     <BoxFrame
       box={box}

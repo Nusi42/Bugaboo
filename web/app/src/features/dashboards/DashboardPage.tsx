@@ -1,5 +1,5 @@
 import { t } from "@bugaboo/messages";
-import { part, partOf } from "@bugaboo/ui";
+import { part, partOf, ReadingHold } from "@bugaboo/ui";
 import { useMemo, type ReactNode } from "react";
 
 import { dashboardAddress } from "../../shared/dashboard-address.ts";
@@ -38,7 +38,10 @@ export function DashboardPage({ id, notFound }: DashboardPageProps) {
       {(dashboard: Dashboard) => (
         <div {...partOf(part.dashboard)}>
           <DashboardHead dashboard={dashboard} />
-          <DashboardBoxes key={dashboard.id} dashboard={dashboard} />
+          {/* The boxes grow with what they hold: they are shown together once their first reads are in. */}
+          <ReadingHold>
+            <DashboardBoxes key={dashboard.id} dashboard={dashboard} />
+          </ReadingHold>
         </div>
       )}
     </QueryGate>
