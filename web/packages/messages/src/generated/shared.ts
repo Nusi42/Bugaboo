@@ -108,6 +108,7 @@ export const messages = {
   "setup.service-hint": "To have Bugaboo start with the computer, run: bugaboo service install",
   "common.choose-role": "Choose a role",
   "common.cancel": "Cancel",
+  "common.actions-for": "Actions for {name}",
   "common.leave-unsaved-title": "Leave this page?",
   "common.leave-unsaved-text": "A change is still being saved. If you leave now, it may be lost.",
   "common.leave-unsaved-leave": "Leave",

@@ -18,6 +18,9 @@ export {
 } from "./row-actions.ts";
 export type { IssueSelection } from "./use-selection.ts";
 export { peopleOf, useAssignablePeople } from "./use-assignable-people.ts";
+export { sortOf } from "./list-sort.ts";
+export { TimeLeftLength } from "./TimeFacts.tsx";
+export { timeLeftOf } from "./time-words.ts";
 export { issueCells, priorityCell } from "./issue-cells.tsx";
 export { AskFor, type AskForProps } from "./AskFor.tsx";
 export { needsAsking, type OfferedChange } from "./ask-for.ts";

@@ -19,6 +19,8 @@ export interface LinkProps {
   readonly button?: boolean;
   /** The name for screen readers, where the words alone do not say what the link is about. */
   readonly label?: string;
+  /** `false` keeps the browser from dragging the link as an address, where something around it is dragged (a card of the board). */
+  readonly draggable?: boolean;
 }
 
 /** A link. With a `RouterProvider` above it, links to pages of the app do not reload the page. */
@@ -30,12 +32,14 @@ export function Link({
   external = false,
   button = false,
   label,
+  draggable,
 }: LinkProps) {
   return (
     <AriaLink
       href={href}
       {...partOf(part.link, { variants: [row && "row", button && "button"] })}
       {...(label === undefined ? {} : { "aria-label": label })}
+      {...(draggable === undefined ? {} : { draggable })}
       {...(current ? { "aria-current": ariaCurrent.page } : {})}
       {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
     >

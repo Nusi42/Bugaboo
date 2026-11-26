@@ -16,5 +16,6 @@ export function cardCells(card: BoardCard) {
       type: card.issue.issue_type ?? undefined,
     },
     issueAddress(key),
+    { draggable: false },
   );
 }

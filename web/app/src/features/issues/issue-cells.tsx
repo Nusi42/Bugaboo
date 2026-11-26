@@ -36,6 +36,8 @@ export interface CellOptions {
   readonly before?: ReactNode;
   /** The issue is the one that is open: its link is the current page. */
   readonly current?: boolean;
+  /** `false` where the row is dragged by its whole face, so the link is not dragged as an address. */
+  readonly draggable?: boolean;
 }
 
 /** The priority cell of every row that shows one (R9): the icon, and the word only where the list shows it (UX §4.2). */
@@ -57,7 +59,7 @@ export function priorityCell(priority: Schema<"Priority">): ReactNode {
 export function issueCells(
   source: CellSource,
   href: string,
-  { before, current = false }: CellOptions = {},
+  { before, current = false, draggable }: CellOptions = {},
 ): Readonly<Pick<Record<ListColumn, ReactNode>, "status" | "key" | "type" | "title">> {
   const { key, title, group, statusWord, type, agent } = source;
   return {
@@ -70,7 +72,7 @@ export function issueCells(
     title: (
       <>
         {before}
-        <Link href={href} current={current}>
+        <Link href={href} current={current} {...(draggable === undefined ? {} : { draggable })}>
           {title}
         </Link>
         {agent === undefined ? null : <AgentMark name={agent.name} state={agent.state} />}

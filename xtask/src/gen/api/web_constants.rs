@@ -768,6 +768,7 @@ export const ownThemeSheets = \"{sheets}\";
 "
     ))
 }
+pub(super) mod board;
 mod notifications;
 mod numbers;
 mod safe_html;
@@ -780,6 +781,5 @@ pub(super) use safe_html::safe_html;
 #[cfg(test)]
 use safe_html::safe_html_paths;
 pub(super) use texts::texts;
-
 #[cfg(test)]
 mod tests;

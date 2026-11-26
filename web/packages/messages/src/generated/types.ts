@@ -252,6 +252,7 @@ export interface MessageArguments {
   "board.count-of-limit": { count: number; limit: number };
   "board.count-over": { count: number; limit: number };
   "board.here": { key: string | number };
+  "board.limit-invalid": { most: number };
   "board.move-to-title": { key: string | number };
   "board.moved": { column: string | number; key: string | number };
   "board.moves-list": { key: string | number };
@@ -267,6 +268,7 @@ export interface MessageArguments {
   "board.reason-no-status-read": { key: string | number };
   "board.rows-truncated": { count: number };
   "board.sort-by": { field: string | number };
+  "board.sorted-by-now": { field: string | number };
   "board.tab": { count: number; name: string | number };
   "check-access.for-issue-type": { type: string | number };
   "check-access.level.no-role": { person: string | number };
@@ -309,6 +311,7 @@ export interface MessageArguments {
   };
   "check-access.result-heading": { person: string | number; place: string | number };
   "comments.version-saved": { version: string | number; when: string | number };
+  "common.actions-for": { name: string | number };
   "common.percent": { percent: string | number; sign: string | number };
   "common.row-more": { what: string | number };
   "common.show-all": { count: number };

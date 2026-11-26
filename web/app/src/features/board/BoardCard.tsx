@@ -20,8 +20,9 @@ export interface BoardCardProps {
 /**
  * A card (UX §4.6, M10-Q4): its Issue ID, its title, and the fields of the layout *Card*, tinted by
  * its status group and edged by its priority as the rows of a list are (R4). A pointer takes it
- * anywhere; the keys of its title (*Space*, the arrows, *Enter*, *Esc*) and its *Move to …* do the same
- * (TEST-A11Y). A card that is on its way to another column shows it, and stays until the server
+ * by any part of its face, the title too (the link of the title is not dragged as an address, so a
+ * click still opens the issue); the keys of its title (*Space*, the arrows, *Enter*, *Esc*) and *Move to …*
+ * in its menu do the same (TEST-A11Y). A card that is on its way to another column shows it, and stays until the server
  * has answered.
  */
 export function BoardCard({ card, column, own }: BoardCardProps) {

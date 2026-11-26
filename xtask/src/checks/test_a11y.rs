@@ -51,7 +51,7 @@ impl Check for TestA11y {
             }
         }
         let mut findings = evaluate(&paths, &suite);
-        let timeline = timeline_files(repo)?;
+        let timeline = drag_files(repo)?;
         let messages = read_text(repo, MESSAGES_FILE)?;
         findings.extend(drags_have_keys(&timeline, &messages));
         findings.extend(report_of(repo)?);
@@ -59,9 +59,9 @@ impl Check for TestA11y {
     }
 }
 
-/// The code of the screens that drag, by path: their TypeScript files, tests left out, and the
+/// The code of the screens that drag (the timeline and the board), by path: their TypeScript files, tests left out, and the
 /// shared list of what they drag.
-fn timeline_files(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String)>> {
+fn drag_files(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String)>> {
     let mut files = Vec::new();
     for folder in DRAG_FOLDERS {
         for name in sorted_files(repo, folder, |name| {
@@ -397,7 +397,7 @@ visit(paths.longer); // paths.home and paths.signIn
     #[test]
     fn the_real_timeline_has_a_key_for_every_drag() {
         let repo = crate::repo::Repo::discover().unwrap();
-        let files = timeline_files(&repo).unwrap();
+        let files = drag_files(&repo).unwrap();
         let messages = read_text(&repo, MESSAGES_FILE).unwrap();
         assert!(drags_have_keys(&files, &messages).is_empty());
     }

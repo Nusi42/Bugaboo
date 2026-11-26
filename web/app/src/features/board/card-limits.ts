@@ -1,9 +1,10 @@
+import { cardLimitMax } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import type { BoardOptions } from "../../shared/list-view.ts";
 
-/** The most a card limit may be, and the least: the server's bounds (1 to 999). */
-const limitBounds = { least: 1, most: 999 } as const;
+/** The least a card limit may be; the most is the server's (`cardLimitMax`). */
+const limitLeast = 1;
 
 /** One card limit as the options keep it: a column by its key (none for *No value*) and its number. */
 export type CardLimit = NonNullable<BoardOptions["card_limits"]>[number];
@@ -14,15 +15,14 @@ export function limitText(limits: readonly CardLimit[], column: string | null): 
   return found === undefined ? "" : String(found.limit);
 }
 
-/** The words of a box that holds no number from 1 to 999; none for an empty box or a number the server takes. */
+/** The words of a box that holds no number from 1 to the highest limit; none for an empty box or a number the server takes. */
 export function limitProblem(text: string): string | undefined {
   if (text.trim() === "") {
     return undefined;
   }
   const number = Number(text);
-  const fits =
-    /^\d+$/u.test(text.trim()) && number >= limitBounds.least && number <= limitBounds.most;
-  return fits ? undefined : t("board.limit-invalid");
+  const fits = /^\d+$/u.test(text.trim()) && number >= limitLeast && number <= cardLimitMax;
+  return fits ? undefined : t("board.limit-invalid", { most: cardLimitMax });
 }
 
 /** The card limits the boxes hold, for the columns they belong to, as the options keep them. */

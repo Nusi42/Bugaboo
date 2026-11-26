@@ -26,6 +26,8 @@
 //!   `src/fields.generated.ts`;
 //! - the size of a part of an upload and of a megabyte (`crates/bb-core/src/files.rs`) are written
 //!   as `src/files.generated.ts`;
+//! - the highest card limit of a board (`crates/bb-core/src/saved_search.rs`) is written as
+//!   `src/board.generated.ts`;
 //! - the most issues one change to many issues names (`crates/bb-core/src/many_changes.rs`) is
 //!   written as `src/many-changes.generated.ts`;
 //! - the most issues one relation map holds (`crates/bb-app/src/relations/map.rs`) is written as
@@ -99,6 +101,8 @@ pub(crate) const EDITING_PATH: &str = "web/packages/api-client/src/editing.gener
 pub(crate) const FIELDS_PATH: &str = "web/packages/api-client/src/fields.generated.ts";
 /// The sizes of files the server and the browser both name.
 pub(crate) const FILES_PATH: &str = "web/packages/api-client/src/files.generated.ts";
+/// The highest card limit of a board, for the browser app.
+pub(crate) const BOARD_PATH: &str = "web/packages/api-client/src/board.generated.ts";
 /// The most issues one change to many issues names, for the browser app.
 pub(crate) const MANY_CHANGES_PATH: &str = "web/packages/api-client/src/many-changes.generated.ts";
 /// The most issues one relation map holds, for the browser app.
@@ -146,6 +150,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         SEARCH_MAIL_PATH,
         EDITING_PATH,
         FILES_PATH,
+        BOARD_PATH,
         MANY_CHANGES_PATH,
         RELATION_MAP_PATH,
         ASSISTANT_PATH,
@@ -178,6 +183,19 @@ fn assistant_file(repo: &Repo, sources: &[Source]) -> anyhow::Result<Generated> 
             &web_constants::assistant_limits(sources)?,
         )?,
     ))
+}
+
+/// The highest card limit of a board, as the browser client's constant.
+fn board_file(repo: &Repo, sources: &[Source]) -> anyhow::Result<Generated> {
+    Ok(Generated::new(
+        BOARD_PATH,
+        format_with_oxfmt(repo, BOARD_PATH, &web_constants::board::board(sources)?)?,
+    ))
+}
+
+/// The limits the screens keep to: those of a question to the assistant and the highest card limit.
+fn limits_files(repo: &Repo, sources: &[Source]) -> anyhow::Result<[Generated; 2]> {
+    Ok([assistant_file(repo, sources)?, board_file(repo, sources)?])
 }
 
 /// The words and numbers the browser takes from the linked crates: what a search names fields by,
@@ -301,7 +319,7 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
     for (path, text) in web_constants::user_pages::pages(&sources)? {
         files.push(Generated::new(path, text));
     }
-    files.push(assistant_file(repo, &sources)?);
+    files.extend(limits_files(repo, &sources)?);
     Ok(files)
 }
 

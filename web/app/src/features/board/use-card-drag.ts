@@ -14,7 +14,8 @@ import { heldBy, type BoardState } from "./holding.ts";
 export function useCardDrag(card: BoardCard, column: number, state: BoardState) {
   const { holding, moves, phone } = state;
   const id = issueOf(card);
-  const drag = useDragOf(dragKinds.card.kind, id, !phone, {
+  const drag = useDragOf(dragKinds.card.kind, id, {
+    enabled: !phone,
     onStart: () => {
       holding.take(card, column, heldBy.pointer);
     },
@@ -31,6 +32,7 @@ export function useCardDrag(card: BoardCard, column: number, state: BoardState) 
         drag.isDragging && "dragging",
         moves.moving.includes(id) && "moving",
         picked && "picked",
+        phone && "locked",
       ],
     }),
   };

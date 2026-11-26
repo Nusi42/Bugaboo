@@ -1393,7 +1393,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "board.limit-invalid",
-        "A card limit is a number from 1 to 999.",
+        "A card limit is a number from 1 to {most, number}.",
     ),
     (
         "board.limits-later",
@@ -1406,7 +1406,10 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("board.no-row-value", "{field} not set"),
     ("board.no-rows", "No rows"),
     ("board.no-value", "No value"),
-    ("board.order-menu", "Order of {column}"),
+    (
+        "board.order-menu",
+        "Order of the whole board, from {column}",
+    ),
     ("board.read-failed", "The board could not be read."),
     (
         "board.reason-cannot-change",
@@ -1433,7 +1436,8 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("board.save", "Save the board"),
     ("board.show-as-board", "Board"),
     ("board.show-more", "Show more cards"),
-    ("board.sort-by", "Sort by {field}"),
+    ("board.sort-by", "Sort the whole board by {field}"),
+    ("board.sorted-by-now", "Sorted by {field} now"),
     ("board.tab", "{name} ({count, number})"),
     ("board.tabs", "Columns"),
     ("check-access.all-fields", "All fields"),
@@ -1845,6 +1849,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "comments.write-help",
         "Type @ and a name to mention someone.",
     ),
+    ("common.actions-for", "Actions for {name}"),
     ("common.cancel", "Cancel"),
     ("common.choose-role", "Choose a role"),
     ("common.close", "Close"),

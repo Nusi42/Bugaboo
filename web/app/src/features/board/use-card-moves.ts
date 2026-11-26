@@ -165,6 +165,43 @@ function useRunning(asker: ConflictAsker) {
 }
 
 /**
+ * What the window of *Ask for* sends the change with: the same send as a move that asks for nothing,
+ * and the same asking when somebody else's change came first (the window closes, the page asks).
+ */
+function askOf(
+  asking: Asking | null,
+  run: (attempt: Attempt) => void,
+  asker: ConflictAsker,
+): (values: IssueValues) => Promise<void> {
+  return async (values) => {
+    if (asking === null) {
+      return;
+    }
+    const attempt = {
+      card: asking.card,
+      planned: statusMove(asking.card, asking.change, values),
+      version: asking.card.issue.version ?? 0,
+    };
+    try {
+      await send(attempt);
+      void refreshBoards();
+    } catch (error) {
+      const refused = refusedOf(error);
+      if (!("conflict" in refused)) {
+        throw error;
+      }
+      askAbout(
+        refused.conflict,
+        (version) => {
+          run({ ...attempt, version });
+        },
+        asker,
+      );
+    }
+  };
+}
+
+/**
  * The moves of the cards of a board. A drop or a key makes the status change of the workflow, which
  * the issue page makes too; the server judges it again and says why not (ADR-0030), and a clash asks
  * over the page until it is answered, or until the screen goes.
@@ -183,14 +220,7 @@ export function useCardMoves(board: MovesOf): CardMoves {
     closeAsking: () => {
       setAsking(null);
     },
-    ask: async (values) => {
-      if (asking === null) {
-        return;
-      }
-      const planned = statusMove(asking.card, asking.change, values);
-      await send({ card: asking.card, planned, version: asking.card.issue.version ?? 0 });
-      void refreshBoards();
-    },
+    ask: askOf(asking, run, asker),
     move: (card, column) => {
       const found = plan(card, column, board);
       if (found === undefined) {

@@ -3546,10 +3546,38 @@ part "board" {
     min-width 0
 }
 
+// The box scrolls sideways when the columns are wider than the room. A shadow at an end that has more behind it
+// says so (`edge-inline`, the scroll position drives it), so a card is never cut at the edge without a sign; a
+// scroll bar stands under it where the system draws one. The shadows are the first and last item of the box.
 part "board-scroll" {
+    display flex
     overflow-x auto
     overscroll-behavior-x contain
     padding-block-end "$space-2"
+}
+
+part "board-scroll::before" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-inline"
+        use "edge-from-start"
+        inset-inline-start 0
+    }
+}
+
+part "board-scroll::after" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-inline"
+        use "edge-from-end"
+        inset-inline-end 0
+    }
+}
+
+// What scrolls: the heads and the rows, as wide as their columns need and at least as wide as the box.
+part "board-content" {
+    display flex
+    flex "1 0 auto"
+    flex-direction column
+    min-width 0
 }
 
 part "board-lane" {
@@ -3690,6 +3718,7 @@ part "board-column" {
 
 part "board-column[state=over]" {
     background "$bg-selected"
+    use "marked"
 }
 
 // The reason a card cannot go here stands over the cards of the column, as high as the column's top: it adds no height.
@@ -3748,6 +3777,12 @@ part "board-card.line" {
     align-items center
     gap "$space-2"
     min-width 0
+}
+
+// A card is taken by its whole face: the link of its title is not dragged as an address, so a drag that
+// starts on the title carries the card, and a click on it still opens the issue.
+part "board-card.title link" {
+    -webkit-user-drag none
 }
 
 part "board-card.title" {
@@ -16818,6 +16853,41 @@ part "tab[selected]" {
 
 part "tab[focus-visible]" {
     use "ring-inside"
+}
+
+// The tabs of the columns of a phone are one row that scrolls sideways, each as wide as its words.
+part "board-phone tabs" {
+    flex-wrap nowrap
+    overflow-x auto
+}
+
+part "board-phone tab" {
+    flex none
+}
+
+// The shadows of the tab row, at the end that has more tabs behind it (the scroll position drives them).
+part "board-phone tabs::before" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-inline"
+        use "edge-from-start"
+        inset-inline-start 0
+    }
+}
+
+part "board-phone tabs::after" {
+    supports "(animation-timeline: scroll())" {
+        use "edge-inline"
+        use "edge-from-end"
+        inset-inline-end 0
+    }
+}
+
+// Forced colors drop every shadow of an end that has more behind it (`edge-shadow`): a line of the text color
+// stands in its place, at the end where the shadow would be.
+part "overlay.dialog::before" "list-scroll::before" "window.body::before" "confirm.body::before" "search-panel::before" "bottom-sheet search-bar::before" "search-suggestions::before" "side-panel.body::before" "list-panel::before" "overlay.dialog::after" "list-scroll::after" "window.body::after" "confirm.body::after" "search-panel::after" "bottom-sheet search-bar::after" "search-suggestions::after" "side-panel.body::after" "list-panel::after" "app-layout.column:has(issue-bar) app-layout.main::after" "board-scroll::before" "board-scroll::after" "board-phone tabs::before" "board-phone tabs::after" "access.scroll::before" "access.scroll::after" {
+    forced {
+        outline "$border-width solid CanvasText"
+    }
 }
 
 part "tab-panel" "form-panel" {

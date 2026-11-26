@@ -1,8 +1,8 @@
 import { Icon, iconName, partOf, part, type PartAttributes } from "@bugaboo/ui";
 import { useRef, type ReactNode } from "react";
-import { Button as AriaButton, useDrag } from "react-aria-components";
+import { Button as AriaButton } from "react-aria-components";
 
-import { typeOf, useDropOf } from "./drop-of.ts";
+import { useDragOf, useDropOf } from "./drop-of.ts";
 
 /**
  * Dragging things of a list to another place in the list (or in another list), with a mouse or a
@@ -33,12 +33,7 @@ export interface DraggableHeadProps {
  * readers; the handle is hidden from them and left out of the tab order).
  */
 export function DraggableHead({ kind, id, label, canDrag, children }: DraggableHeadProps) {
-  const drag = useDrag({
-    getItems: () => [{ [typeOf(kind)]: id }],
-    getAllowedDropOperations: () => ["move"],
-    hasDragButton: true,
-    isDisabled: !canDrag,
-  });
+  const drag = useDragOf(kind, id, { enabled: canDrag, hasDragButton: true });
   return (
     <div
       {...partOf(part.draggable, { states: [drag.isDragging && "dragging"] })}
@@ -106,11 +101,7 @@ export interface DragHandleProps {
  * next to it (*Add dependency…*).
  */
 export function DragHandle({ kind, id, label, look, children }: DragHandleProps) {
-  const drag = useDrag({
-    getItems: () => [{ [typeOf(kind)]: id }],
-    getAllowedDropOperations: () => ["move"],
-    hasDragButton: true,
-  });
+  const drag = useDragOf(kind, id, { hasDragButton: true });
   return (
     <span aria-hidden {...drag.dragProps}>
       <AriaButton {...drag.dragButtonProps} {...look} aria-label={label} excludeFromTabOrder>

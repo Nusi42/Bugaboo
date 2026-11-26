@@ -8,7 +8,7 @@ Open a search, a saved search or the list of a project. Above the list, set **Sh
 
 Next to the name of a column stands how many cards it holds. The count is of the issues you may see; an issue you may not see is in no column and is not counted.
 
-The cards of a column follow the sort of the search: at the start, the priority and then the last change. A board keeps no order of its own. The menu at the end of a column's head (**Order of In progress**) sorts the search by priority, by due date or by the last change.
+The cards of a column follow the sort of the search: at the start, the priority and then the last change. A board keeps no order of its own. The menu at the end of a column's head (**Order of the whole board, from In progress**) sorts the search, and so the whole board and not only that column, by priority, by due date or by the last change. It names the sort that holds now (**Sorted by Priority now**).
 
 **Refresh** reads the board again. It also reads again after you change something, and when the window gets the focus again.
 
@@ -16,7 +16,7 @@ The cards of a column follow the sort of the search: at the start, the priority 
 
 A card shows the Issue ID, the title and the fields of the layout *Card* of its issue type, at most four. The layout is changed in the layouts of your organization; **Customize › Card** opens it for people who may change layouts. A card has the tint of its status group and the mark of its priority, like a row of the list. The title opens the issue.
 
-A long column shows its first cards and **Show more cards**.
+The columns scroll sideways when they are wider than the window, and a soft shadow at an end says there is more behind it. A long column shows its first cards and **Show more cards**.
 
 ## Move a card
 
@@ -30,7 +30,7 @@ Move a card by dragging it to another column. This is the status change of its w
 
 You can move a card with the keyboard or without dragging:
 
-- **Move to …** on every card lists the columns. A column the card cannot go to is shown with its reason and cannot be chosen.
+- Every card has a menu button, **Actions for WEB-139**, with **Move to …** as its first entry. It lists the columns. A column the card cannot go to is shown with its reason and cannot be chosen.
 - Press `Tab` until the title of a card has the focus. `Space` picks the card up, `←` and `→` choose the column, `Enter` drops it and `Esc` puts it down. When no card is picked up, `↑` and `↓` move between the cards of a column, and `←` and `→` between columns.
 
 ## Card limits
@@ -45,7 +45,7 @@ A board can be split into rows by a field, for example by the person an issue is
 
 The person who created a saved search sees **Customize** above its board. The window sets:
 
-- **Columns from:** *Status*, *Status group* (**Not started**, **In progress** and **Done**, which suits a board over very different workflows) or an own field that holds one choice. A column of *None* holds the issues without a value.
+- **Columns from:** *Status*, *Status group* (**Not started**, **In progress** and **Done**, which suits a board over very different workflows) or an own field that holds one choice. A column of **No value** holds the issues without a value.
 - **Rows:** no rows, or a field.
 - **Card limits:** a number from 1 to 999 for each column; an empty box means no limit. Limits are set for the columns the board has now, so when you change the field of the columns, save that first.
 
@@ -53,4 +53,4 @@ The person who created a saved search sees **Customize** above its board. The wi
 
 ## The board on a phone
 
-A phone shows one column at a time. The names of the columns are tabs, each with its count. Nothing is dragged: every card has **Move to …**, which does the same as a drag.
+A phone shows one column at a time. The names of the columns are tabs, each with its count. Nothing is dragged: every card has its menu button with **Move to …**, which does the same as a drag. The tabs are one row that scrolls sideways.

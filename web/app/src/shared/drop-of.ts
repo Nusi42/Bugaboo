@@ -71,23 +71,30 @@ export function useDropOf(
   });
 }
 
-/** What a screen hears of a drag it started: when it begins and when it ends (dropped or not). */
-export interface DragEnds {
-  readonly onStart: () => void;
-  readonly onEnd: () => void;
+/** How a thing is dragged: whether it can be, from where, and what the screen hears of it. */
+export interface DragOptions {
+  /** Whether it can be dragged at all: not on a phone, where the buttons are the way. */
+  readonly enabled?: boolean;
+  /** The thing is dragged by a handle of its own (`DraggableHead`, `DragHandle`), not as a whole. */
+  readonly hasDragButton?: boolean;
+  /** The drag begins. */
+  readonly onStart?: () => void;
+  /** The drag ends, dropped or not. */
+  readonly onEnd?: () => void;
 }
 
 /**
- * Makes a thing draggable by the pointer as a whole, with `id` named as a thing of `kind` (a card of
- * a board): spread `dragProps` on its element. The counterpart of `useDropOf`; the handle that drags
- * only from a grip is `DraggableHead`. A screen that drags offers the same by keys (TEST-A11Y).
+ * Makes a thing draggable by the pointer, with `id` named as a thing of `kind`: the one drag of the
+ * screens (a card of a board as a whole, a head or a handle by its grip). The counterpart of
+ * `useDropOf`. A screen that drags offers the same by keys (TEST-A11Y).
  */
-export function useDragOf(kind: string, id: string, enabled: boolean, ends: DragEnds) {
+export function useDragOf(kind: string, id: string, options: DragOptions = {}) {
   return useDrag({
     getItems: () => [{ [typeOf(kind)]: id }],
     getAllowedDropOperations: () => ["move"],
-    isDisabled: !enabled,
-    onDragStart: ends.onStart,
-    onDragEnd: ends.onEnd,
+    isDisabled: options.enabled === false,
+    ...(options.hasDragButton === true ? { hasDragButton: true } : {}),
+    ...(options.onStart === undefined ? {} : { onDragStart: options.onStart }),
+    ...(options.onEnd === undefined ? {} : { onDragEnd: options.onEnd }),
   });
 }

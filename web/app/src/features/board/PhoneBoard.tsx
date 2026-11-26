@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { part, partOf, Tabs } from "@bugaboo/ui";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { BoardCell } from "./BoardCell.tsx";
 import { BoardRow } from "./BoardRow.tsx";
@@ -16,12 +16,18 @@ export function PhoneBoard({ model, own, rowName }: BoardGridProps & { readonly 
   const { columns, rows } = model.board;
   const [chosen, setChosen] = useState(0);
   const open = Math.min(chosen, columns.length - 1);
+  const box = useRef<HTMLDivElement>(null);
+  // The tabs are one row that scrolls sideways: the chosen one is brought into view.
+  useEffect(() => {
+    const tabs = box.current?.querySelectorAll<HTMLElement>('[role="tab"]');
+    tabs?.[open]?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [open]);
   const tabs = columns.map((column, at) => ({
     id: String(at),
     label: t("board.tab", { name: columnName(column), count: column.count }),
   }));
   return (
-    <div {...partOf(part.boardPhone)}>
+    <div ref={box} {...partOf(part.boardPhone)}>
       <Tabs
         label={t("board.tabs")}
         tabs={tabs}

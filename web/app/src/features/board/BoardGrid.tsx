@@ -24,23 +24,25 @@ export function BoardGrid({ model, own, rowName }: BoardGridProps) {
   const { columns, rows } = model.board;
   return (
     <div {...partOf(part.boardScroll)}>
-      <div {...partOf(part.boardHead)}>
-        {columns.map((column, at) => (
-          <ColumnHead key={columnId(column)} column={column} at={at} />
-        ))}
+      <div {...partOf(part.boardContent)}>
+        <div {...partOf(part.boardHead)}>
+          {columns.map((column, at) => (
+            <ColumnHead key={columnId(column)} column={column} at={at} />
+          ))}
+        </div>
+        {rows.length === 0 ? (
+          <BoardLane model={model} row={null} own={own} />
+        ) : (
+          rows.map((row, at) => (
+            <BoardRow key={JSON.stringify(row.key)} name={rowName(row)} count={row.issues}>
+              <BoardLane model={model} row={at} own={own} />
+            </BoardRow>
+          ))
+        )}
+        {model.board.rows_truncated ? (
+          <p {...partOf(part.boardNote)}>{t("board.rows-truncated", { count: rows.length })}</p>
+        ) : null}
       </div>
-      {rows.length === 0 ? (
-        <BoardLane model={model} row={null} own={own} />
-      ) : (
-        rows.map((row, at) => (
-          <BoardRow key={JSON.stringify(row.key)} name={rowName(row)} count={row.issues}>
-            <BoardLane model={model} row={at} own={own} />
-          </BoardRow>
-        ))
-      )}
-      {model.board.rows_truncated ? (
-        <p {...partOf(part.boardNote)}>{t("board.rows-truncated", { count: rows.length })}</p>
-      ) : null}
     </div>
   );
 }

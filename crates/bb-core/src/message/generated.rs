@@ -1597,9 +1597,6 @@ pub const BOARD_EMPTY_COLUMN: MessageKey = MessageKey::new("board.empty-column")
 /// The message `board.keys`.
 pub const BOARD_KEYS: MessageKey = MessageKey::new("board.keys");
 
-/// The message `board.limit-invalid`.
-pub const BOARD_LIMIT_INVALID: MessageKey = MessageKey::new("board.limit-invalid");
-
 /// The message `board.limits-later`.
 pub const BOARD_LIMITS_LATER: MessageKey = MessageKey::new("board.limits-later");
 
@@ -14762,6 +14759,15 @@ pub fn board_here(key: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `board.limit-invalid`.
+#[must_use]
+pub fn board_limit_invalid(most: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.limit-invalid"),
+        vec![("most", Value::Number(most))],
+    )
+}
+
 /// The message `board.move-to-title`.
 #[must_use]
 pub fn board_move_to_title(key: impl std::fmt::Display) -> Message {
@@ -14908,6 +14914,15 @@ pub fn board_rows_truncated(count: i64) -> Message {
 pub fn board_sort_by(field: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("board.sort-by"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `board.sorted-by-now`.
+#[must_use]
+pub fn board_sorted_by_now(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.sorted-by-now"),
         vec![("field", Value::Text(field.to_string()))],
     )
 }
@@ -15461,6 +15476,15 @@ pub fn comments_version_saved(values: CommentsVersionSaved<'_>) -> Message {
             ("version", Value::Text(values.version.to_string())),
             ("when", Value::Text(values.when.to_string())),
         ],
+    )
+}
+
+/// The message `common.actions-for`.
+#[must_use]
+pub fn common_actions_for(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("common.actions-for"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
