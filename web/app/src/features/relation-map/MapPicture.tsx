@@ -28,8 +28,8 @@ export interface MapPictureProps extends Pointing {
   readonly chosen: string | undefined;
   /** What the picture is for screen readers: one figure, with the list as its reading order. */
   readonly label: string;
-  /** How often *Fit* was pressed: each new number fits the picture into its box once. */
-  readonly fits: number;
+  /** Whether the picture is to be fitted to its box now (`onFit` says the zoom, which clears it). */
+  readonly fitDue: boolean;
   /** The zoom at which the whole picture fits into its box. */
   readonly onFit: (zoom: number) => void;
 }
@@ -153,20 +153,18 @@ function Stage(
  * start and fades the rest; only colors change, so nothing moves under the cursor (UX §6.4).
  */
 export function MapPicture(props: MapPictureProps) {
-  const { picture, sizes, looks, zoom, pointed, chosen, fits, onFit } = props;
+  const { picture, sizes, looks, zoom, pointed, chosen, fitDue, onFit } = props;
   const box = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLDivElement>(null);
   const size = pictureSize(picture, sizes);
   // *Fit*: the zoom at which the picture and the room around it fit the box, measured once for each
   // press; a new answer keeps the zoom the person has.
-  const fitted = useRef(0);
   // Before the picture is painted, so the first frame already has the zoom it keeps.
   useLayoutEffect(() => {
     const element = box.current;
-    if (fits === fitted.current || element === null || size.width <= 0 || size.height <= 0) {
+    if (!fitDue || element === null || size.width <= 0 || size.height <= 0) {
       return;
     }
-    fitted.current = fits;
     const room = pixelsOf("space-5") * 2;
     onFit(
       Math.min(
@@ -174,7 +172,7 @@ export function MapPicture(props: MapPictureProps) {
         (element.clientHeight - room) / size.height,
       ),
     );
-  }, [fits, onFit, size.width, size.height]);
+  }, [fitDue, onFit, size.width, size.height]);
   usePlace(canvas, { "map-width": size.width, "map-height": size.height, "map-zoom": zoom });
   const active = pointed ?? chosen;
   const drag = useBackgroundDrag();

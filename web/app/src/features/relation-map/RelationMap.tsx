@@ -53,7 +53,7 @@ function ShownForm({
       pointed={view.pointed}
       chosen={view.chosen}
       label={label(answer.issues.length)}
-      fits={view.fits}
+      fitDue={view.fitDue}
       onFit={view.onFit}
     />
   ) : (

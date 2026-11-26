@@ -26,8 +26,8 @@ export interface MapView {
   /** 1 is the size of the text. */
   readonly zoom: number;
   readonly setZoom: (zoom: number) => void;
-  /** How often *Fit* was pressed. */
-  readonly fits: number;
+  /** Whether the picture is to be fitted to its box when it is drawn next: once when the page opens, and after each press of *Fit*. */
+  readonly fitDue: boolean;
   readonly onFitPress: () => void;
   /** Takes the zoom at which the picture fits, as the largest zoom offered below it. */
   readonly onFit: (ratio: number) => void;
@@ -41,8 +41,9 @@ export interface MapView {
 export function useMapView(phone: boolean): MapView {
   const [form, setForm] = useState<MapForm>(phone ? "list" : "picture");
   const [zoom, setZoom] = useState(fullSize);
-  // A map opens fitted to its box, as far as the smallest zoom allows: *Fit* is asked once at the start.
-  const [fits, setFits] = useState(1);
+  // A map opens fitted to its box, as far as the smallest zoom allows: *Fit* is asked once for the page,
+  // so switching between the list and the picture keeps the zoom the person chose.
+  const [fitDue, setFitDue] = useState(true);
   const [pointed, setPointed] = useState<string | null>(null);
   const [chosen, setChosen] = useState<string | null>(null);
   return {
@@ -50,12 +51,13 @@ export function useMapView(phone: boolean): MapView {
     setForm,
     zoom,
     setZoom,
-    fits,
+    fitDue,
     onFitPress: () => {
-      setFits((count) => count + 1);
+      setFitDue(true);
     },
     onFit: (ratio: number) => {
       setZoom(fittingZoom(ratio));
+      setFitDue(false);
     },
     pointed: pointed ?? undefined,
     chosen: chosen ?? undefined,

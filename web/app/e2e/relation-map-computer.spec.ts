@@ -60,6 +60,18 @@ const timesheetChain = chainSentence(
 /** The relations between issues of WEB: WEB-1 blocks WEB-4, WEB-5 blocks WEB-4, WEB-1 related to WEB-2, WEB-6 blocks WEB-2, WEB-7 causes WEB-1. */
 const webRelations = 5;
 
+/** The color a token of the theme gives, as the browser writes a computed color. */
+function tokenColor(page: Page, token: string): Promise<string> {
+  return page.evaluate((name) => {
+    const probe = document.createElement("span");
+    probe.style.color = `var(--${name})`;
+    document.body.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  }, token);
+}
+
 /** Presses a chip of *Kinds shown*. */
 async function toggleKind(page: Page, word: string): Promise<void> {
   await page.getByRole("button", { name: word, exact: true }).click();
@@ -274,13 +286,14 @@ test("iss_16_the_keyboard_reaches_every_card_and_start_from_here", async ({ page
 });
 
 test("iss_16_the_start_and_the_chain_keep_the_edge_of_their_priority", async ({ page }) => {
-  // WEB-1 is Critical: on the start and on a shown chain its start edge keeps the color of its priority.
+  // WEB-1 is Critical and WEB-4 High: on the start and on a shown chain, their start edges keep the
+  // colors of their priorities, the same as the edges of the rows of a list.
   await signIn(page, ada);
   await openMap(page, mapped.start);
   await cardOf(page, mapped.timesheet).click();
-  const edges = await cardOf(page, mapped.start).evaluate((card) => {
-    const style = getComputedStyle(card);
-    return { start: style.borderInlineStartColor, top: style.borderTopColor };
-  });
-  expect(edges.start).not.toBe(edges.top);
+  await expect(cardOf(page, mapped.notes)).toHaveAttribute("data-state", /\bon-chain\b/u);
+  const startEdge = (key: string) =>
+    cardOf(page, key).evaluate((card) => getComputedStyle(card).borderInlineStartColor);
+  expect(await startEdge(mapped.start)).toBe(await tokenColor(page, "danger"));
+  expect(await startEdge(mapped.notes)).toBe(await tokenColor(page, "edge-high"));
 });

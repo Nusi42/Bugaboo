@@ -16,6 +16,7 @@ import {
   routeParam,
   savedSearchAddress,
 } from "./paths.ts";
+import { mapParam } from "./relation-map-view.ts";
 
 /**
  * How a change of the search enters the history of the browser (UX design section 2.1): typing in
@@ -81,7 +82,7 @@ export interface SearchLocation {
 }
 
 /** A part of the address as text. The router reads `7` as a number; the text is what was written. */
-function textOf(raw: object, name: keyof SearchParts): string | undefined {
+export function textOf(raw: object, name: keyof SearchParts): string | undefined {
   const value: unknown = Reflect.get(raw, name);
   if (typeof value === "string") {
     return value;
@@ -134,8 +135,8 @@ export function readSearch(location: {
   const effort = textOf(raw, "effort");
   const drivers = textOf(raw, "drivers");
   const dates = datesOf(textOf(raw, "dates"));
-  const hide = textOf(raw, "hide");
-  const parts = textOf(raw, "parts");
+  const hide = textOf(raw, mapParam.hide);
+  const parts = textOf(raw, mapParam.partOf);
   return {
     text: written === undefined || written.trim() === "" ? "" : written,
     ...(written === "" ? { everything: true } : {}),
@@ -162,8 +163,8 @@ function viewOptionParts(state: SearchState): SearchParts {
     ...(state.effort === undefined ? {} : { effort: state.effort ? "1" : "0" }),
     ...(state.drivers === undefined ? {} : { drivers: state.drivers ? "1" : "0" }),
     ...(state.dates === undefined ? {} : { dates: state.dates.join(",") }),
-    ...(state.hide === undefined ? {} : { hide: state.hide }),
-    ...(state.parts === undefined ? {} : { parts: state.parts }),
+    ...(state.hide === undefined ? {} : { [mapParam.hide]: state.hide }),
+    ...(state.parts === undefined ? {} : { [mapParam.partOf]: state.parts }),
   };
 }
 

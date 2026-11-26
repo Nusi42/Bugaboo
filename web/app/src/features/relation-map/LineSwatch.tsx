@@ -1,4 +1,4 @@
-import { part, partOf } from "@bugaboo/ui";
+import { LegendItem, part, partOf } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import type { LineLook } from "./line-look.ts";
@@ -34,10 +34,5 @@ export function LineLegendItem({
   readonly look: LineLook;
   readonly children: ReactNode;
 }) {
-  return (
-    <li {...partOf(part.legendItem)}>
-      <LineSwatch look={look} />
-      {children}
-    </li>
-  );
+  return <LegendItem swatch={<LineSwatch look={look} />}>{children}</LegendItem>;
 }

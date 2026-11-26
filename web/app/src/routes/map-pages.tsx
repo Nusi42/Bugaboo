@@ -8,6 +8,7 @@ import {
   mapParam,
   stepChoices,
 } from "../shared/relation-map-view.ts";
+import { textOf } from "../shared/search-address.ts";
 import { useAddressPart } from "./address-part.ts";
 import { appRoute } from "./layouts.tsx";
 import { loadsScreen } from "./preload.ts";
@@ -40,14 +41,6 @@ function searchOf(ask: IssueMapAsk): MapSearch {
   };
 }
 
-/** A part of the address as text: the router reads `0` as a number. */
-function textIn(value: unknown): string | undefined {
-  if (typeof value === "string") {
-    return value;
-  }
-  return typeof value === "number" ? String(value) : undefined;
-}
-
 /** The relation map of an issue, `/issues/WEB-142/map` (UX §2.1, §4.15). */
 export const issueMapRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -56,8 +49,8 @@ export const issueMapRoute = createRoute({
     const steps = search[mapParam.steps];
     return {
       [mapParam.steps]: typeof steps === "number" ? steps : undefined,
-      [mapParam.hide]: textIn(search[mapParam.hide]),
-      [mapParam.partOf]: textIn(search[mapParam.partOf]),
+      [mapParam.hide]: textOf(search, mapParam.hide),
+      [mapParam.partOf]: textOf(search, mapParam.partOf),
     };
   },
   loader: loadsScreen(IssueMapScreen),

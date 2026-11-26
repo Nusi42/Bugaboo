@@ -21,18 +21,24 @@ export function Legend({ label, children }: LegendProps) {
   );
 }
 
-export interface LegendItemProps {
-  readonly look: LegendLook;
+/** What a line of the key shows before its words: a swatch of the theme file, or a drawing of its own (a line of the relation map). */
+export type LegendSwatch = { readonly look: LegendLook } | { readonly swatch: ReactNode };
+
+export type LegendItemProps = LegendSwatch & {
   /** What the swatch means, in words: color is never alone (R5). */
   readonly children: ReactNode;
-}
+};
 
 /** One line of the key: a swatch and what it means. */
-export function LegendItem({ look, children }: LegendItemProps) {
+export function LegendItem(props: LegendItemProps) {
   return (
     <li {...partOf(part.legendItem)}>
-      <span {...partOf(part.legendSwatch, { variants: [look] })} aria-hidden />
-      {children}
+      {"swatch" in props ? (
+        props.swatch
+      ) : (
+        <span {...partOf(part.legendSwatch, { variants: [props.look] })} aria-hidden />
+      )}
+      {props.children}
     </li>
   );
 }

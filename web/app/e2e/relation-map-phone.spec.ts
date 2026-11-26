@@ -24,3 +24,15 @@ test("iss_16_the_phone_starts_in_the_list_form", async ({ page }) => {
   ).toBeVisible();
   await expectGoodInEveryLook(page);
 });
+
+test("iss_16_switching_between_list_and_picture_keeps_the_zoom", async ({ page }) => {
+  await signIn(page, ada);
+  await openMap(page, mapped.start);
+  await page.getByRole("button", { name: t("relation-map.show-as-picture"), exact: true }).click();
+  const zoom = page.getByLabel(t("relation-map.zoom"), { exact: true });
+  const chosen = t("relation-map.zoom-level", { percent: 125 });
+  await zoom.selectOption({ label: chosen });
+  await page.getByRole("button", { name: t("relation-map.show-as-list"), exact: true }).click();
+  await page.getByRole("button", { name: t("relation-map.show-as-picture"), exact: true }).click();
+  await expect(zoom.locator("option:checked")).toHaveText(chosen);
+});
