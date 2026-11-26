@@ -4,7 +4,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { undoStore } from "../../shared/optimistic-undo.ts";
-import { dashboardAddress, paths } from "../../shared/paths.ts";
+import { paths } from "../../shared/paths.ts";
+import { dashboardAddress } from "../../shared/dashboard-address.ts";
 import {
   restoreDashboard,
   useCopyDashboard,

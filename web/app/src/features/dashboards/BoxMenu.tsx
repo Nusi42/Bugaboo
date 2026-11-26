@@ -1,5 +1,7 @@
 import { t } from "@bugaboo/messages";
-import { ActionMenu, MoreButton, type MenuAction } from "@bugaboo/ui";
+import type { MenuAction } from "@bugaboo/ui";
+
+import { ItemActions } from "../../shared/ItemActions.tsx";
 
 /** What the menu of a box can do; a phone moves a box up and down, a computer by *Move …* and *Resize …*. */
 export interface BoxActions {
@@ -34,7 +36,7 @@ function actionsOf(actions: BoxActions): MenuAction[] {
 
 /**
  * The menu of a box in *Change* (UX §4.10): *Move …* and *Resize …* (the typed ways of the two drags) on a computer,
- * *Move up* and *Move down* on a phone, then *Change box* and *Remove*.
+ * *Move up* and *Move down* on a phone, then *Change box* and *Remove*; the shared menu of a thing that is dragged.
  */
 export function BoxMenu({
   title,
@@ -43,12 +45,5 @@ export function BoxMenu({
   readonly title: string;
   readonly actions: BoxActions;
 }) {
-  return (
-    <ActionMenu
-      label={t("dashboards.box-menu", { title })}
-      actions={actionsOf(actions)}
-      cancelLabel={t("common.cancel")}
-      trigger={MoreButton}
-    />
-  );
+  return <ItemActions name={title} actions={actionsOf(actions)} />;
 }

@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { expect } from "@playwright/test";
 
-import { dashboardAddress } from "../src/shared/paths.ts";
+import { dashboardAddress } from "../src/shared/dashboard-address.ts";
 import { ada } from "./support/accounts.ts";
 import {
   boxOnScreen,
@@ -44,7 +44,7 @@ test("cfg_03_the_phone_shows_boxes_in_one_column", async ({ page, server }) => {
   await startChange(page);
   await expect(partIn(page, "dashboard-box.handle")).toHaveCount(0);
   await page
-    .getByRole("button", { name: t("dashboards.box-menu", { title: "Left" }), exact: true })
+    .getByRole("button", { name: t("common.actions-for", { name: "Left" }), exact: true })
     .click();
   await page.getByRole("button", { name: t("dashboards.move-down"), exact: true }).click();
   await expect(boxes.getByRole("heading", { level: 2 })).toHaveText(["Right", "Left", "Under"]);

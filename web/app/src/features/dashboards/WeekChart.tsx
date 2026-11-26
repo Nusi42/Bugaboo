@@ -1,6 +1,6 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { BarChart, type ChartRow } from "@bugaboo/ui";
+import { BarChart, type ChartRow } from "@bugaboo/ui/chart";
 
 import { dayText } from "../../shared/format.ts";
 import { minutesText } from "../../shared/own-value-text.ts";

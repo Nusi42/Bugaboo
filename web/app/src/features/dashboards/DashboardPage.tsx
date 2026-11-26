@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { part, partOf } from "@bugaboo/ui";
 import { useMemo, type ReactNode } from "react";
 
-import { dashboardAddress } from "../../shared/paths.ts";
+import { dashboardAddress } from "../../shared/dashboard-address.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { QueryGate, usePageTrail } from "../shell/index.ts";
 import { DashboardBoxes } from "./DashboardBoxes.tsx";

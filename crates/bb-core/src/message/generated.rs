@@ -16512,15 +16512,6 @@ pub fn dashboards_box_changed(title: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `dashboards.box-menu`.
-#[must_use]
-pub fn dashboards_box_menu(title: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("dashboards.box-menu"),
-        vec![("title", Value::Text(title.to_string()))],
-    )
-}
-
 /// The message `dashboards.change-box-title`.
 #[must_use]
 pub fn dashboards_change_box_title(title: impl std::fmt::Display) -> Message {

@@ -1,9 +1,14 @@
 import { t } from "@bugaboo/messages";
 import { expect } from "@playwright/test";
 
-import { dashboardAddress, projectIssuesAddress } from "../src/shared/paths.ts";
+import { projectIssuesAddress } from "../src/shared/paths.ts";
 import { ada, bob, signInThroughApi } from "./support/accounts.ts";
-import { createBug, createTask, readyMadeBox } from "./support/dashboard-issues.ts";
+import {
+  createBug,
+  createTask,
+  dashboardAddress,
+  readyMadeBox,
+} from "./support/dashboard-issues.ts";
 import { boxOnScreen, createDashboard, searchOf, showAsTable } from "./support/dashboards.ts";
 import { test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";

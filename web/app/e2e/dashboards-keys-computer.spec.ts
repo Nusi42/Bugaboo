@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { expect } from "@playwright/test";
 
-import { dashboardAddress } from "../src/shared/paths.ts";
+import { dashboardAddress } from "../src/shared/dashboard-address.ts";
 import { ada } from "./support/accounts.ts";
 import {
   boxOnScreen,
@@ -66,7 +66,7 @@ test("cfg_03_tab_from_the_menu_of_a_box_out_of_it_ends_moving_it_by_keys", async
   await chooseByKeys(page, "First", t("dashboards.move"));
   // The menu of the box is still in the box: placing goes on.
   const menu = page.getByRole("button", {
-    name: t("dashboards.box-menu", { title: "First" }),
+    name: t("common.actions-for", { name: "First" }),
     exact: true,
   });
   await tabTo(page, menu);

@@ -1,6 +1,6 @@
 import { sumWords, type Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { BarChart, NumberChart, type ChartRow } from "@bugaboo/ui";
+import { BarChart, NumberChart, type ChartRow } from "@bugaboo/ui/chart";
 
 import { formatNumber } from "../../shared/format.ts";
 import { lengthSums } from "../../shared/length-sums.ts";

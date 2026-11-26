@@ -2,7 +2,8 @@ import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { expect } from "@playwright/test";
 
-import { dashboardAddress, paths } from "../src/shared/paths.ts";
+import { paths } from "../src/shared/paths.ts";
+import { dashboardAddress } from "../src/shared/dashboard-address.ts";
 import { ada } from "./support/accounts.ts";
 import { boxOnScreen, createDashboard, dashboardOf, readyMadeTitle } from "./support/dashboards.ts";
 import { test } from "./support/fixtures.ts";
@@ -57,7 +58,7 @@ test("cfg_03_customize_on_home_changes_the_persons_dashboard", async ({ page, se
   await page.getByRole("button", { name: t("dashboards.customize"), exact: true }).click();
   await expect(page.getByText(t("dashboards.changing-home"), { exact: true })).toBeVisible();
   await page
-    .getByRole("button", { name: t("dashboards.box-menu", { title: due }), exact: true })
+    .getByRole("button", { name: t("common.actions-for", { name: due }), exact: true })
     .click();
   await page.getByRole("button", { name: t("dashboards.remove"), exact: true }).click();
   await expect(boxOnScreen(page, due)).toHaveCount(0);

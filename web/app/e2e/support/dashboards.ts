@@ -267,7 +267,7 @@ export async function tabTo(page: Page, control: Locator, backwards = false): Pr
 export async function chooseByKeys(page: Page, title: string, action: string): Promise<void> {
   await tabTo(
     page,
-    page.getByRole("button", { name: t("dashboards.box-menu", { title }), exact: true }),
+    page.getByRole("button", { name: t("common.actions-for", { name: title }), exact: true }),
   );
   await page.keyboard.press("Enter");
   await tabTo(page, page.getByRole("button", { name: action, exact: true }));

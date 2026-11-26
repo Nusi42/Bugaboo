@@ -2154,7 +2154,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("dashboards.box-by-none", "Nothing: one number"),
     ("dashboards.box-changed", "{title} was changed."),
     ("dashboards.box-kind", "Kind of box"),
-    ("dashboards.box-menu", "Actions for {title}"),
     ("dashboards.box-search", "Search"),
     (
         "dashboards.box-search-hint",

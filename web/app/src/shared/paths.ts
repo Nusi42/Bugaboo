@@ -268,12 +268,11 @@ export const targetParam = { comment: "comment", change: "change" } as const;
 
 /** The address of an issue with the comment or the change that *Open* of a notification goes to. */
 export function issueTargetAddress(key: string, target: IssueTarget): string {
-  const query = new URLSearchParams();
-  if (target.kind === "comment") {
-    query.set(targetParam.comment, target.comment);
-  } else {
-    query.set(targetParam.change, target.at);
-  }
+  const query = new URLSearchParams(
+    target.kind === "comment"
+      ? { [targetParam.comment]: target.comment }
+      : { [targetParam.change]: target.at },
+  );
   return `${issueAddress(key)}?${query.toString()}`;
 }
 
@@ -285,11 +284,6 @@ export function projectIssuesAddress(shortName: string): string {
 /** The address of a saved search, `/s/<ID>`: its own address, which is shared. */
 export function savedSearchAddress(id: string): string {
   return filled(paths.savedSearch, routeParam.search, id);
-}
-
-/** The address of a dashboard, `/d/<ID>`: its own address, which is shared (ADR-0050, decision 1). */
-export function dashboardAddress(id: string): string {
-  return filled(paths.dashboard, routeParam.dashboard, id);
 }
 
 /** The name of the parameter that asks for the menu of the settings of a project instead of a section. */

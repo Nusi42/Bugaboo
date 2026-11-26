@@ -9,6 +9,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./aria-current": "./src/aria-current.ts",
+    "./chart": "./src/Chart.tsx",
     "./icons": "./src/icons.ts",
     "./scroll-reach": "./src/scroll-reach.ts",
     "./theme.css": "./src/theme.css"

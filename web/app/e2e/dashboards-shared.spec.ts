@@ -1,7 +1,7 @@
 import { t } from "@bugaboo/messages";
 import { expect } from "@playwright/test";
 
-import { dashboardAddress } from "../src/shared/paths.ts";
+import { dashboardAddress } from "../src/shared/dashboard-address.ts";
 import { lea } from "./support/access.ts";
 import { ada, signInThroughApi } from "./support/accounts.ts";
 import { boxOnScreen, createGuestTeam, viewOf } from "./support/dashboards.ts";

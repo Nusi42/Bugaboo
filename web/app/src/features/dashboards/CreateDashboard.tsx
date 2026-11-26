@@ -2,7 +2,7 @@ import { t } from "@bugaboo/messages";
 import { useNavigate } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 
-import { dashboardAddress } from "../../shared/paths.ts";
+import { dashboardAddress } from "../../shared/dashboard-address.ts";
 import { useCreateDashboard, type Dashboard } from "./dashboards.ts";
 import { NameDialog } from "./NameDialog.tsx";
 

@@ -358,7 +358,6 @@ export interface MessageArguments {
   "dashboards.add-this": { title: string | number };
   "dashboards.added": { title: string | number };
   "dashboards.box-changed": { title: string | number };
-  "dashboards.box-menu": { title: string | number };
   "dashboards.change-box-title": { title: string | number };
   "dashboards.copy-name": { name: string | number };
   "dashboards.deleted": { name: string | number };

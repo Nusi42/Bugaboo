@@ -26,7 +26,6 @@ export const messages = {
     "Someone changed this dashboard in the meantime. It now shows their change; try again.",
   "dashboards.empty": "This dashboard has no boxes you can see.",
   "dashboards.empty-mine": "No boxes yet. Add the first one with Add box.",
-  "dashboards.box-menu": "Actions for {title}",
   "dashboards.move-up": "Move up",
   "dashboards.move-down": "Move down",
   "dashboards.change-box": "Change box",
