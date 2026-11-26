@@ -55,7 +55,8 @@ enum Action {
     },
     /// Check the release folder of this version: its six files and nothing else, every checksum,
     /// the signature of `SHA256SUMS` against the keys the program carries, and the parts list with
-    /// its VEX statements against its schema (the `release` part of DEP-SBOM).
+    /// its VEX statements against its schema (the `release` part of DEP-SBOM), and that no file
+    /// names a folder of a computer (SEC-BUILD-PATHS).
     Check,
     /// Make the release folder of this version from the files of a release published with the
     /// earlier layout (a signature per file, a separate VEX file): the programs and the notices
@@ -180,7 +181,14 @@ pub(crate) fn run_release(repo: &crate::repo::Repo, arguments: Arguments) -> any
         }
         (Some(Action::Check), _, _) => {
             let (folder, name) = this_folder(repo)?;
-            let passed = report(&folder::problems_with_our_keys(&folder, &name));
+            let clean = match refuse_build_paths(repo.root(), &files_in(&folder)?) {
+                Ok(()) => true,
+                Err(refusal) => {
+                    crate::output::error(&refusal.to_string());
+                    false
+                }
+            };
+            let passed = report(&folder::problems_with_our_keys(&folder, &name)) && clean;
             if passed {
                 crate::output::info(&format!(
                     "{} holds the files of the release and nothing else, signed with a key of the \
