@@ -4703,10 +4703,14 @@ part "legend.swatch[variant=due]" {
 }
 
 // The switch *Deadline drivers* is the Legend's item of the outline: it reads like the other items, in their size and
-// color, and is as high as its track, which still is a target large enough for a pointer, so the Legend keeps the
-// height of a line of text (the head of the timeline fits a low window, UX §6.5).
+// color, and takes the room of its track in the line, so the Legend keeps the height of a line of text (the head of
+// the timeline fits a low window, UX §6.5).
 part "legend.item switch" {
     min-height auto
+    // The target stays a control high (36 with a mouse, a finger's 44 on touch, UX §7.4): padding around the track that
+    // the same negative margin takes back, so the line of the Legend does not grow.
+    padding-block "calc(($size-control - $space-5) / 2)"
+    margin-block "calc(($space-5 - $size-control) / 2)"
     gap "$space-2"
     color inherit
     font-size inherit
