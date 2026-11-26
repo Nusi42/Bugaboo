@@ -3,7 +3,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { dashboardAddress } from "../src/shared/places.ts";
 import { ada, signInThroughApi } from "./support/accounts.ts";
 import { readyMadeBox } from "./support/dashboard-issues.ts";
-import { createDashboard, resultsBox } from "./support/dashboards.ts";
+import { boxOnScreen, createDashboard, resultsBox } from "./support/dashboards.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { firstReadOf } from "./support/first-read.ts";
 import { signIn } from "./support/flows.ts";
@@ -31,4 +31,17 @@ test("cfg_03_a_small_timeline_box_moves_nothing_from_the_first_frame", async ({ 
     await route.continue();
   });
   expect(await firstReadOf(page, dashboardAddress(made.id))).toEqual([]);
+});
+
+test("cfg_03_a_dashboard_is_shown_when_the_pins_cannot_be_read", async ({ page, server }) => {
+  const admin = await signInThroughApi(server, ada);
+  const made = await createDashboard(admin, "Without pins", [
+    resultsBox("Still shown", { column: 0, row: 0, width: 12, height: 2 }),
+  ]);
+  await admin.dispose();
+  await signIn(page, ada);
+  // The read of the pins is refused: the page waits for its first reads, never for one that has failed.
+  await page.route("**/api/v1/me/pins", (route) => route.fulfill({ status: 403 }));
+  await page.goto(dashboardAddress(made.id));
+  await expect(boxOnScreen(page, "Still shown")).toBeVisible();
 });

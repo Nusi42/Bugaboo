@@ -46,6 +46,8 @@ export function usePinning({ kind, target }: PinTarget) {
   return {
     /** The pins were read: until they are, `pinned` says nothing. */
     known: pins.isSuccess,
+    /** The first read of the pins is on its way; once it has answered or failed, nothing waits for it. */
+    reading: pins.isPending,
     pinned,
     pending: pin.isPending || unpin.isPending,
     problem: pin.error ?? unpin.error,

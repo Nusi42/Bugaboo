@@ -20,8 +20,9 @@ import { usePinning, type PinTarget } from "./pins.ts";
  */
 export function PinButton(props: PinTarget) {
   const pinning = usePinning(props);
-  // Inside a hold the page waits for the pins, so the button does not come in later and push what stands after it.
-  useHoldWhileReading(!pinning.known);
+  // Inside a hold the page waits for the first read of the pins, so the button does not come in later and push what
+  // stands after it; a read that failed holds nothing (the page shows, without the button).
+  useHoldWhileReading(pinning.reading);
   if (!pinning.known) {
     return null;
   }
