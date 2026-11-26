@@ -12,10 +12,11 @@ use bb_testing::{Failure, TestResult, each_database};
 use serde_json::{Value, json};
 use zip::ZipArchive;
 
+use super::dashboards_http::{create, results, share, timer};
 use super::fields_http::create_field;
 use super::files_http::{run_jobs, upload};
 use super::http::{Browser, rig_and_app};
-use super::issues_site::{ISSUES, Site, id_in, key_of, ok, version_of};
+use super::issues_site::{ISSUES, Site, id_in, id_of, key_of, ok, text_in, version_of};
 use super::plan_privacy_http::field_level;
 use super::rig::Rig;
 
@@ -133,6 +134,105 @@ async fn priv_03_the_files_the_person_uploaded_are_in_the_file_with_their_bytes(
                 .iter()
                 .any(|row| row.to_string().contains(&mine)),
             "{attachments:?}"
+        );
+        Ok(())
+    })
+    .await
+}
+
+/// Saves a search as `browser` with the columns of `columns` and one card limit of the board; its
+/// ID.
+async fn search_with_columns(
+    browser: &mut Browser,
+    name: &str,
+    columns: &[&str],
+) -> Result<String, Failure> {
+    let columns: Vec<Value> = columns
+        .iter()
+        .map(|field| json!({"field": field, "width": 240}))
+        .collect();
+    let made = browser
+        .send(
+            "POST",
+            "/api/v1/saved-searches",
+            Some(json!({
+                "name": name,
+                "search_text": "",
+                "presentation": {
+                    "view": "board",
+                    "columns": columns,
+                    "group_by": null,
+                    "board": {"columns": null, "rows": null, "card_limits": [{"column": "Open", "limit": 4}]},
+                },
+            })),
+        )
+        .await?;
+    text_in(ok(&made)?, "id")
+}
+
+/// Whether every row of `rows` holds `wanted` and none holds `foreign`.
+fn only_theirs(rows: &[Value], wanted: &str, foreign: &str) -> bool {
+    rows.iter().all(|row| {
+        let row = row.to_string();
+        row.contains(wanted) && !row.contains(foreign)
+    })
+}
+
+#[tokio::test]
+async fn priv_03_the_file_holds_the_dashboards_with_their_boxes_and_the_searches_with_their_columns()
+-> TestResult {
+    each_database("priv_03_parts_in_the_file", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut bob, _) = site.person(StartingRole::TeamMember, "bob").await?;
+        let adas = id_of(
+            &create(
+                &mut ada,
+                "Ada board",
+                vec![
+                    results("Ada open bugs", "status is open", (0, 0, 6, 4)),
+                    timer(4),
+                ],
+            )
+            .await?,
+        )?;
+        let adas_search = search_with_columns(&mut ada, "Ada lane", &["title", "status"]).await?;
+        // Bob's dashboard is shared with a project Ada sees: she sees it, yet it is his, not hers.
+        let bobs = id_of(
+            &create(
+                &mut bob,
+                "Bob board",
+                vec![results("Bob open bugs", "status is open", (0, 0, 6, 4))],
+            )
+            .await?,
+        )?;
+        ok(&share(&mut bob, &bobs, ("project", &site.acme)).await?)?;
+        let bobs_search = search_with_columns(&mut bob, "Bob lane", &["status"]).await?;
+        let mut file = my_file(&rig, &mut ada).await?;
+        let dashboards = file.rows("dashboard")?;
+        assert_eq!(dashboards.len(), 1, "{dashboards:?}");
+        assert!(only_theirs(&dashboards, &adas, &bobs), "{dashboards:?}");
+        // Each box names its dashboard, so the person can tell which boxes are on which.
+        let boxes = file.rows("dashboard_box")?;
+        assert_eq!(boxes.len(), 2, "{:?}", file.names());
+        assert!(only_theirs(&boxes, &adas, "Bob open bugs"), "{boxes:?}");
+        assert!(
+            boxes
+                .iter()
+                .any(|row| row.to_string().contains("Ada open bugs")),
+            "{boxes:?}"
+        );
+        let columns = file.rows("saved_search_column")?;
+        assert_eq!(columns.len(), 2, "{:?}", file.names());
+        assert!(
+            only_theirs(&columns, &adas_search, &bobs_search),
+            "{columns:?}"
+        );
+        let limits = file.rows("saved_search_card_limit")?;
+        assert_eq!(limits.len(), 1, "{:?}", file.names());
+        assert!(
+            only_theirs(&limits, &adas_search, &bobs_search),
+            "{limits:?}"
         );
         Ok(())
     })

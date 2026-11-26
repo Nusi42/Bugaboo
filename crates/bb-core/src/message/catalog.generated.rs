@@ -5771,6 +5771,16 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-field.comment.issue", "Issue it is under"),
     ("personal-field.comment.text", "Text of the comment"),
     ("personal-field.comment.version", "Number of changes"),
+    ("personal-field.dashboard-box.dashboard", "Dashboard"),
+    ("personal-field.dashboard-box.id", "Reference"),
+    (
+        "personal-field.dashboard-box.position",
+        "Place among the boxes",
+    ),
+    (
+        "personal-field.dashboard-box.spec",
+        "What the box shows and where",
+    ),
     ("personal-field.dashboard.created-at", "Created on"),
     (
         "personal-field.dashboard.deleted-at",
@@ -6189,6 +6199,23 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-field.saved-search.updated-at", "Last changed on"),
     ("personal-field.saved-search.version", "Number of changes"),
     ("personal-field.saved-search.view", "Kind of view"),
+    (
+        "personal-field.search-card-limit.column",
+        "Column of the board",
+    ),
+    ("personal-field.search-card-limit.limit", "Card limit"),
+    (
+        "personal-field.search-card-limit.position",
+        "Place among the limits",
+    ),
+    ("personal-field.search-card-limit.search", "Saved search"),
+    ("personal-field.search-column.field", "Field"),
+    (
+        "personal-field.search-column.position",
+        "Place among the columns",
+    ),
+    ("personal-field.search-column.search", "Saved search"),
+    ("personal-field.search-column.width", "Width"),
     ("personal-field.search-mail.created-at", "Created on"),
     ("personal-field.search-mail.days", "Weekdays"),
     ("personal-field.search-mail.holder", "Sent to"),
@@ -6443,6 +6470,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-kind.backup-run", "Backups and restores"),
     ("personal-kind.comment", "Comments"),
     ("personal-kind.dashboard", "Dashboards"),
+    ("personal-kind.dashboard-box", "Boxes of dashboards"),
     ("personal-kind.data-export", "Files of Download my data"),
     ("personal-kind.domain-event", "Records of what happened"),
     ("personal-kind.draft", "Drafts"),
@@ -6499,6 +6527,11 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("personal-kind.review", "Reviews of agent work"),
     ("personal-kind.row-naming-person", "Changes naming a person"),
     ("personal-kind.saved-search", "Saved searches"),
+    (
+        "personal-kind.search-card-limit",
+        "Card limits of saved searches",
+    ),
+    ("personal-kind.search-column", "Columns of saved searches"),
     ("personal-kind.search-mail", "E-mailed searches"),
     (
         "personal-kind.security-log-entry",

@@ -1,5 +1,5 @@
-use bb_core::event::{EntityRef, FieldChange};
-use bb_core::id::{EntityId, FieldId, UserId};
+use bb_core::event::{EntityRef, FieldChange, RecordKind};
+use bb_core::id::{EntityId, FieldId, SavedSearchId, UserId};
 use bb_core::own_fields::FieldType;
 use bb_core::personal::{Entity, Link, LinkScope, PersonLink};
 
@@ -53,6 +53,13 @@ pub struct SavedSearch {
     #[personal(category = "content", basis = "legitimate_interests")]
     #[person_in_json(subject)]
     pub timeline: serde_json::Value,
+}
+
+#[derive(Entity)]
+pub struct SearchColumn {
+    #[not_personal]
+    #[person_for(part_of, link = "author")]
+    pub search: SavedSearchId,
 }
 
 // The derive writes every link into the constant, in the order of the fields.
@@ -117,6 +124,20 @@ fn main() {
             LinkScope::Json
         )]
     );
+    // A part takes the kind of its record from the type of the ID.
+    let part = <SearchColumn as Entity>::MARKS.person_links();
+    assert_eq!(
+        part.links(),
+        [PersonLink::new(
+            "search",
+            Some(Link::Author),
+            LinkScope::PartOf {
+                kind: RecordKind::SavedSearch
+            }
+        )]
+    );
+    assert_eq!(part.whole(), Some(RecordKind::SavedSearch));
+    assert_eq!(links.whole(), None);
     // Each field of such a record has the title of its column.
     for marks in [
         <Comment as Entity>::MARKS,
@@ -124,6 +145,7 @@ fn main() {
         <StoredFieldValue as Entity>::MARKS,
         <EmailChange as Entity>::MARKS,
         <SavedSearch as Entity>::MARKS,
+        <SearchColumn as Entity>::MARKS,
     ] {
         assert!(marks.fields().iter().all(|field| field.title().is_some()));
     }

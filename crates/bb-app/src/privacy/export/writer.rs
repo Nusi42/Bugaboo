@@ -55,7 +55,8 @@ fn json_of(value: &Shown) -> Json {
     }
 }
 
-/// A row in the JSON.
+/// A row in the JSON: each field by its name, and a field stored in several columns as an object
+/// of its columns, so none of its parts is lost.
 fn row_json(row: &ShapedRow) -> Json {
     let mut object = Map::new();
     object.insert(
@@ -63,7 +64,19 @@ fn row_json(row: &ShapedRow) -> Json {
         json!(row.links.iter().map(|link| link.code()).collect::<Vec<_>>()),
     );
     for cell in &row.cells {
-        object.insert(cell.field.to_owned(), json_of(&cell.value));
+        let mut parts = row.cells.iter().filter(|other| other.field == cell.field);
+        let value = match (parts.next(), parts.next()) {
+            (Some(_), Some(_)) => {
+                let mut columns = match object.remove(cell.field) {
+                    Some(Json::Object(columns)) => columns,
+                    _ => Map::new(),
+                };
+                columns.insert(cell.column.clone(), json_of(&cell.value));
+                Json::Object(columns)
+            }
+            _ => json_of(&cell.value),
+        };
+        object.insert(cell.field.to_owned(), value);
     }
     Json::Object(object)
 }

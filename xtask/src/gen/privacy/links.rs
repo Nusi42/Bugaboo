@@ -13,6 +13,9 @@ pub(crate) enum Scope {
     Every,
     /// Some rows (`#[person_for(…)]`), as the page words them.
     Rows(String),
+    /// The rows that are a part of a record of the person (`#[person_for(part_of, …)]`): the
+    /// field holds the ID of the record, whose type the derive checks.
+    Part,
     /// The rows that hold the person's e-mail address (`#[person_email(…)]`).
     Email,
     /// The rows whose changes name the person (`#[person_in_changes]`); each member says what the
@@ -81,8 +84,8 @@ fn read_person_for(attr: &Attribute) -> Result<LinkMark, String> {
             .path
             .get_ident()
             .map_or_else(String::new, ToString::to_string);
-        // `record` stands alone; every other part has a value.
-        let value = if name == "record" {
+        // `record` and `part_of` stand alone; every other part has a value.
+        let value = if name == "record" || name == "part_of" {
             String::new()
         } else {
             meta.value()?.parse::<syn::LitStr>()?.value()
@@ -100,6 +103,16 @@ fn read_person_for(attr: &Attribute) -> Result<LinkMark, String> {
     let Some(word) = part("link") else {
         return Err("needs link = \"…\" in #[person_for(…)]".to_owned());
     };
+    if part("part_of").is_some() {
+        return if parts.len() == 2 {
+            Ok(LinkMark {
+                word,
+                scope: Scope::Part,
+            })
+        } else {
+            Err("takes only link = \"…\" beside part_of in #[person_for(…)]".to_owned())
+        };
+    }
     let rows = match (
         part("record"),
         part("kind"),
@@ -253,6 +266,16 @@ mod tests {
         assert_eq!(links[1].as_ref().unwrap().scope, Scope::Every);
         assert_eq!(links[2].as_ref().unwrap().scope, Scope::Email);
         assert_eq!(links[3].as_ref().unwrap().scope, Scope::Never);
+        let part = read_links(&field(
+            "#[person_for(part_of, link = \"author\")] a: DashboardId",
+        ));
+        assert_eq!(part[0].as_ref().unwrap().scope, Scope::Part);
+        assert!(
+            read_links(&field(
+                "#[person_for(part_of, record, link = \"author\")] a: DashboardId"
+            ))[0]
+                .is_err()
+        );
         assert!(read_links(&field("#[person(a, b)] a: UserId"))[0].is_err());
         assert!(read_links(&field("#[person_for(kind = \"x\")] a: UserId"))[0].is_err());
         assert!(

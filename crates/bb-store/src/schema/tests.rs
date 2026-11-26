@@ -63,7 +63,10 @@ fn priv_02_every_field_that_names_a_person_has_a_link_on_a_stored_column() {
                 LinkScope::Record { kind: None } => (2..=2, None),
                 LinkScope::Record { kind: Some(kind) } => (1..=1, Some(kind)),
                 LinkScope::FieldType { key, .. } => (1..=1, Some(key)),
-                LinkScope::Email | LinkScope::Changes | LinkScope::Json => (1..=1, None),
+                LinkScope::PartOf { .. }
+                | LinkScope::Email
+                | LinkScope::Changes
+                | LinkScope::Json => (1..=1, None),
             };
             assert!(
                 expected.contains(&columns),

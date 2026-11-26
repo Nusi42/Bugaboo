@@ -6531,6 +6531,22 @@ pub const PERSONAL_FIELD_COMMENT_TEXT: MessageKey = MessageKey::new("personal-fi
 pub const PERSONAL_FIELD_COMMENT_VERSION: MessageKey =
     MessageKey::new("personal-field.comment.version");
 
+/// The message `personal-field.dashboard-box.dashboard`.
+pub const PERSONAL_FIELD_DASHBOARD_BOX_DASHBOARD: MessageKey =
+    MessageKey::new("personal-field.dashboard-box.dashboard");
+
+/// The message `personal-field.dashboard-box.id`.
+pub const PERSONAL_FIELD_DASHBOARD_BOX_ID: MessageKey =
+    MessageKey::new("personal-field.dashboard-box.id");
+
+/// The message `personal-field.dashboard-box.position`.
+pub const PERSONAL_FIELD_DASHBOARD_BOX_POSITION: MessageKey =
+    MessageKey::new("personal-field.dashboard-box.position");
+
+/// The message `personal-field.dashboard-box.spec`.
+pub const PERSONAL_FIELD_DASHBOARD_BOX_SPEC: MessageKey =
+    MessageKey::new("personal-field.dashboard-box.spec");
+
 /// The message `personal-field.dashboard.created-at`.
 pub const PERSONAL_FIELD_DASHBOARD_CREATED_AT: MessageKey =
     MessageKey::new("personal-field.dashboard.created-at");
@@ -7677,6 +7693,38 @@ pub const PERSONAL_FIELD_SAVED_SEARCH_VERSION: MessageKey =
 pub const PERSONAL_FIELD_SAVED_SEARCH_VIEW: MessageKey =
     MessageKey::new("personal-field.saved-search.view");
 
+/// The message `personal-field.search-card-limit.column`.
+pub const PERSONAL_FIELD_SEARCH_CARD_LIMIT_COLUMN: MessageKey =
+    MessageKey::new("personal-field.search-card-limit.column");
+
+/// The message `personal-field.search-card-limit.limit`.
+pub const PERSONAL_FIELD_SEARCH_CARD_LIMIT_LIMIT: MessageKey =
+    MessageKey::new("personal-field.search-card-limit.limit");
+
+/// The message `personal-field.search-card-limit.position`.
+pub const PERSONAL_FIELD_SEARCH_CARD_LIMIT_POSITION: MessageKey =
+    MessageKey::new("personal-field.search-card-limit.position");
+
+/// The message `personal-field.search-card-limit.search`.
+pub const PERSONAL_FIELD_SEARCH_CARD_LIMIT_SEARCH: MessageKey =
+    MessageKey::new("personal-field.search-card-limit.search");
+
+/// The message `personal-field.search-column.field`.
+pub const PERSONAL_FIELD_SEARCH_COLUMN_FIELD: MessageKey =
+    MessageKey::new("personal-field.search-column.field");
+
+/// The message `personal-field.search-column.position`.
+pub const PERSONAL_FIELD_SEARCH_COLUMN_POSITION: MessageKey =
+    MessageKey::new("personal-field.search-column.position");
+
+/// The message `personal-field.search-column.search`.
+pub const PERSONAL_FIELD_SEARCH_COLUMN_SEARCH: MessageKey =
+    MessageKey::new("personal-field.search-column.search");
+
+/// The message `personal-field.search-column.width`.
+pub const PERSONAL_FIELD_SEARCH_COLUMN_WIDTH: MessageKey =
+    MessageKey::new("personal-field.search-column.width");
+
 /// The message `personal-field.search-mail.created-at`.
 pub const PERSONAL_FIELD_SEARCH_MAIL_CREATED_AT: MessageKey =
     MessageKey::new("personal-field.search-mail.created-at");
@@ -8206,6 +8254,9 @@ pub const PERSONAL_KIND_COMMENT: MessageKey = MessageKey::new("personal-kind.com
 /// The message `personal-kind.dashboard`.
 pub const PERSONAL_KIND_DASHBOARD: MessageKey = MessageKey::new("personal-kind.dashboard");
 
+/// The message `personal-kind.dashboard-box`.
+pub const PERSONAL_KIND_DASHBOARD_BOX: MessageKey = MessageKey::new("personal-kind.dashboard-box");
+
 /// The message `personal-kind.data-export`.
 pub const PERSONAL_KIND_DATA_EXPORT: MessageKey = MessageKey::new("personal-kind.data-export");
 
@@ -8338,6 +8389,13 @@ pub const PERSONAL_KIND_ROW_NAMING_PERSON: MessageKey =
 
 /// The message `personal-kind.saved-search`.
 pub const PERSONAL_KIND_SAVED_SEARCH: MessageKey = MessageKey::new("personal-kind.saved-search");
+
+/// The message `personal-kind.search-card-limit`.
+pub const PERSONAL_KIND_SEARCH_CARD_LIMIT: MessageKey =
+    MessageKey::new("personal-kind.search-card-limit");
+
+/// The message `personal-kind.search-column`.
+pub const PERSONAL_KIND_SEARCH_COLUMN: MessageKey = MessageKey::new("personal-kind.search-column");
 
 /// The message `personal-kind.search-mail`.
 pub const PERSONAL_KIND_SEARCH_MAIL: MessageKey = MessageKey::new("personal-kind.search-mail");

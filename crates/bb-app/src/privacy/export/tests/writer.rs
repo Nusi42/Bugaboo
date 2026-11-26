@@ -26,10 +26,12 @@ fn comments() -> ShapedKind {
             cells: vec![
                 ShapedCell {
                     field: "author",
+                    column: "author".to_owned(),
                     value: Shown::Person(PersonRef::Someone),
                 },
                 ShapedCell {
                     field: "text",
+                    column: "text".to_owned(),
                     value: Shown::Text {
                         text: HOSTILE.to_owned(),
                         written: true,
@@ -37,6 +39,7 @@ fn comments() -> ShapedKind {
                 },
                 ShapedCell {
                     field: "created_at",
+                    column: "created_at".to_owned(),
                     value: Shown::Moment(jiff::Timestamp::from_second(1_767_600_000).unwrap()),
                 },
             ],
@@ -234,4 +237,31 @@ fn m9_f21_the_readme_reads_the_period_of_exports_from_the_keep_rules() {
     assert!(kept.starts_with(&period), "{kept} names {period}");
     // A kind that no row deletes by its age is kept while it is needed.
     assert_ne!(kept_of("comment"), kept);
+}
+
+#[test]
+fn priv_03_a_field_stored_in_several_columns_keeps_every_column_in_the_json() {
+    let cell = |column: &str, value: Shown| ShapedCell {
+        field: "spec",
+        column: column.to_owned(),
+        value,
+    };
+    let row = ShapedRow {
+        links: vec![Link::Author],
+        cells: vec![
+            cell(
+                "title",
+                Shown::Text {
+                    text: "Open bugs".to_owned(),
+                    written: true,
+                },
+            ),
+            cell("width", Shown::Number(6)),
+            cell("time_span", Shown::Empty),
+        ],
+    };
+    assert_eq!(
+        row_json(&row)["spec"],
+        serde_json::json!({"title": "Open bugs", "width": 6, "time_span": null})
+    );
 }

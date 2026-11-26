@@ -143,6 +143,11 @@ pub async fn removal_plan<S: AuthStore>(
     let mut kept_as_former_user = Vec::new();
     let mut by_law: BTreeMap<KeepKind, u64> = BTreeMap::new();
     for kind in &kinds {
+        // A part of a record (a box of a dashboard) goes and stays with its record, which the plan
+        // counts.
+        if kind.marks.person_links().whole().is_some() {
+            continue;
+        }
         let shown = |rows| PlanKind {
             title: title_of(&kind.marks),
             rows,

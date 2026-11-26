@@ -36,6 +36,9 @@ pub struct ShapedRow {
 pub struct ShapedCell {
     /// The field of the entity.
     pub field: &'static str,
+    /// The column that holds it: a field can be stored in several (the place of a box of a
+    /// dashboard, the options of the timeline of a saved search).
+    pub column: String,
     /// What is shown of it.
     pub value: Shown,
 }
@@ -139,6 +142,7 @@ pub fn shape_row(
             };
             ShapedCell {
                 field: cell.field,
+                column: cell.column,
                 value,
             }
         })

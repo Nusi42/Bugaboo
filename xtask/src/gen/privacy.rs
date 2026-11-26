@@ -526,6 +526,9 @@ fn links_line(entity: &EntityDef) -> Option<String> {
                 match &link.scope {
                     links::Scope::Every => Some(format!("`{name}` is the {word}")),
                     links::Scope::Rows(rows) => Some(format!("`{name}` is the {word} in {rows}")),
+                    links::Scope::Part => Some(format!(
+                        "`{name}` is the {word} in the rows that are a part of a record that is the person or belongs to them (`whose`), found by its ID"
+                    )),
                     links::Scope::Changes => Some(format!(
                         "the values of `{name}` name a person as the members declared for each kind say"
                     )),

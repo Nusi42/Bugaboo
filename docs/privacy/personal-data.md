@@ -352,9 +352,11 @@ A box of a dashboard, in the order of the dashboard.
 
 Defined in `crates/bb-core/src/dashboard.rs`.
 
+A person in its rows: `dashboard` is the author in the rows that are a part of a record that is the person or belongs to them (`whose`), found by its ID.
+
 | Field       | Personal data | Category  | Legal basis | What it holds                                                                                                                                       |
 | ----------- | ------------- | --------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dashboard` | No            | –         | –           | The dashboard.                                                                                                                                      |
+| `dashboard` | No            | –         | –           | The dashboard. A box is the dashboard's maker's as much as the dashboard is.                                                                        |
 | `id`        | No            | –         | –           | The ID of the box, which says nothing of the other boxes.                                                                                           |
 | `position`  | No            | –         | –           | Its place among the boxes of the dashboard, counted from 0.                                                                                         |
 | `spec`      | Yes           | `content` | `contract`  | The kind, the place, the options of its kind and what it reads. The title and the search text are content a person wrote; the rest is not personal. |
@@ -1654,9 +1656,11 @@ One card limit of the board of a saved search, in order.
 
 Defined in `crates/bb-core/src/saved_search.rs`.
 
+A person in its rows: `search` is the author in the rows that are a part of a record that is the person or belongs to them (`whose`), found by its ID.
+
 | Field      | Personal data | Category  | Legal basis            | What it holds                                                                                                                                                   |
 | ---------- | ------------- | --------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `search`   | No            | –         | –                      | The search.                                                                                                                                                     |
+| `search`   | No            | –         | –                      | The search. A limit is the search's maker's as much as the search is.                                                                                           |
 | `position` | No            | –         | –                      | Its place among the limits of the search, counted from 0.                                                                                                       |
 | `column`   | Yes           | `content` | `legitimate_interests` | The column, by the name of its status or choice or the word of its status group; `None` for the column of the issues without a value. A person wrote the names. |
 | `limit`    | No            | –         | –                      | The limit.                                                                                                                                                      |
@@ -1667,9 +1671,11 @@ One column of a saved search, in order.
 
 Defined in `crates/bb-core/src/saved_search.rs`.
 
+A person in its rows: `search` is the author in the rows that are a part of a record that is the person or belongs to them (`whose`), found by its ID.
+
 | Field      | Personal data | Category  | Legal basis            | What it holds                                                                           |
 | ---------- | ------------- | --------- | ---------------------- | --------------------------------------------------------------------------------------- |
-| `search`   | No            | –         | –                      | The search.                                                                             |
+| `search`   | No            | –         | –                      | The search. A column is the search's maker's as much as the search is.                  |
 | `position` | No            | –         | –                      | Its place among the columns of the search, counted from 0.                              |
 | `field`    | Yes           | `content` | `legitimate_interests` | The search word of the field. It can be the name of an own field, which a person wrote. |
 | `width`    | No            | –         | –                      | How wide the column is, if the person dragged it.                                       |

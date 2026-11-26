@@ -3,6 +3,10 @@
 //! nothing else. It is the only code that searches rows by person; it works the same on both
 //! databases, because every condition is built from the names in `schema` with the query builder.
 //!
+//! A row that names nobody itself but is a part of a record of the person (a box of their
+//! dashboard, a column of their saved search, `LinkScope::PartOf`) is found by the ID of that
+//! record, as `whose` says whose it is: one rule for every such part.
+//!
 //! The rows of a table are found in arms (`arms.rs`): each arm is one condition that one index
 //! answers, and no row is in two arms, so the walk counts and pages without reading a table whole
 //! (M9-F144).
@@ -254,6 +258,14 @@ fn link_parts(
                 (person, dialect),
             )?
         }
+        // A part of a record of the person (a box of their dashboard): one part, the IDs of their
+        // records of the kind looked up in the index of the field, as for a reference to a record.
+        LinkScope::PartOf { kind } => {
+            let id_column = column(table, field, false)?;
+            let record = owned_record(all, kind, &id_column, (person, dialect))?
+                .ok_or(StoreError::Corrupt("a part of a record that is nobody's"))?;
+            vec![Cond::all().add(record)]
+        }
         LinkScope::FieldType { .. } => {
             let typed = of_its_type(table, all, link)?.ok_or(StoreError::Corrupt("a link"))?;
             vec![
@@ -299,19 +311,32 @@ fn record_parts(
 ) -> Result<Vec<Cond>, StoreError> {
     let mut parts = Vec::new();
     for kind in kinds {
-        let of_the_kind = Expr::col(kind_column.clone()).eq(kind.code());
-        let the_record = match whose(*kind) {
-            Whose::ThePerson => Expr::col(id_column.clone()).eq(person.stored()),
-            Whose::Owner { of } => member_of(
-                id_column.clone(),
-                ids_where(all, of, person.stored())?,
-                dialect,
-            ),
-            Whose::Nobody => continue,
+        let Some(the_record) = owned_record(all, *kind, id_column, (person, dialect))? else {
+            continue;
         };
+        let of_the_kind = Expr::col(kind_column.clone()).eq(kind.code());
         parts.push(Cond::all().add(of_the_kind).add(the_record));
     }
     Ok(parts)
+}
+
+/// The condition that `id_column` holds the ID of a record of `kind` that is `person` or belongs to
+/// them, as `whose` says; none for a kind that is nobody's.
+fn owned_record(
+    all: &[StoredTable],
+    kind: RecordKind,
+    id_column: &Alias,
+    (person, dialect): (UserId, Dialect),
+) -> Result<Option<Expr>, StoreError> {
+    Ok(match whose(kind) {
+        Whose::ThePerson => Some(Expr::col(id_column.clone()).eq(person.stored())),
+        Whose::Owner { of } => Some(member_of(
+            id_column.clone(),
+            ids_where(all, of, person.stored())?,
+            dialect,
+        )),
+        Whose::Nobody => None,
+    })
 }
 
 /// The IDs (the field `of.id`) of the rows of the entity of `of` whose field `of.value` is

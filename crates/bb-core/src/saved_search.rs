@@ -444,8 +444,9 @@ impl SavedSearch {
 /// One card limit of the board of a saved search, in order.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct SearchCardLimit {
-    /// The search.
+    /// The search. A limit is the search's maker's as much as the search is.
     #[not_personal]
+    #[person_for(part_of, link = "author")]
     pub search: SavedSearchId,
     /// Its place among the limits of the search, counted from 0.
     #[not_personal]
@@ -462,8 +463,9 @@ pub struct SearchCardLimit {
 /// One column of a saved search, in order.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct SearchColumn {
-    /// The search.
+    /// The search. A column is the search's maker's as much as the search is.
     #[not_personal]
+    #[person_for(part_of, link = "author")]
     pub search: SavedSearchId,
     /// Its place among the columns of the search, counted from 0.
     #[not_personal]

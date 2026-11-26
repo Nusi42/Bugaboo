@@ -313,8 +313,9 @@ pub struct Dashboard {
 /// A box of a dashboard, in the order of the dashboard.
 #[derive(Clone, Debug, PartialEq, Eq, Entity)]
 pub struct DashboardBox {
-    /// The dashboard.
+    /// The dashboard. A box is the dashboard's maker's as much as the dashboard is.
     #[not_personal]
+    #[person_for(part_of, link = "author")]
     pub dashboard: DashboardId,
     /// The ID of the box, which says nothing of the other boxes.
     #[not_personal]

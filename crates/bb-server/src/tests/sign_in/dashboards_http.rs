@@ -508,6 +508,12 @@ async fn priv_04_removal_deletes_private_dashboards_and_keeps_shared_ones_as_for
             "{}",
             plan.body
         );
+        // The boxes go and stay with their dashboards, so the plan does not count them apart.
+        assert!(
+            !plan.body.to_string().contains("Boxes of dashboards"),
+            "{}",
+            plan.body
+        );
         let done = remove(&mut ada, bob_id, json!({"comments": "keep"})).await?;
         assert_eq!(done["status"], 204, "{done}");
         // The shared one stays, made by a former user; the private one is gone.

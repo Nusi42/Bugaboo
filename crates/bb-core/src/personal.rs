@@ -15,8 +15,8 @@ use crate::message::MessageKey;
 use jiff::Timestamp;
 
 pub use links::{
-    CanNameAPerson, CarriesChanges, HoldsAnAddress, HoldsJson, Link, LinkScope, NamesAPerson,
-    PersonLink, PersonLinks, RefersToARecord,
+    CanNameAPerson, CarriesChanges, HoldsAnAddress, HoldsJson, IdOfAnOwnedRecord, Link, LinkScope,
+    NamesAPerson, PersonLink, PersonLinks, RefersToARecord,
 };
 
 pub use bb_macros::Entity;
