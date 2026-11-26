@@ -16,6 +16,8 @@ export function useCardDrag(card: BoardCard, column: number, state: BoardState) 
   const id = issueOf(card);
   const drag = useDragOf(dragKinds.card.kind, id, {
     enabled: !phone,
+    // A card is dragged as a whole, with no button of the drag: a click with no pointer (*Enter* on its title) starts no drag.
+    hasDragButton: true,
     onStart: () => {
       holding.take(card, column, heldBy.pointer);
     },
