@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import { createRegistry, useRegistry } from "./registry.ts";
 
 /**
- * Where the parts of time stand: at the bottom of the sidebar of a computer, at the top of *Home* (on
- * a phone and a tablet, which have no sidebar), or in the bar of a phone.
+ * Where the parts of time stand: at the bottom of the sidebar of a computer, in the box *My timer* of a dashboard
+ * (*Home* starts with it, ADR-0050, decision 6), or in the bar of a phone.
  */
 export const timePlace = { sidebar: "sidebar", home: "home", bar: "bar" } as const;
 export type TimePlace = (typeof timePlace)[keyof typeof timePlace];

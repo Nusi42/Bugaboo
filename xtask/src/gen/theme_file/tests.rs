@@ -219,6 +219,18 @@ fn list_beside_is_the_sum(file: &ThemeFile) -> bool {
     (token_pixels(file, "bp-list-beside") - sum).abs() < 0.5
 }
 
+#[test]
+fn the_columns_of_a_dashboard_are_the_columns_of_the_core() {
+    let repo = Repo::discover().unwrap();
+    let text = crate::source::read_text(&repo, THEME_PATH).unwrap();
+    let file = ThemeFile::parse_base(&text).unwrap();
+    let columns = file
+        .token("dashboard-columns")
+        .and_then(|token| token.same.as_deref())
+        .and_then(|value| value.parse::<u32>().ok());
+    assert_eq!(columns, Some(bb_core::dashboard::GRID_COLUMNS));
+}
+
 /// Whether the breakpoint from which the assistant docks beside the page is the computer layout plus the width of the dock.
 fn assistant_dock_is_the_sum(file: &ThemeFile) -> bool {
     let sum = token_pixels(file, "bp-computer") + token_pixels(file, "size-panel");

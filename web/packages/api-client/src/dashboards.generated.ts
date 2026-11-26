@@ -10,6 +10,16 @@ export const boxHeightLeast = 2;
 export const boxHeightMost = 8;
 /** The most boxes one dashboard holds (`BOXES_MAX`). */
 export const boxesMost = 20;
+/** The kinds of box that read no search (`KINDS_WITHOUT_SEARCH`). */
+export const kindsWithoutSearch = ["my-timer"] as const;
+/** Whose time a box of time totals adds up without a search (`SPANS_WITHOUT_SEARCH`). */
+export const spansWithoutSearch = ["my-week"] as const;
+/** The kinds of box with a shape, bars by a field or one number (`KINDS_WITH_SHAPE`). */
+export const kindsWithShape = ["numbers-and-chart"] as const;
+/** The kinds of box that say whose time they add up (`KINDS_WITH_SPAN`). */
+export const kindsWithSpan = ["time-totals"] as const;
+/** The kinds of own field a total adds up (`bb_core::totals::SUMMED_KINDS`). */
+export const summedFieldKinds = ["whole-number", "decimal"] as const;
 /** The words of the sums a total adds up (`bb_core::totals`); an own field of numbers is `number` and its word. */
 export const sumWords = {
   count: "count",

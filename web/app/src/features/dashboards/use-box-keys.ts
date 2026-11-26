@@ -1,5 +1,5 @@
 import type { Packer } from "@bugaboo/wasm";
-import { useEffect, useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 
 import { dragKinds } from "../../shared/drag-kinds.ts";
 import { grownBy, samePlaces, steppedBy, type GridPlace, type Step } from "./grid-layout.ts";
@@ -20,6 +20,8 @@ const back = "Escape";
 export interface BoxKeysInput {
   readonly places: readonly GridPlace[];
   readonly pack: Packer | null;
+  /** *Change* is on: when it ends, placing ends with it. */
+  readonly changing: boolean;
   /** The places are kept: the same as letting a dragged box go. */
   readonly onDrop: (placing: Placing) => void;
 }
@@ -44,45 +46,60 @@ function afterKey(
   return undefined;
 }
 
+/** Whether a key press is one placing reads: no modifier with it, and no letter being composed. */
+function isPlain(event: KeyboardEvent<HTMLElement>): boolean {
+  return (
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey &&
+    !event.nativeEvent.isComposing
+  );
+}
+
 /**
  * *Move …* and *Resize …* of the menu of a box (UX §4.10, TEST-A11Y): the typed way of each drag. While one is on, the
- * arrow keys move the shadow of the box (a column sideways, past the box above or below) or change its size, Enter keeps
- * it and Escape goes back, wherever the focus is, so the keys do exactly what a drag does.
+ * handle of the box has the focus and reads the arrow keys: they move the shadow of the box (a column sideways, past the
+ * box above or below) or change its size, Enter keeps it and Escape goes back, so the keys do exactly what a drag does.
+ * Leaving the box, or the end of *Change*, goes back too.
  */
-export function useBoxKeys({ places, pack, onDrop }: BoxKeysInput): {
+export function useBoxKeys({ places, pack, changing, onDrop }: BoxKeysInput): {
   readonly placing: Placing | null;
   readonly start: (at: number, gesture: Gesture) => void;
+  readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+  readonly onBlur: (stillInBox: boolean) => void;
 } {
   const [placing, setPlacing] = useState<Placing | null>(null);
-  useEffect(() => {
-    if (placing === null || pack === null) {
-      return () => {};
-    }
-    const listen = (event: KeyboardEvent): void => {
-      const after = afterKey(event.key, placing, pack);
+  const shown = changing ? placing : null;
+  return {
+    placing: shown,
+    start: (at, gesture) => {
+      setPlacing({ at, gesture, places });
+    },
+    onKeyDown: (event) => {
+      if (shown === null || pack === null || !isPlain(event)) {
+        return;
+      }
+      const after = afterKey(event.key, shown, pack);
       if (after === undefined) {
         return;
       }
       event.preventDefault();
-      event.stopPropagation();
       if ("next" in after) {
         setPlacing(after.next);
         return;
       }
       setPlacing(null);
-      if (after.end === "keep" && !samePlaces(placing.places, places)) {
-        onDrop(placing);
+      if (after.end === "keep" && !samePlaces(shown.places, places)) {
+        onDrop(shown);
       }
-    };
-    window.addEventListener("keydown", listen, true);
-    return () => {
-      window.removeEventListener("keydown", listen, true);
-    };
-  }, [placing, pack, places, onDrop]);
-  return {
-    placing,
-    start: (at, gesture) => {
-      setPlacing({ at, gesture, places });
+    },
+    // The menu that chose *Move …* gives the focus back to its own button in the box, which the handle takes again;
+    // the focus going anywhere else ends placing.
+    onBlur: (stillInBox) => {
+      if (!stillInBox) {
+        setPlacing(null);
+      }
     },
   };
 }

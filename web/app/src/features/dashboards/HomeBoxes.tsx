@@ -1,4 +1,6 @@
-import { HoldWhileLoading, part, partOf } from "@bugaboo/ui";
+import { Alert, alertTone, HoldWhileLoading, part, partOf } from "@bugaboo/ui";
+
+import { messageOf } from "../../shared/errors.ts";
 
 import { DashboardBoxes } from "./DashboardBoxes.tsx";
 import { useHomeDashboard } from "./dashboards.ts";
@@ -10,6 +12,9 @@ import { useHomeDashboard } from "./dashboards.ts";
  */
 export function HomeBoxes() {
   const home = useHomeDashboard();
+  if (home.isError) {
+    return <Alert tone={alertTone.danger}>{messageOf(home.error)}</Alert>;
+  }
   if (home.data === undefined) {
     return <HoldWhileLoading />;
   }

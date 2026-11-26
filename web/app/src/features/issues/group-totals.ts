@@ -1,33 +1,23 @@
-import { dataOf, sumWords, type Schema } from "@bugaboo/api-client";
+import { dataOf, summedFieldKinds, sumWords, type Schema } from "@bugaboo/api-client";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { api } from "../../shared/api.ts";
-import { listWord } from "../../shared/list-columns.ts";
-import { ownValueText } from "../../shared/own-value-text.ts";
-import { minutesText } from "../../shared/own-value-text.ts";
+import { lengthSums } from "../../shared/length-sums.ts";
+import { minutesText, ownValueText } from "../../shared/own-value-text.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
 import { sumText } from "../../shared/sum-text.ts";
 import type { FoundSearch } from "./found-issues.ts";
 import type { OwnColumns } from "./own-columns.ts";
 
-/** The sum of each column of a length, by the search word of its column. */
-const lengthSums: Readonly<Record<string, string>> = {
-  [listWord.estimatedTime]: sumWords.estimated,
-  [listWord.timeLeft]: sumWords.timeLeft,
-  [listWord.timeSpent]: sumWords.timeSpent,
-};
-
-/** The kinds of own field that a total adds up. */
-const numberKinds: ReadonlySet<Schema<"FieldType">> = new Set(["whole-number", "decimal"]);
-
 /** The sum a column of the list asks for: a length, or an own field of numbers; none for another column. */
 export function sumOf(word: string, own: OwnColumns): string | undefined {
-  const length = lengthSums[word];
+  const length = lengthSums.find((each) => each.column === word);
   if (length !== undefined) {
-    return length;
+    return length.sum;
   }
   const field = own[word];
-  return field !== undefined && numberKinds.has(field.kind)
+  const summed: readonly string[] = summedFieldKinds;
+  return field !== undefined && summed.includes(field.kind)
     ? `${sumWords.number}${word}`
     : undefined;
 }

@@ -7,7 +7,7 @@ import {
   boxOnScreen,
   createDashboard,
   dashboardOf,
-  placesOf,
+  readingTitles,
   resultsBox,
   startChange,
   startsOf,
@@ -48,7 +48,8 @@ test("cfg_03_the_phone_shows_boxes_in_one_column", async ({ page, server }) => {
     .click();
   await page.getByRole("button", { name: t("dashboards.move-down"), exact: true }).click();
   await expect(boxes.getByRole("heading", { level: 2 })).toHaveText(["Right", "Left", "Under"]);
+  // The order is kept: the places the server keeps read in the new order, row by row.
   await expect
-    .poll(async () => Object.keys(placesOf(await dashboardOf(api, made.id))).length)
-    .toBe(3);
+    .poll(async () => readingTitles(await dashboardOf(api, made.id)))
+    .toEqual(["Right", "Left", "Under"]);
 });

@@ -1,6 +1,8 @@
 import type { Packer } from "@bugaboo/wasm";
 import { useEffect, useState } from "react";
 
+import { doNothing } from "../../shared/do-nothing.ts";
+
 /** The packing that was loaded, shared by every dashboard of the page. */
 let loaded: Packer | null = null;
 
@@ -24,11 +26,15 @@ export function usePacker(wanted: boolean): Packer | null {
       return () => {};
     }
     let live = true;
-    void loadIt().then((ready: Packer) => {
-      if (live) {
-        setPacker(() => ready);
-      }
-    });
+    // A failed load (the network) leaves nothing to place with: the ways to place stay hidden, and the next *Change*
+    // tries again.
+    loadIt()
+      .then((ready: Packer) => {
+        if (live) {
+          setPacker(() => ready);
+        }
+      })
+      .catch(doNothing);
     return () => {
       live = false;
     };

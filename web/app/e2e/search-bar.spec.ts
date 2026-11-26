@@ -167,9 +167,9 @@ test("qry_06 share lists only what the person may share with", async ({ page }) 
   await signIn(page, ada);
   await page.goto(savedSearchAddress(someSearch));
   await openBar(page);
-  await page.getByRole("button", { name: t("search.share") }).click();
+  await page.getByRole("button", { name: t("common.share") }).click();
   const window = page.getByRole("dialog", {
-    name: t("search.share-title", { name: "Mine to do" }),
+    name: t("common.share-title", { name: "Mine to do" }),
   });
   await expect(window).toBeVisible();
   await expect(window.getByText(t("search.share-note"))).toBeVisible();

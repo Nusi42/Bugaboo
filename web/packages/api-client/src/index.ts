@@ -97,6 +97,11 @@ export {
   boxHeightMost,
   boxWidthLeast,
   gridColumns,
+  kindsWithShape,
+  kindsWithSpan,
+  kindsWithoutSearch,
+  spansWithoutSearch,
+  summedFieldKinds,
   sumWords,
 } from "./dashboards.generated.ts";
 export { reasonMax } from "./texts.generated.ts";

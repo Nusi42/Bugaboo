@@ -4,7 +4,11 @@
  */
 export const dashboardKeys = {
   all: ["dashboards"],
+  /** Every list of dashboards (the names in the sidebar). */
+  lists: () => ["dashboards", "list"],
   list: (which: string, size: number) => ["dashboards", "list", which, size],
+  /** What every box of one dashboard answers. */
+  boxesOf: (dashboard: string) => ["dashboards", "box", dashboard],
   one: (id: string) => ["dashboards", "one", id],
   home: () => ["dashboards", "home"],
   /** What one box answers, for the version of its dashboard that placed it. */

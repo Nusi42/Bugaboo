@@ -127,6 +127,7 @@
   --box-width: 1;
   --box-height: 1;
   --chart-share: 0;
+  --dashboard-columns: 12;
   --size-dashboard-row: 72px;
   --size-chart-names: calc(120px * var(--text-scale));
   --size-chart-bar: calc(16px * var(--text-scale));

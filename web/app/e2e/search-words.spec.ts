@@ -261,7 +261,7 @@ test("qry_06 a search stored in the old spelling opens unchanged and Undo comes 
   await signIn(page, ada);
   await page.goto(savedSearchAddress(storedBefore));
   await openBar(page);
-  await expect(page.getByText(textByKey("search.made-by", { person: "Ada Admin" }))).toBeVisible();
+  await expect(page.getByText(textByKey("common.made-by", { person: "Ada Admin" }))).toBeVisible();
   await expect(page.getByText(t("search.changed-not-saved"))).toBeHidden();
   // The address says nothing of the search: it is the saved one.
   expect(addressText(page)).toBe("");

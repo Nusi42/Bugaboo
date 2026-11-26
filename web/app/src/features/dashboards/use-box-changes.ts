@@ -1,7 +1,7 @@
-import { boxesMost } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
+import { doNothing } from "../../shared/do-nothing.ts";
 import { codeOf, messageOf } from "../../shared/errors.ts";
 import { undoStore } from "../../shared/optimistic-undo.ts";
 import { queryClient } from "../../shared/query-client.ts";
@@ -28,18 +28,26 @@ function keyOf(dashboard: Dashboard) {
 }
 
 /**
- * Why a change was refused, in words: a stale version is said as such (the dashboard is read again), and a change the
- * server refused as too many boxes while the person sees fewer than the most says that boxes they cannot see now count
- * too (M10-F55).
+ * Why a change was refused, in words: a stale version is said as such (the dashboard is read again); every other refusal
+ * says what the server said, among them that a dashboard holds at most 20 boxes, the ones the maker cannot see now
+ * counted too (`dashboard.too-many-boxes`, M10-F55), and a search that does not check.
  */
-function refusalOf(error: unknown, dashboard: Dashboard): string {
-  if (codeOf(error) === "edit.version-changed") {
-    return t("dashboards.stale");
+function refusalOf(error: unknown): string {
+  return codeOf(error) === "edit.version-changed" ? t("dashboards.stale") : messageOf(error);
+}
+
+/** Offers *Undo* of a change that says what it did; the *Undo* itself says nothing. */
+function offerUndo(said: string | null, undo: () => void): void {
+  if (said !== null) {
+    undoStore.offer({ message: said, undo });
   }
-  if (codeOf(error) === "request.invalid" && dashboard.boxes.length < boxesMost) {
-    return t("dashboards.full-unseen", { most: boxesMost });
-  }
-  return messageOf(error);
+}
+
+/** After a change of what the boxes are, what each box answers is read again; a change of places reads nothing. */
+function readBoxesAgain(dashboard: Dashboard): () => void {
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.dashboards.boxesOf(dashboard.id) });
+  };
 }
 
 /**
@@ -50,24 +58,25 @@ function refusalOf(error: unknown, dashboard: Dashboard): string {
 export function useBoxChanges(dashboard: Dashboard) {
   const change = useChangeDashboard(dashboard);
   const [refused, setRefused] = useState<string | null>(null);
-  const send = (boxes: readonly AskedBox[], version: number, said: string | null): void => {
+  const send = (
+    boxes: readonly AskedBox[],
+    version: number,
+    said: string | null,
+    afterSave: () => void = doNothing,
+  ): void => {
     const before = dashboard.boxes.map((box) => bodyOf(box));
     setRefused(null);
     change.mutate(
       { boxes, version },
       {
         onSuccess: (changed: Dashboard) => {
-          if (said !== null) {
-            undoStore.offer({
-              message: said,
-              undo: () => {
-                send(before, changed.version, null);
-              },
-            });
-          }
+          afterSave();
+          offerUndo(said, () => {
+            send(before, changed.version, null, afterSave);
+          });
         },
         onError: (error: unknown) => {
-          setRefused(refusalOf(error, dashboard));
+          setRefused(refusalOf(error));
           refreshDashboards();
         },
       },
@@ -76,11 +85,11 @@ export function useBoxChanges(dashboard: Dashboard) {
   return {
     refused,
     pending: change.isPending,
-    /** Saves the boxes after a change: an added, changed or removed box. */
+    // An added, changed or removed box: what the boxes answer is read again.
     save: ({ boxes, said }: BoxesChange) => {
-      send(boxes, dashboard.version, said);
+      send(boxes, dashboard.version, said, readBoxesAgain(dashboard));
     },
-    /** Saves new places of the boxes the person sees, in their order, and shows them at once. */
+    // New places of the boxes the person sees, in their order, shown at once.
     place: (places: readonly GridPlace[], said: string) => {
       const boxes = dashboard.boxes.map((box, at) => ({ ...box, ...places[at] }));
       queryClient.setQueryData(keyOf(dashboard), { ...dashboard, boxes });

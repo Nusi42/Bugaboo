@@ -15,7 +15,7 @@ export function ShareButton({ search }: { readonly search: SavedSearch }) {
           setOpen(true);
         }}
       >
-        {t("search.share")}
+        {t("common.share")}
       </Button>
       <ShareWindow
         search={search}

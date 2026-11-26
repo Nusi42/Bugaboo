@@ -56,7 +56,7 @@ function MadeLinks({
               icon={icon}
               label={thing.name}
               {...(shared
-                ? { by: personName(thing.maker), bySeparator: t("search.saved-by-separator") }
+                ? { by: personName(thing.maker), bySeparator: t("common.saved-by-separator") }
                 : {})}
               href={addressOf(thing.id)}
               current={howCurrent(addressOf(thing.id), pathname) === placeCurrent.page}
@@ -99,8 +99,8 @@ function BothLists({
 }) {
   return (
     <>
-      <MadeLinks heading={t("search.saved-mine")} things={mine} shared={false} {...rest} />
-      <MadeLinks heading={t("search.saved-shared")} things={shared} shared {...rest} />
+      <MadeLinks heading={t("common.saved-mine")} things={mine} shared={false} {...rest} />
+      <MadeLinks heading={t("common.saved-shared")} things={shared} shared {...rest} />
     </>
   );
 }
@@ -149,10 +149,13 @@ export function MineAndShared({
     return framed(<p {...partOf(part.sidebarNote)}>{t("common.loading")}</p>);
   }
   // An empty section keeps its heading and says so in one line, like every section. Only in a window too low for the
-  // sidebar (the height that folds its bottom group) it is the first thing left out (M5-F150, UX §4.9); the sheet *More*
-  // of a phone always has room.
+  // sidebar (the height that folds its bottom group) it is the first thing left out, with what it offers to make: the
+  // sidebar must fit a window 600 px high (M5-F150, UX §4.9, M10-F130); the sheet *More* of a phone always has room.
   if (!narrow && isEmpty(mine, shared)) {
-    return low && view.place !== "sheet" ? null : framed(<EmptyLists none={none} after={after} />);
+    if (low && view.place !== "sheet") {
+      return null;
+    }
+    return framed(<EmptyLists none={none} after={after} />);
   }
   return framed(
     <ul {...partOf(part.sidebarList)}>

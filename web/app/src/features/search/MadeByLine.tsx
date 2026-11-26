@@ -35,7 +35,7 @@ export function MadeByLine({
     <div {...partOf(part.searchMadeBy, { states: [!unchanged && "changed"] })}>
       <p {...partOf(part.muted)}>
         {unchanged
-          ? t("search.made-by", { person: personName(search.maker) })
+          ? t("common.made-by", { person: personName(search.maker) })
           : t("search.changed-not-saved")}
       </p>
       <span

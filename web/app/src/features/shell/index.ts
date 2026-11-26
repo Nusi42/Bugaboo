@@ -26,6 +26,7 @@ export {
 } from "./MineAndShared.tsx";
 export {
   addSidebarSection,
+  madeListShown,
   type SidebarSection,
   type SidebarSectionView,
 } from "./sidebar-sections.ts";

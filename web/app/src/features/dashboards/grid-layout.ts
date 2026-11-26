@@ -8,7 +8,11 @@ import type { BoxPlace, Packer } from "@bugaboo/wasm";
  */
 export type GridPlace = BoxPlace;
 
-/** Whether two places share a cell. */
+/**
+ * Whether two places share a cell. The same test as `BoxPlace::overlaps` of `bb_core`, kept here because laying the boxes
+ * out runs on every move of a pointer, where a call into the WebAssembly module for each pair would cost more than the
+ * test; the packing that decides the places the server keeps is the module's (`pack_places`).
+ */
 function overlaps(one: GridPlace, other: GridPlace): boolean {
   return (
     one.column < other.column + other.width &&

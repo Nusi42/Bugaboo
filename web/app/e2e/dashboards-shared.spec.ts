@@ -20,6 +20,7 @@ test("cfg_03_a_shared_dashboard_shows_the_viewer_their_own_answer_and_closes_gap
 }) => {
   const admin = await signInThroughApi(server, ada);
   const team = await createGuestTeam(admin);
+  const maker = await viewOf(admin, team.id);
   await admin.dispose();
   const guest = await signInThroughApi(server, lea);
   const view = await viewOf(guest, team.id);
@@ -41,9 +42,12 @@ test("cfg_03_a_shared_dashboard_shows_the_viewer_their_own_answer_and_closes_gap
     new RegExp(` ${String(view.issues)}$`, "u"),
   );
   await expect(
-    page.getByText(t("search.made-by", { person: view.maker }), { exact: true }),
+    page.getByText(t("common.made-by", { person: view.maker }), { exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: t("dashboards.save-copy"), exact: true }),
   ).toBeVisible();
+  // Each box runs as its viewer: the guest counts fewer issues than the maker, and only the maker shares.
+  expect(view.issues).toBeLessThan(maker.issues);
+  await expect(page.getByRole("button", { name: t("common.share"), exact: true })).toHaveCount(0);
 });

@@ -22,7 +22,7 @@ export const boxHeightLeast = {BOX_HEIGHT_MIN};
 export const boxHeightMost = {BOX_HEIGHT_MAX};
 /** The most boxes one dashboard holds (`BOXES_MAX`). */
 export const boxesMost = {BOXES_MAX};
-/** The words of the sums a total adds up (`bb_core::totals`); an own field of numbers is `number` and its word. */
+{rules}/** The words of the sums a total adds up (`bb_core::totals`); an own field of numbers is `number` and its word. */
 export const sumWords = {{
   count: \"{count}\",
   estimated: \"{estimated}\",
@@ -31,12 +31,61 @@ export const sumWords = {{
   number: \"{number}\",
 }} as const;
 ",
+        rules = rules(),
         count = bb_core::totals::COUNT,
         estimated = bb_core::totals::ESTIMATED,
         left = bb_core::totals::TIME_LEFT,
         spent = bb_core::totals::TIME_SPENT,
         number = bb_core::totals::NUMBER_SUM,
     )
+}
+
+/// A list of words as a TypeScript constant.
+fn listed<T: bb_core::words::Word>(name: &str, doc: &str, words: &[T]) -> String {
+    let quoted: Vec<String> = words
+        .iter()
+        .map(|each| format!("\"{}\"", each.code()))
+        .collect();
+    format!(
+        "/** {doc} */\nexport const {name} = [{}] as const;\n",
+        quoted.join(", ")
+    )
+}
+
+/// The rules of the kinds of box and of the sums that the forms of the screen follow, each from
+/// its one home in `bb_core` (ADR-0050, decisions 3 and 7).
+fn rules() -> String {
+    use bb_core::dashboard::{
+        KINDS_WITH_SHAPE, KINDS_WITH_SPAN, KINDS_WITHOUT_SEARCH, SPANS_WITHOUT_SEARCH,
+    };
+    [
+        listed(
+            "kindsWithoutSearch",
+            "The kinds of box that read no search (`KINDS_WITHOUT_SEARCH`).",
+            &KINDS_WITHOUT_SEARCH,
+        ),
+        listed(
+            "spansWithoutSearch",
+            "Whose time a box of time totals adds up without a search (`SPANS_WITHOUT_SEARCH`).",
+            &SPANS_WITHOUT_SEARCH,
+        ),
+        listed(
+            "kindsWithShape",
+            "The kinds of box with a shape, bars by a field or one number (`KINDS_WITH_SHAPE`).",
+            &KINDS_WITH_SHAPE,
+        ),
+        listed(
+            "kindsWithSpan",
+            "The kinds of box that say whose time they add up (`KINDS_WITH_SPAN`).",
+            &KINDS_WITH_SPAN,
+        ),
+        listed(
+            "summedFieldKinds",
+            "The kinds of own field a total adds up (`bb_core::totals::SUMMED_KINDS`).",
+            &bb_core::totals::SUMMED_KINDS,
+        ),
+    ]
+    .concat()
 }
 
 #[cfg(test)]

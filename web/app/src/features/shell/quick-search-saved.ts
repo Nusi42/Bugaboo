@@ -15,7 +15,7 @@ type Item = ReadonlyDeep<Schema<"SavedSearchItem">>;
 /** The result of a saved search; the ones shared with the person say so. */
 function resultOf(item: Item, scope: Schema<"SearchSet">): QuickResult {
   const found = { id: item.id, title: item.name, path: savedSearchAddress(item.id) };
-  return scope === "shared" ? { ...found, hint: t("search.saved-shared") } : found;
+  return scope === "shared" ? { ...found, hint: t("common.saved-shared") } : found;
 }
 
 /** The saved searches of one set (the ones the person made, or the ones shared with them) that the words name. */

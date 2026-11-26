@@ -341,13 +341,10 @@ async fn cfg_03_limits_of_boxes_and_dashboards_are_counted_inside_the_change() -
         let (_, mut ada) = Site::start(&rig, &app).await?;
         let boxes = |count: u32| (0..count).map(|at| timer(at * 2)).collect::<Vec<_>>();
         let too_many = create(&mut ada, "Full", boxes(21)).await?;
-        assert_eq!(
-            too_many.status,
-            StatusCode::BAD_REQUEST,
-            "{}",
-            too_many.body
-        );
-        assert_eq!(too_many.code(), "request.invalid");
+        // Too many boxes has a code of its own, so the screen can tell it from a box that does
+        // not check (M10-F55).
+        assert_eq!(too_many.status, StatusCode::CONFLICT, "{}", too_many.body);
+        assert_eq!(too_many.code(), "dashboard.too-many-boxes");
         // Boxes may not overlap either.
         let over = create(&mut ada, "Over", vec![timer(0), timer(1)]).await?;
         assert_eq!(over.code(), "request.invalid");
@@ -391,13 +388,19 @@ async fn cfg_03_home_is_the_persons_own_dashboard_made_from_todays_blocks() -> T
             .flatten()
             .map(|each| (each["kind"].clone(), each["title"].clone()))
             .collect();
+        // *My timer* and *Due soon* side by side, *My open issues* under them, the whole width.
         assert_eq!(
             kinds_and_titles,
             [
                 (json!("my-timer"), json!("My timer")),
-                (json!("search-results"), json!("My open issues")),
                 (json!("search-results"), json!("Due soon")),
+                (json!("search-results"), json!("My open issues")),
             ]
+        );
+        assert_eq!(
+            first["boxes"][2]["width"],
+            json!(bb_core::dashboard::GRID_COLUMNS),
+            "{first}"
         );
         let again = ada.send("GET", &home_path, None).await?;
         assert_eq!(ok(&again)?["id"], first["id"], "made once");

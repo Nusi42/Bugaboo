@@ -124,8 +124,10 @@ export function useBoxAnswer(dashboard: string, box: string) {
 
 /** What a box that is not on a dashboard yet would answer: the preview of *Add box*. */
 export function useBoxPreview(box: AskedBox, enabled: boolean) {
+  // Where a box would stand changes nothing of what it answers, so the place is not part of the key.
+  const { column: _column, row: _row, width: _width, height: _height, ...asked } = box;
   return useQuery({
-    queryKey: queryKeys.dashboards.preview(JSON.stringify(box)),
+    queryKey: queryKeys.dashboards.preview(JSON.stringify(asked)),
     enabled,
     retry: false,
     queryFn: async () =>
@@ -194,7 +196,9 @@ export function useChangeDashboard(dashboard: Dashboard) {
         dashboard.home ? queryKeys.dashboards.home() : queryKeys.dashboards.one(changed.id),
         changed,
       );
-      refreshDashboards();
+      // A new name shows in the lists and the pins; what the boxes answer does not change with their places.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboards.lists() });
+      refreshPins();
     },
   });
 }

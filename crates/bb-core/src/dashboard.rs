@@ -111,6 +111,19 @@ words_in_api!(
     "Whose time a box of time totals adds up: the issues of its search, or the viewer's own week."
 );
 
+/// The kinds of box that read no search (ADR-0050, decision 4): the viewer's own timer.
+pub const KINDS_WITHOUT_SEARCH: [BoxKind; 1] = [BoxKind::MyTimer];
+
+/// Whose time a box of *Time totals* adds up without a search: the viewer's own week.
+pub const SPANS_WITHOUT_SEARCH: [TimeSpan; 1] = [TimeSpan::MyWeek];
+
+/// The kinds of box that show their totals in a shape (bars by a field, or one number) and take
+/// a field only as bars.
+pub const KINDS_WITH_SHAPE: [BoxKind; 1] = [BoxKind::NumbersAndChart];
+
+/// The kinds of box that say whose time they add up.
+pub const KINDS_WITH_SPAN: [BoxKind; 1] = [BoxKind::TimeTotals];
+
 /// Where a box stands on the grid and how big it is, in columns and rows counted from 0.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize)]
 pub struct BoxPlace {
@@ -186,17 +199,15 @@ pub struct BoxSpec {
 }
 
 impl BoxSpec {
-    /// Whether the box reads a search: every kind but *My timer* and the viewer's own week.
+    /// Whether the box reads a search: every kind but those of [`KINDS_WITHOUT_SEARCH`], unless
+    /// whose time it adds up is one of [`SPANS_WITHOUT_SEARCH`] (the viewer's own week).
     #[must_use]
     pub fn reads_a_search(&self) -> bool {
-        match self.kind {
-            BoxKind::MyTimer => false,
-            BoxKind::TimeTotals => self.options.span != Some(TimeSpan::MyWeek),
-            BoxKind::SearchResults
-            | BoxKind::NumbersAndChart
-            | BoxKind::SmallTimeline
-            | BoxKind::RecentChanges => true,
-        }
+        !KINDS_WITHOUT_SEARCH.contains(&self.kind)
+            && self
+                .options
+                .span
+                .is_none_or(|span| !SPANS_WITHOUT_SEARCH.contains(&span))
     }
 
     /// Whether the box can be kept: its place fits the grid, it has a source exactly when it reads
@@ -207,20 +218,17 @@ impl BoxSpec {
     #[must_use]
     pub fn is_valid(&self) -> bool {
         let options = &self.options;
-        let kind_holds = match self.kind {
-            BoxKind::NumbersAndChart => match options.shape {
-                Some(ChartShape::Bars) => options.span.is_none(),
-                Some(ChartShape::Number) => options.by.is_none() && options.span.is_none(),
+        let shape_holds = if KINDS_WITH_SHAPE.contains(&self.kind) {
+            match options.shape {
+                Some(ChartShape::Bars) => true,
+                Some(ChartShape::Number) => options.by.is_none(),
                 None => false,
-            },
-            BoxKind::TimeTotals => {
-                options.span.is_some() && options.by.is_none() && options.shape.is_none()
             }
-            BoxKind::SearchResults
-            | BoxKind::SmallTimeline
-            | BoxKind::MyTimer
-            | BoxKind::RecentChanges => *options == BoxOptions::default(),
+        } else {
+            options.shape.is_none() && options.by.is_none()
         };
+        let span_holds = options.span.is_some() == KINDS_WITH_SPAN.contains(&self.kind);
+        let kind_holds = shape_holds && span_holds;
         self.place.is_valid()
             && kind_holds
             && self.source.is_some() == self.reads_a_search()
@@ -418,9 +426,15 @@ const fn ready(which: ReadyMade, kind: BoxKind, text: Option<&'static str>) -> R
         shape: None,
         span: None,
         width: GRID_COLUMNS / 2,
-        height: 4,
+        height: LIST_HEIGHT,
     }
 }
+
+/// How high a ready-made list starts, in rows: its first issues or changes.
+const LIST_HEIGHT: u32 = 4;
+
+/// How high a ready-made chart starts, in rows: a few bars and the switch to its table.
+const CHART_HEIGHT: u32 = 3;
 
 /// The text of the issues that are not done.
 const NOT_DONE: &str = "status group is not Done";
@@ -440,6 +454,7 @@ pub const READY_MADE_BOXES: &[ReadyMadeBox] = &[
     ReadyMadeBox {
         by: Some("priority"),
         shape: Some(ChartShape::Bars),
+        height: CHART_HEIGHT,
         ..ready(
             ReadyMade::OpenBugsByPriority,
             BoxKind::NumbersAndChart,
@@ -449,6 +464,7 @@ pub const READY_MADE_BOXES: &[ReadyMadeBox] = &[
     ReadyMadeBox {
         by: Some("status group"),
         shape: Some(ChartShape::Bars),
+        height: CHART_HEIGHT,
         ..ready(
             ReadyMade::IssuesByStatusGroup,
             BoxKind::NumbersAndChart,
@@ -458,6 +474,7 @@ pub const READY_MADE_BOXES: &[ReadyMadeBox] = &[
     ReadyMadeBox {
         by: Some("status group"),
         shape: Some(ChartShape::Bars),
+        height: CHART_HEIGHT,
         ..ready(
             ReadyMade::ProgressOfARelease,
             BoxKind::NumbersAndChart,
@@ -466,10 +483,12 @@ pub const READY_MADE_BOXES: &[ReadyMadeBox] = &[
     },
     ReadyMadeBox {
         span: Some(TimeSpan::MyWeek),
+        height: CHART_HEIGHT,
         ..ready(ReadyMade::MyTimeThisWeek, BoxKind::TimeTotals, None)
     },
     ReadyMadeBox {
         span: Some(TimeSpan::Search),
+        height: BOX_HEIGHT_MIN,
         ..ready(
             ReadyMade::TimeOnThisSearch,
             BoxKind::TimeTotals,
@@ -501,12 +520,37 @@ pub fn ready_made(which: ReadyMade) -> Option<&'static ReadyMadeBox> {
     READY_MADE_BOXES.iter().find(|entry| entry.which == which)
 }
 
-/// The boxes *Home* starts with, in the order they stand (ADR-0050, decision 6): the blocks of
-/// *Home* before it was a dashboard, *Timer*, *My issues* and *Due soon*.
-pub const HOME_BOXES: [ReadyMade; 3] = [
-    ReadyMade::MyTimer,
-    ReadyMade::MyOpenIssues,
-    ReadyMade::DueSoon,
+/// The boxes *Home* starts with, each on its place (ADR-0050, decision 6): the blocks of *Home*
+/// before it was a dashboard, *Timer* and *Due soon* side by side and *My issues* under them, the
+/// whole width.
+pub const HOME_BOXES: [(ReadyMade, BoxPlace); 3] = [
+    (
+        ReadyMade::MyTimer,
+        BoxPlace {
+            column: 0,
+            row: 0,
+            width: GRID_COLUMNS / 2,
+            height: BOX_HEIGHT_MIN,
+        },
+    ),
+    (
+        ReadyMade::DueSoon,
+        BoxPlace {
+            column: GRID_COLUMNS / 2,
+            row: 0,
+            width: GRID_COLUMNS / 2,
+            height: BOX_HEIGHT_MIN,
+        },
+    ),
+    (
+        ReadyMade::MyOpenIssues,
+        BoxPlace {
+            column: 0,
+            row: BOX_HEIGHT_MIN,
+            width: GRID_COLUMNS,
+            height: LIST_HEIGHT,
+        },
+    ),
 ];
 
 #[cfg(test)]
@@ -625,6 +669,12 @@ mod tests {
         for which in ReadyMade::ALL {
             assert!(ready_made(*which).is_some(), "{which:?}");
         }
-        assert!(HOME_BOXES.iter().all(|which| ready_made(*which).is_some()));
+        assert!(
+            HOME_BOXES
+                .iter()
+                .all(|(which, _)| ready_made(*which).is_some())
+        );
+        let home: Vec<BoxPlace> = HOME_BOXES.iter().map(|(_, place)| *place).collect();
+        assert_eq!(pack(&home), home, "the places of Home are packed");
     }
 }

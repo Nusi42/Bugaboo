@@ -122,12 +122,13 @@ const WORDED: [(ErrorCode, SkipReason); 14] = [
 /// Every other refusal says the single change would not take this issue as it is and has no word of
 /// its own. The codes are listed, so a new one is a decision made here: a test fails until it is in
 /// [`WORDED`] or in this list.
-const UNWORDED: [ErrorCode; 118] = [
+const UNWORDED: [ErrorCode; 119] = [
     ErrorCode::ReleaseNameTaken,
     ErrorCode::ReleaseNotOffered,
     ErrorCode::ReleaseInUse,
     ErrorCode::ReleaseReasonNeeded,
     ErrorCode::ReleasesTooMany,
+    ErrorCode::DashboardTooManyBoxes,
     ErrorCode::AgentWorkOpen,
     ErrorCode::AgentWorkNotReady,
     ErrorCode::AgentWorkBudget,

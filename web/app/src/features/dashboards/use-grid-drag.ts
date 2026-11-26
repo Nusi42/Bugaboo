@@ -1,9 +1,13 @@
-import { gridColumns } from "@bugaboo/api-client";
+import { pixelsOf } from "@bugaboo/ui";
 import type { Packer } from "@bugaboo/wasm";
-import { useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 
 import { dragKinds } from "../../shared/drag-kinds.ts";
+import { usePointerDrag, type DragDistance, type DragHandlers } from "../../shared/pointer-drag.ts";
 import { droppedAt, resizedTo, samePlaces, type GridPlace } from "./grid-layout.ts";
+import { measureOf, stepsFrom, type GridSteps } from "../../shared/dashboard-grid-steps.ts";
+
+export type { DragHandlers } from "../../shared/pointer-drag.ts";
 
 /** What a pointer does to a box: moves it by its title, or resizes it by its corner. */
 export type Gesture = typeof dragKinds.dashboardBox.kind | typeof dragKinds.dashboardCorner.kind;
@@ -15,63 +19,60 @@ export interface Placing {
   readonly places: readonly GridPlace[];
 }
 
-/** The pointer events of the title or the corner of a box. */
-export interface DragHandlers {
-  readonly onPointerDown: (event: PointerEvent<HTMLElement>) => void;
-  readonly onPointerMove: (event: PointerEvent<HTMLElement>) => void;
-  readonly onPointerUp: (event: PointerEvent<HTMLElement>) => void;
-  readonly onPointerCancel: () => void;
-}
-
-/** The button of a pointer that drags: the main one (the left button of a mouse, a finger, a pen). */
-const mainButton = 0;
-
-/** Where a drag started, and how far one column and one row are on screen. */
-interface Start {
-  readonly x: number;
-  readonly y: number;
+/** Which part of which box a pointer drags. */
+interface Part {
   readonly at: number;
   readonly gesture: Gesture;
-  readonly column: number;
-  readonly row: number;
 }
 
-/** A length the browser computed, in pixels (`72px`); none it cannot read. */
-function pixels(length: string): number {
-  return Number(length.replace("px", "")) || 0;
-}
-
-/** How far a column and a row of the grid are on screen: a column of its width and a row of its height, each with the gap. */
-function stepsOf(grid: HTMLElement): { column: number; row: number } {
-  const style = getComputedStyle(grid);
-  const columnGap = pixels(style.columnGap);
-  return {
-    column: (grid.clientWidth + columnGap) / gridColumns,
-    row: pixels(style.gridAutoRows) + pixels(style.rowGap),
-  };
-}
-
-/** The places of the boxes if the box of a drag were let go where the pointer is now. */
+/** The places of the boxes if the box of a drag were let go this far from where it started. */
 function placesAfter(
-  from: Start,
+  part: Part,
   places: readonly GridPlace[],
   pack: Packer,
-  pointer: { readonly x: number; readonly y: number },
+  { steps, distance }: { readonly steps: GridSteps; readonly distance: DragDistance },
 ): readonly GridPlace[] {
-  const place = places[from.at];
+  const place = places[part.at];
   if (place === undefined) {
     return places;
   }
-  const columns = Math.round((pointer.x - from.x) / from.column);
-  const rows = Math.round((pointer.y - from.y) / from.row);
-  return from.gesture === dragKinds.dashboardBox.kind
-    ? droppedAt(places, from.at, { column: place.column + columns, row: place.row + rows }, pack)
+  const columns = Math.round(distance.x / steps.column);
+  const rows = Math.round(distance.y / steps.row);
+  return part.gesture === dragKinds.dashboardBox.kind
+    ? droppedAt(places, part.at, { column: place.column + columns, row: place.row + rows }, pack)
     : resizedTo(
         places,
-        from.at,
+        part.at,
         { width: place.width + columns, height: place.height + rows },
         pack,
       );
+}
+
+/** A pointer near the bottom of the window scrolls the page down by a step, so a box can go below what is shown. */
+function scrollNearTheEnd(event: PointerEvent<HTMLElement>): void {
+  const edge = pixelsOf("size-control");
+  if (event.clientY > window.innerHeight - edge) {
+    window.scrollBy(0, edge);
+  }
+}
+
+/** While `on`, Escape (with no modifier) calls `cancel`. */
+function useEscapeWhile(on: boolean, cancel: () => void): void {
+  useEffect(() => {
+    if (!on) {
+      return () => {};
+    }
+    const listen = (event: KeyboardEvent): void => {
+      if (event.key === "Escape" && !event.altKey && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        cancel();
+      }
+    };
+    window.addEventListener("keydown", listen);
+    return () => {
+      window.removeEventListener("keydown", listen);
+    };
+  }, [on, cancel]);
 }
 
 export interface GridDragInput {
@@ -85,52 +86,52 @@ export interface GridDragInput {
 }
 
 /**
- * Placing a box with a pointer (UX §4.10): while it is dragged by its title or its corner, the boxes stay where they
- * are and only the shadow shows where it will land (nothing moves under the cursor, UX §6.4); when it is let go, the
- * others make room once. Every drag has its keys too (*Move …*, *Resize …*).
+ * Placing a box with a pointer (UX §4.10, `shared/pointer-drag.ts`): while it is dragged by its title or its corner,
+ * the boxes stay where they are and only the shadow shows where it will land (nothing moves under the cursor, UX §6.4);
+ * when it is let go, the others make room once. Escape lets go without placing it, and the pointer near the bottom of the
+ * window scrolls the page. Every drag has its keys too (*Move …*, *Resize …*).
  */
 export function useGridDrag({ places, pack, gridOf, onDrop }: GridDragInput): {
   readonly placing: Placing | null;
   readonly handlers: (at: number, gesture: Gesture) => DragHandlers;
 } {
   const [placing, setPlacing] = useState<Placing | null>(null);
-  const start = useRef<Start | null>(null);
-  const placesAt = (x: number, y: number): readonly GridPlace[] =>
-    start.current === null || pack === null
-      ? places
-      : placesAfter(start.current, places, pack, { x, y });
-  const end = (): void => {
-    start.current = null;
-    setPlacing(null);
+  const steps = useRef<GridSteps>({ column: 1, row: 1 });
+  const parts = useRef(new Map<string, Part>());
+  const partOf = (at: number, gesture: Gesture): Part => {
+    const name = `${gesture} ${String(at)}`;
+    const known = parts.current.get(name);
+    if (known !== undefined) {
+      return known;
+    }
+    const made = { at, gesture };
+    parts.current.set(name, made);
+    return made;
   };
-  const handlers = (at: number, gesture: Gesture): DragHandlers => ({
-    onPointerDown: (event) => {
+  const after = (part: Part, distance: DragDistance): readonly GridPlace[] =>
+    pack === null ? places : placesAfter(part, places, pack, { steps: steps.current, distance });
+  const drag = usePointerDrag<Part>({
+    drags: () => pack !== null && gridOf() !== null,
+    onStart: (part) => {
       const grid = gridOf();
-      if (event.button !== mainButton || pack === null || grid === null) {
-        return;
-      }
-      event.preventDefault();
-      const steps = stepsOf(grid);
-      start.current = { x: event.clientX, y: event.clientY, at, gesture, ...steps };
-      event.currentTarget.setPointerCapture(event.pointerId);
-      setPlacing({ at, gesture, places });
+      steps.current = grid === null ? steps.current : stepsFrom(measureOf(grid));
+      setPlacing({ ...part, places });
     },
-    onPointerMove: (event) => {
-      if (start.current?.at === at && start.current.gesture === gesture) {
-        setPlacing({ at, gesture, places: placesAt(event.clientX, event.clientY) });
-      }
+    onMove: (part, distance, event) => {
+      scrollNearTheEnd(event);
+      setPlacing({ ...part, places: after(part, distance) });
     },
-    onPointerUp: (event) => {
-      if (start.current?.at !== at || start.current.gesture !== gesture) {
-        return;
-      }
-      const after = placesAt(event.clientX, event.clientY);
-      end();
-      if (!samePlaces(after, places)) {
-        onDrop({ at, gesture, places: after });
+    onEnd: (part, distance) => {
+      const placed = after(part, distance);
+      setPlacing(null);
+      if (!samePlaces(placed, places)) {
+        onDrop({ ...part, places: placed });
       }
     },
-    onPointerCancel: end,
+    onCancel: () => {
+      setPlacing(null);
+    },
   });
-  return { placing, handlers };
+  useEscapeWhile(placing !== null, drag.cancel);
+  return { placing, handlers: (at, gesture) => drag.handlers(partOf(at, gesture)) };
 }

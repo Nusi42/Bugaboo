@@ -11,7 +11,7 @@ import {
   usePlace,
 } from "@bugaboo/ui";
 import { useKeyboardScroll } from "@bugaboo/ui/scroll-reach";
-import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 
 import type { Box } from "./dashboards.ts";
 import { gridPlaceOf } from "./grid-layout.ts";
@@ -28,6 +28,12 @@ export interface BoxPlacing {
   readonly dragging: boolean;
   /** *Move …* or *Resize …* works on this box with the keys. */
   readonly keys: boolean;
+  /** The keys of the handle while it works. */
+  readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+  /** The handle lost the focus: whether it went to something else in the box. */
+  readonly onBlur: (stillInBox: boolean) => void;
+  /** The handle was pressed with the keyboard: *Move …* starts. */
+  readonly onPress: () => void;
 }
 
 /**
@@ -83,6 +89,13 @@ function BoxHead({
             type={buttonType.button}
             {...partOf(part.button, { variants: [buttonLook.quiet, buttonShape.square] })}
             aria-label={t("dashboards.place", { title: box.title })}
+            onKeyDown={placing.onKeyDown}
+            onClick={placing.onPress}
+            onBlur={(event: { readonly relatedTarget: unknown }) => {
+              const next = event.relatedTarget;
+              const frame = keys.current?.closest("li");
+              placing.onBlur(next instanceof Node && frame?.contains(next) === true);
+            }}
           >
             <Icon name={iconName.grip} size={iconSize.small} />
           </button>

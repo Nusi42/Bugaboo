@@ -29,6 +29,11 @@ export function GridBox({ dashboard, box, at, changing, grid, onChangeBox }: Gri
           : undefined,
         dragging: grid.dragged === at,
         keys: grid.keyed === at,
+        onKeyDown: grid.onKeyDown,
+        onBlur: grid.onBlur,
+        onPress: () => {
+          grid.onPressHandle(at);
+        },
       }}
       menu={
         changing ? (

@@ -28,6 +28,9 @@ export interface SidebarSectionView {
   readonly onNavigate?: () => void;
 }
 
+/** How many things of one list a section of *Mine* and *Shared with me* shows (saved searches, dashboards). */
+export const madeListShown = 20;
+
 const sections = createRegistry<SidebarSection>();
 
 /** Adds a section to the sidebar; returns the way to take it out again. */

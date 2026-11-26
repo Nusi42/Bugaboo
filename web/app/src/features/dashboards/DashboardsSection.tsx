@@ -5,7 +5,12 @@ import { useState } from "react";
 
 import { itemsOf } from "../../shared/paged.ts";
 import { dashboardAddress } from "../../shared/paths.ts";
-import { MineAndShared, NavButton, type SidebarSectionView } from "../shell/index.ts";
+import {
+  madeListShown,
+  MineAndShared,
+  NavButton,
+  type SidebarSectionView,
+} from "../shell/index.ts";
 import {
   dashboardSet,
   dashboardsHeading,
@@ -17,9 +22,6 @@ import { NameDialog } from "./NameDialog.tsx";
 
 /** A new dashboard has no name until the person types one. */
 const noName = "";
-
-/** How many dashboards of one list the sidebar shows. */
-const shown = 20;
 
 /** *Create a dashboard*: asks for its name and opens it, private and empty, in *Change*. */
 function CreateDashboard({ view }: { readonly view: SidebarSectionView }) {
@@ -62,8 +64,8 @@ function CreateDashboard({ view }: { readonly view: SidebarSectionView }) {
  * with who made it, and *Create a dashboard*. *Home* is the start page and is not listed.
  */
 export function DashboardsSection({ view }: { readonly view: SidebarSectionView }) {
-  const mine = useDashboardList(dashboardSet.mine, shown);
-  const shared = useDashboardList(dashboardSet.shared, shown);
+  const mine = useDashboardList(dashboardSet.mine, madeListShown);
+  const shared = useDashboardList(dashboardSet.shared, madeListShown);
   return (
     <MineAndShared
       view={view}

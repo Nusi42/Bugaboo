@@ -331,8 +331,10 @@ export interface MessageArguments {
   "check-access.result-heading": { person: string | number; place: string | number };
   "comments.version-saved": { version: string | number; when: string | number };
   "common.actions-for": { name: string | number };
+  "common.made-by": { person: string | number };
   "common.percent": { percent: string | number; sign: string | number };
   "common.row-more": { what: string | number };
+  "common.share-title": { name: string | number };
   "common.show-all": { count: number };
   "common.swipe-shown": { actions: string | number };
   "common.time-24": { hour: string | number; minute: string | number };
@@ -361,7 +363,6 @@ export interface MessageArguments {
   "dashboards.copy-name": { name: string | number };
   "dashboards.deleted": { name: string | number };
   "dashboards.full": { most: number };
-  "dashboards.full-unseen": { most: number };
   "dashboards.more": { name: string | number };
   "dashboards.moved": { title: string | number };
   "dashboards.place": { title: string | number };
@@ -392,6 +393,7 @@ export interface MessageArguments {
   "editing.is-editing-now": { name: string | number; thing: string | number };
   "editing.lost-changed": { name: string | number; thing: string | number };
   "editing.lost-taken-over": { name: string | number };
+  "error.dashboard.too-many-boxes": { most: number };
   "error.relation-kind.date-effect-most": { most: string | number };
   "error.release.too-many": { most: number };
   "error.request.limit-out-of-range": { least: string | number; most: string | number };
@@ -911,7 +913,6 @@ export interface MessageArguments {
   "search.found-issue": { id: string | number; title: string | number };
   "search.found-project": { name: string | number; short: string | number };
   "search.help-use": { example: string | number };
-  "search.made-by": { person: string | number };
   "search.mail-hour-choice": { time: string | number; zone: string | number };
   "search.mail-note": { most: string | number };
   "search.mail-title": { name: string | number };
@@ -981,7 +982,6 @@ export interface MessageArguments {
   "search.mistake.wrong-text": { field: string | number };
   "search.project-list-stop": { name: string | number };
   "search.project-list-use": { name: string | number };
-  "search.share-title": { name: string | number };
   "security-log.broken": { reason: string | number; seq: string | number };
   "security-log.head": { hash: string | number; seq: string | number };
   "security-log.valid": { entries: number };

@@ -39,4 +39,4 @@ A dashboard is private when you create it. **Share** shares it with groups and p
 
 ## Home
 
-*Home*, your start page, is your own dashboard. Your notifications stay at the top; below them are your boxes, at first **My timer**, **My open issues** and **Due soon**. **Customize** changes them like **Change** on a dashboard. *Home* is never shared.
+*Home*, your start page, is your own dashboard. Your notifications stay at the top; below them are your boxes, at first **My timer** and **Due soon** side by side and **My open issues** under them. On a phone your timer is the box **My timer**. **Customize** changes them like **Change** on a dashboard. *Home* is never shared.

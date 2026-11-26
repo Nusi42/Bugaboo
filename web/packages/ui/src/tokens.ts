@@ -321,6 +321,7 @@ export const tokenNames = [
   "box-width",
   "box-height",
   "chart-share",
+  "dashboard-columns",
   "size-dashboard-row",
   "size-chart-names",
   "size-chart-bar",

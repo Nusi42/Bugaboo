@@ -45,7 +45,7 @@ export function DashboardHead({ dashboard }: { readonly dashboard: Dashboard }) 
       look={cardLook.pageHead}
       actions={<HeadActions dashboard={dashboard} />}
       intro={
-        dashboard.mine ? undefined : t("search.made-by", { person: personName(dashboard.maker) })
+        dashboard.mine ? undefined : t("common.made-by", { person: personName(dashboard.maker) })
       }
     />
   );

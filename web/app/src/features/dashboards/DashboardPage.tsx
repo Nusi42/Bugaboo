@@ -1,9 +1,10 @@
 import { t } from "@bugaboo/messages";
 import { part, partOf } from "@bugaboo/ui";
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 
+import { dashboardAddress } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { QueryGate } from "../shell/index.ts";
+import { QueryGate, usePageTrail } from "../shell/index.ts";
 import { DashboardBoxes } from "./DashboardBoxes.tsx";
 import { DashboardHead } from "./DashboardHead.tsx";
 import { useDashboard, type Dashboard } from "./dashboards.ts";
@@ -20,7 +21,21 @@ export interface DashboardPageProps {
  */
 export function DashboardPage({ id, notFound }: DashboardPageProps) {
   const read = useDashboard(id);
-  usePageTitle(read.data?.name ?? t("dashboards.heading"));
+  const name = read.data?.name;
+  usePageTitle(name ?? t("dashboards.heading"));
+  // The top bar says where the page is: *Dashboards* and its name. *Dashboards* has no page of its own (the list is in
+  // the sidebar), so both lead to the dashboard.
+  const trail = useMemo(
+    () =>
+      name === undefined
+        ? undefined
+        : [
+            { label: t("dashboards.heading"), href: dashboardAddress(id) },
+            { label: name, href: dashboardAddress(id) },
+          ],
+    [name, id],
+  );
+  usePageTrail(trail);
   return (
     <QueryGate error={read.error} data={read.data} notFound={notFound}>
       {(dashboard: Dashboard) => (

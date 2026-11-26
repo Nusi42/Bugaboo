@@ -195,6 +195,6 @@ test("qry_06 pictures: a saved search, its Share window and what was changed", a
   await expect(page.getByRole("heading", { level: 1, name: "Mine to do" })).toBeVisible();
   await inFourThemes(page, "saved");
   await openBar(page);
-  await page.getByRole("button", { name: t("search.share") }).click();
+  await page.getByRole("button", { name: t("common.share") }).click();
   await inFourThemes(page, "share");
 });

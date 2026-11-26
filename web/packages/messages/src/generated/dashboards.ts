@@ -22,8 +22,6 @@ export const messages = {
   "dashboards.added": "{title} was added.",
   "dashboards.box-changed": "{title} was changed.",
   "dashboards.full": "A dashboard holds at most {most, number} boxes.",
-  "dashboards.full-unseen":
-    "This dashboard also holds boxes you cannot see now. With them it would have more than {most, number} boxes, so this box cannot be added.",
   "dashboards.stale":
     "Someone changed this dashboard in the meantime. It now shows their change; try again.",
   "dashboards.empty": "This dashboard has no boxes you can see.",

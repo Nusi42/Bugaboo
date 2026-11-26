@@ -8,7 +8,7 @@ import { boxOnScreen, createDashboard, searchOf, showAsTable } from "./support/d
 import { test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
-import { idInPeople } from "./support/privacy.ts";
+import { aaron, createPeopleWithRoles, idInPeople, roleName } from "./support/dashboard-people.ts";
 
 // The charts of dashboards (CFG-03, M10-Q13, QRY-08): every chart has its table, a chart by a person stands in the
 // order of the names and never of size, and *Open bugs by priority* says what the grouped list says.
@@ -20,11 +20,20 @@ test("cfg_03_every_chart_has_a_table_and_a_person_chart_is_in_the_order_of_names
   server,
 }) => {
   const admin = await signInThroughApi(server, ada);
-  const [adaId, bobId] = [await idInPeople(admin, ada), await idInPeople(admin, bob)];
-  // Bob has more issues than Ada: in the order of size Bob would come first.
+  // Aaron is created last but sorts first by name; Bob has the most issues, so neither the order of creation nor the
+  // order of size is the order of names.
+  await createPeopleWithRoles(server, admin, [
+    { person: aaron, role: roleName.teamMember, project: "WEB" },
+  ]);
+  const [aaronId, adaId, bobId] = [
+    await idInPeople(admin, aaron),
+    await idInPeople(admin, ada),
+    await idInPeople(admin, bob),
+  ];
   await createTask(admin, "Chart one", { assigned_to: [bobId] });
   await createTask(admin, "Chart two", { assigned_to: [bobId] });
   await createTask(admin, "Chart three", { assigned_to: [adaId] });
+  await createTask(admin, "Chart four", { assigned_to: [aaronId] });
   const title = "Who works on charts";
   const made = await createDashboard(admin, "Charts", [
     {
@@ -47,8 +56,8 @@ test("cfg_03_every_chart_has_a_table_and_a_person_chart_is_in_the_order_of_names
   await expect(box.getByRole("table", { name: title })).toHaveCount(1);
   await showAsTable(box);
   await expect(box.getByRole("table", { name: title })).toBeVisible();
-  await expect(box.getByRole("rowheader")).toHaveText([ada.name, bob.name]);
-  await expect(box.getByRole("cell")).toHaveText([/ 1$/u, / 2$/u]);
+  await expect(box.getByRole("rowheader")).toHaveText([aaron.name, ada.name, bob.name]);
+  await expect(box.getByRole("cell")).toHaveText([/ 1$/u, / 1$/u, / 2$/u]);
 });
 
 test("qry_08_open_bugs_by_priority_matches_the_grouped_list", async ({ page, server }) => {

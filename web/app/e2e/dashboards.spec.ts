@@ -71,3 +71,22 @@ test("cfg_03_customize_on_home_changes_the_persons_dashboard", async ({ page, se
     page.getByRole("button", { name: t("dashboards.customize"), exact: true }),
   ).toBeVisible();
 });
+
+test("cfg_03_a_box_whose_search_does_not_check_says_what_the_server_says", async ({
+  page,
+  server,
+}) => {
+  await signIn(page, ada);
+  const made = await createDashboard(apiOf(page, server), "Typos", []);
+  await page.goto(dashboardAddress(made.id));
+  await page.getByRole("button", { name: t("dashboards.add-box"), exact: true }).click();
+  const window = page.getByRole("dialog", { name: t("dashboards.add-box") });
+  await window.getByLabel(t("dashboards.box-title"), { exact: true }).fill("Typo");
+  await window.getByLabel(t("dashboards.box-search"), { exact: true }).fill("nothing contains x");
+  await window.getByRole("button", { name: t("dashboards.add-the-box"), exact: true }).click();
+  // The refusal says what the server said, not that the dashboard is full.
+  await expect(page.getByText(t("error.request.invalid"), { exact: true })).toBeVisible();
+  await expect
+    .poll(async () => (await dashboardOf(apiOf(page, server), made.id)).boxes)
+    .toEqual([]);
+});

@@ -34,7 +34,7 @@ impl Looked {
     pub(crate) fn number_field(&self, word: &str) -> Option<(FieldId, FieldType)> {
         self.own_by_word(word)
             .map(|(definition, _)| (definition.field.id, definition.field.kind))
-            .filter(|(_, kind)| matches!(kind, FieldType::WholeNumber | FieldType::Decimal))
+            .filter(|(_, kind)| bb_core::totals::SUMMED_KINDS.contains(kind))
     }
 
     /// The own field that owns this word of the search language, with the word, whether or not

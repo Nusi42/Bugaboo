@@ -4,7 +4,7 @@
 
 use bb_core::ErrorCode;
 use bb_core::dashboard::{
-    BoxSource, BoxSpec, DASHBOARDS_MAX, Dashboard, DashboardBox, boxes_are_valid, pack,
+    BOXES_MAX, BoxSource, BoxSpec, DASHBOARDS_MAX, Dashboard, DashboardBox, boxes_are_valid, pack,
 };
 use bb_core::event::{DomainEvent, RecordKind};
 use bb_core::id::{DashboardBoxId, DashboardId, UserId};
@@ -121,13 +121,17 @@ impl<S: AuthStore> Ctx<'_, S> {
     /// `known`; the others get new ones. Nothing is judged for a person here.
     ///
     /// # Errors
-    /// `request.invalid` for boxes that cannot be kept together, or an ID named twice.
+    /// `dashboard.too-many-boxes` for more boxes than a dashboard holds; `request.invalid` for
+    /// boxes that cannot be kept together, or an ID named twice.
     pub(super) fn placed(
         &self,
         dashboard: DashboardId,
         given: Vec<BoxChange>,
         known: &[DashboardBoxId],
     ) -> Result<Vec<DashboardBox>, AppError> {
+        if given.len() > BOXES_MAX {
+            return Err(ErrorCode::DashboardTooManyBoxes.into());
+        }
         let named: Vec<DashboardBoxId> = given.iter().filter_map(|each| each.id).collect();
         let repeated = named
             .iter()

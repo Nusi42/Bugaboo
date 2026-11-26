@@ -7361,7 +7361,7 @@ textarea,
 
 [data-part="dashboard-grid"] {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--dashboard-columns), minmax(0, 1fr));
   grid-auto-rows: var(--size-dashboard-row);
   gap: var(--space-4);
   position: relative;
@@ -7448,6 +7448,7 @@ textarea,
   min-height: var(--size-control);
   cursor: grab;
   touch-action: none;
+  user-select: none;
 }
 
 [data-part="dashboard-box.body"] {
@@ -7473,6 +7474,7 @@ textarea,
   color: var(--fg-muted);
   cursor: nwse-resize;
   touch-action: none;
+  user-select: none;
 }
 
 [data-part="dashboard-shadow"] {
@@ -7528,7 +7530,7 @@ textarea,
 }
 
 [data-part="add-box.preview"] {
-  max-height: var(--size-box-preview);
+  height: var(--size-box-preview);
   overflow: hidden;
   pointer-events: none;
 }

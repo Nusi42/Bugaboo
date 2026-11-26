@@ -22,10 +22,10 @@ export function DashboardShare({ dashboard }: { readonly dashboard: Dashboard })
           setOpen(true);
         }}
       >
-        {t("search.share")}
+        {t("common.share")}
       </Button>
       <ShareWindow
-        title={t("search.share-title", { name: dashboard.name })}
+        title={t("common.share-title", { name: dashboard.name })}
         note={t("dashboards.share-note")}
         isOpen={open}
         onClose={() => {

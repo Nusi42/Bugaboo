@@ -3,10 +3,11 @@ import { t } from "@bugaboo/messages";
 import { BarChart, NumberChart, type ChartRow } from "@bugaboo/ui";
 
 import { formatNumber } from "../../shared/format.ts";
+import { lengthSums } from "../../shared/length-sums.ts";
 import { minutesText } from "../../shared/own-value-text.ts";
 import { overText } from "../../shared/sum-text.ts";
-import { groupName, groupsOfKeys } from "../issues/index.ts";
-import { useSearchFields } from "../search/index.ts";
+import { groupName, groupsOfKeys, useOwnColumns } from "../issues/index.ts";
+import { useSearchFields, useSearchLanguage } from "../search/index.ts";
 import { chartShape, type Box } from "./dashboards.ts";
 
 /** The totals of a search as a box gets them. */
@@ -30,6 +31,8 @@ function labelsOf(box: Box, names: string) {
 export function NumbersChart({ box, totals }: { readonly box: Box; readonly totals: Totals }) {
   const fields = useSearchFields();
   const by = box.by ?? undefined;
+  // A group of an own field of numbers or days is written as the field writes its values, in the person's Region.
+  const own = useOwnColumns(useSearchLanguage(), by !== undefined);
   if (box.shape === chartShape.number || by === undefined) {
     const rows: ChartRow[] = [
       {
@@ -41,7 +44,7 @@ export function NumbersChart({ box, totals }: { readonly box: Box; readonly tota
     ];
     return <NumberChart rows={rows} labels={labelsOf(box, t("dashboards.what"))} />;
   }
-  const rows = groupsOfKeys(totals.groups, undefined, by).map((group): ChartRow => ({
+  const rows = groupsOfKeys(totals.groups, own[by], by).map((group): ChartRow => ({
     key: group.id,
     name: groupName(group),
     value: group.count,
@@ -56,16 +59,9 @@ export function NumbersChart({ box, totals }: { readonly box: Box; readonly tota
   );
 }
 
-/** The three lengths of *Time totals*, by the word of their sum, with the name of each. */
-const lengths = [
-  { word: sumWords.estimated, name: "issue-field.estimated-time" },
-  { word: sumWords.timeLeft, name: "issue-field.time-left" },
-  { word: sumWords.timeSpent, name: "issue-field.time-spent" },
-] as const;
-
 /** A box of *Time totals* of a search: *Estimated time*, *Time left* and *Time spent*, as numbers with their table. */
 export function TimeNumbers({ box, totals }: { readonly box: Box; readonly totals: Totals }) {
-  const rows = lengths.flatMap(({ word, name }): ChartRow[] => {
+  const rows = lengthSums.flatMap(({ sum: word, name }): ChartRow[] => {
     const sum = totals.all.sums[totals.sums.indexOf(word)];
     return sum === undefined
       ? []

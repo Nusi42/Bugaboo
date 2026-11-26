@@ -2099,6 +2099,39 @@ pub const COMMON_PERCENT_SIGN: MessageKey = MessageKey::new("common.percent-sign
 /// The message `common.save`.
 pub const COMMON_SAVE: MessageKey = MessageKey::new("common.save");
 
+/// The message `common.saved-by-separator`.
+pub const COMMON_SAVED_BY_SEPARATOR: MessageKey = MessageKey::new("common.saved-by-separator");
+
+/// The message `common.saved-mine`.
+pub const COMMON_SAVED_MINE: MessageKey = MessageKey::new("common.saved-mine");
+
+/// The message `common.saved-shared`.
+pub const COMMON_SAVED_SHARED: MessageKey = MessageKey::new("common.saved-shared");
+
+/// The message `common.share`.
+pub const COMMON_SHARE: MessageKey = MessageKey::new("common.share");
+
+/// The message `common.share-done`.
+pub const COMMON_SHARE_DONE: MessageKey = MessageKey::new("common.share-done");
+
+/// The message `common.share-groups`.
+pub const COMMON_SHARE_GROUPS: MessageKey = MessageKey::new("common.share-groups");
+
+/// The message `common.share-more-groups`.
+pub const COMMON_SHARE_MORE_GROUPS: MessageKey = MessageKey::new("common.share-more-groups");
+
+/// The message `common.share-more-projects`.
+pub const COMMON_SHARE_MORE_PROJECTS: MessageKey = MessageKey::new("common.share-more-projects");
+
+/// The message `common.share-none-groups`.
+pub const COMMON_SHARE_NONE_GROUPS: MessageKey = MessageKey::new("common.share-none-groups");
+
+/// The message `common.share-none-projects`.
+pub const COMMON_SHARE_NONE_PROJECTS: MessageKey = MessageKey::new("common.share-none-projects");
+
+/// The message `common.share-projects`.
+pub const COMMON_SHARE_PROJECTS: MessageKey = MessageKey::new("common.share-projects");
+
 /// The message `common.show-fewer`.
 pub const COMMON_SHOW_FEWER: MessageKey = MessageKey::new("common.show-fewer");
 
@@ -10002,47 +10035,14 @@ pub const SEARCH_SAVE_NEED: MessageKey = MessageKey::new("search.save-need");
 /// The message `search.save-text`.
 pub const SEARCH_SAVE_TEXT: MessageKey = MessageKey::new("search.save-text");
 
-/// The message `search.saved-by-separator`.
-pub const SEARCH_SAVED_BY_SEPARATOR: MessageKey = MessageKey::new("search.saved-by-separator");
-
 /// The message `search.saved-heading`.
 pub const SEARCH_SAVED_HEADING: MessageKey = MessageKey::new("search.saved-heading");
-
-/// The message `search.saved-mine`.
-pub const SEARCH_SAVED_MINE: MessageKey = MessageKey::new("search.saved-mine");
 
 /// The message `search.saved-none`.
 pub const SEARCH_SAVED_NONE: MessageKey = MessageKey::new("search.saved-none");
 
-/// The message `search.saved-shared`.
-pub const SEARCH_SAVED_SHARED: MessageKey = MessageKey::new("search.saved-shared");
-
-/// The message `search.share`.
-pub const SEARCH_SHARE: MessageKey = MessageKey::new("search.share");
-
-/// The message `search.share-done`.
-pub const SEARCH_SHARE_DONE: MessageKey = MessageKey::new("search.share-done");
-
-/// The message `search.share-groups`.
-pub const SEARCH_SHARE_GROUPS: MessageKey = MessageKey::new("search.share-groups");
-
-/// The message `search.share-more-groups`.
-pub const SEARCH_SHARE_MORE_GROUPS: MessageKey = MessageKey::new("search.share-more-groups");
-
-/// The message `search.share-more-projects`.
-pub const SEARCH_SHARE_MORE_PROJECTS: MessageKey = MessageKey::new("search.share-more-projects");
-
-/// The message `search.share-none-groups`.
-pub const SEARCH_SHARE_NONE_GROUPS: MessageKey = MessageKey::new("search.share-none-groups");
-
-/// The message `search.share-none-projects`.
-pub const SEARCH_SHARE_NONE_PROJECTS: MessageKey = MessageKey::new("search.share-none-projects");
-
 /// The message `search.share-note`.
 pub const SEARCH_SHARE_NOTE: MessageKey = MessageKey::new("search.share-note");
-
-/// The message `search.share-projects`.
-pub const SEARCH_SHARE_PROJECTS: MessageKey = MessageKey::new("search.share-projects");
 
 /// The message `search.show-mistake`.
 pub const SEARCH_SHOW_MISTAKE: MessageKey = MessageKey::new("search.show-mistake");
@@ -16017,6 +16017,15 @@ pub fn common_actions_for(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `common.made-by`.
+#[must_use]
+pub fn common_made_by(person: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("common.made-by"),
+        vec![("person", Value::Text(person.to_string()))],
+    )
+}
+
 /// The values of the message `common.percent`, by name.
 #[derive(Clone, Copy)]
 pub struct CommonPercent<'a> {
@@ -16044,6 +16053,15 @@ pub fn common_row_more(what: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("common.row-more"),
         vec![("what", Value::Text(what.to_string()))],
+    )
+}
+
+/// The message `common.share-title`.
+#[must_use]
+pub fn common_share_title(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("common.share-title"),
+        vec![("name", Value::Text(name.to_string()))],
     )
 }
 
@@ -16539,15 +16557,6 @@ pub fn dashboards_full(most: i64) -> Message {
     )
 }
 
-/// The message `dashboards.full-unseen`.
-#[must_use]
-pub fn dashboards_full_unseen(most: i64) -> Message {
-    Message::with_arguments(
-        MessageKey::new("dashboards.full-unseen"),
-        vec![("most", Value::Number(most))],
-    )
-}
-
 /// The message `dashboards.more`.
 #[must_use]
 pub fn dashboards_more(name: impl std::fmt::Display) -> Message {
@@ -16937,6 +16946,15 @@ pub fn editing_lost_taken_over(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("editing.lost-taken-over"),
         vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `error.dashboard.too-many-boxes`.
+#[must_use]
+pub fn error_dashboard_too_many_boxes(most: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("error.dashboard.too-many-boxes"),
+        vec![("most", Value::Number(most))],
     )
 }
 
@@ -23825,15 +23843,6 @@ pub fn search_help_use(example: impl std::fmt::Display) -> Message {
     )
 }
 
-/// The message `search.made-by`.
-#[must_use]
-pub fn search_made_by(person: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("search.made-by"),
-        vec![("person", Value::Text(person.to_string()))],
-    )
-}
-
 /// The values of the message `search.mail-hour-choice`, by name.
 #[derive(Clone, Copy)]
 pub struct SearchMailHourChoice<'a> {
@@ -24489,15 +24498,6 @@ pub fn search_project_list_stop(name: impl std::fmt::Display) -> Message {
 pub fn search_project_list_use(name: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("search.project-list-use"),
-        vec![("name", Value::Text(name.to_string()))],
-    )
-}
-
-/// The message `search.share-title`.
-#[must_use]
-pub fn search_share_title(name: impl std::fmt::Display) -> Message {
-    Message::with_arguments(
-        MessageKey::new("search.share-title"),
         vec![("name", Value::Text(name.to_string()))],
     )
 }

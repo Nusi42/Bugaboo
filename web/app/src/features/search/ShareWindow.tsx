@@ -21,7 +21,7 @@ export function ShareWindow({ search, isOpen, onClose }: ShareWindowProps) {
   const change = useChangeShare(search.id);
   return (
     <SharingWindow
-      title={t("search.share-title", { name: search.name })}
+      title={t("common.share-title", { name: search.name })}
       note={t("search.share-note")}
       isOpen={isOpen}
       onClose={onClose}

@@ -79,7 +79,7 @@ async fn cfg_03_home_opens_for_a_guest_hr_and_a_person_whose_priority_is_hidden(
         let shown = bob.send("GET", &home, None).await?;
         assert_eq!(
             box_titles(ok(&shown)?),
-            ["My timer", "My open issues", "Due soon"]
+            ["My timer", "Due soon", "My open issues"]
         );
         assert_eq!(shown.body["id"], hidden.body["id"]);
         Ok(())

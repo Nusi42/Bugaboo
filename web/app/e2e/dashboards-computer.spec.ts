@@ -5,6 +5,7 @@ import { dashboardAddress } from "../src/shared/paths.ts";
 import { ada } from "./support/accounts.ts";
 import {
   boxOnScreen,
+  chooseByKeys,
   cornerOf,
   createDashboard,
   dashboardOf,
@@ -39,20 +40,6 @@ async function openInChange(page: Page, server: Parameters<typeof apiOf>[1]): Pr
   await expect(boxOnScreen(page, "First")).toBeVisible();
   await startChange(page);
   return made.id;
-}
-
-/** Opens the menu of a box with the keyboard and chooses one of its actions. */
-async function chooseByKeys(page: Page, title: string, action: string): Promise<void> {
-  const menu = page.getByRole("button", { name: t("dashboards.box-menu", { title }), exact: true });
-  await menu.focus();
-  await page.keyboard.press("Enter");
-  const item = page.getByRole("button", { name: action, exact: true });
-  await item.focus();
-  await page.keyboard.press("Enter");
-  // The keys go to the handle of the box once the menu has closed.
-  await expect(
-    page.getByRole("button", { name: t("dashboards.place", { title }), exact: true }),
-  ).toBeFocused();
 }
 
 test("cfg_03_a_box_is_placed_by_drag_and_resized_by_its_corner", async ({ page, server }) => {

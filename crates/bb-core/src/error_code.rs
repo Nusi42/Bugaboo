@@ -14,6 +14,7 @@ use std::collections::BTreeMap;
 
 use serde::Serialize;
 
+use crate::dashboard::BOXES_MAX;
 use crate::message::{Message, MessageKey, Value};
 use crate::paging::{PAGE_SIZE_LEAST, PAGE_SIZE_MAX};
 use crate::project_release::FOUND_IN_RELEASES_MAX;
@@ -159,6 +160,10 @@ error_codes! {
     ReleaseReasonNeeded => ("release.reason-needed", 400),
     /// An issue names more releases in *Found in release* than it may (ADR-0049, decision 3).
     ReleasesTooMany => ("release.too-many", 400),
+    /// A change of a dashboard would hold more boxes than a dashboard may (ADR-0050, decision 3):
+    /// the boxes its maker names and the ones kept below them that the maker cannot see now count
+    /// together, so the maker may be told this while seeing fewer.
+    DashboardTooManyBoxes => ("dashboard.too-many-boxes", 409),
     /// The workflow of the issue has no status change from the status the issue is in to that one
     /// (WF-01).
     WorkflowNoSuchChange => ("workflow.no-such-change", 409),
@@ -427,6 +432,7 @@ impl ErrorCode {
             Self::ThemesForEveryoneMost => vec![("most", most(THEMES_FOR_EVERYONE_MOST))],
             Self::PersonalThemesMost => vec![("most", most(PERSONAL_THEMES_MOST))],
             Self::ReleasesTooMany => vec![("most", most(FOUND_IN_RELEASES_MAX))],
+            Self::DashboardTooManyBoxes => vec![("most", most(BOXES_MAX))],
             Self::LimitOutOfRange => vec![
                 ("least", Value::Number(i64::from(PAGE_SIZE_LEAST))),
                 ("most", Value::Number(i64::from(PAGE_SIZE_MAX))),

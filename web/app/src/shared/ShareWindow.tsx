@@ -81,14 +81,14 @@ function ShareRow({
 /** The words of the list of one kind. */
 const kindWords = {
   group: {
-    legend: "search.share-groups",
-    none: "search.share-none-groups",
-    more: "search.share-more-groups",
+    legend: "common.share-groups",
+    none: "common.share-none-groups",
+    more: "common.share-more-groups",
   },
   project: {
-    legend: "search.share-projects",
-    none: "search.share-none-projects",
-    more: "search.share-more-projects",
+    legend: "common.share-projects",
+    none: "common.share-none-projects",
+    more: "common.share-more-projects",
   },
 } as const satisfies Record<Schema<"ShareKind">, Record<string, string>>;
 
@@ -159,7 +159,7 @@ export function ShareWindow({ title, note, sharing, isOpen, onClose }: ShareWind
       footer={
         <div {...partOf(part.windowFooterActions)}>
           <Button look={buttonLook.primary} onPress={onClose}>
-            {t("search.share-done")}
+            {t("common.share-done")}
           </Button>
         </div>
       }

@@ -24,7 +24,7 @@ import init, {
   theme_readability,
   time_sentence,
 } from "../generated/bb_wasm.js";
-import { isThemeRead, type Packer, type ThemeReader } from "./answers.ts";
+import { isThemeRead, PLACE_NUMBERS, type Packer, type ThemeReader } from "./answers.ts";
 import type {
   Change as WordedChange,
   File as WordedFile,
@@ -211,7 +211,7 @@ const themeReader: ThemeReader = (extendsTheme, values) => {
   return null;
 };
 
-/** The places go to the module and come back as one flat list, four numbers for each (`pack_places`). */
+/** The places go to the module and come back as one flat list of numbers (`PLACE_NUMBERS` for each). */
 const packer: Packer = (places) => {
   const packed = pack_places(
     Uint32Array.from(
@@ -219,10 +219,10 @@ const packer: Packer = (places) => {
     ),
   );
   return places.map((_, at) => ({
-    column: packed[at * 4] ?? 0,
-    row: packed[at * 4 + 1] ?? 0,
-    width: packed[at * 4 + 2] ?? 0,
-    height: packed[at * 4 + 3] ?? 0,
+    column: packed[at * PLACE_NUMBERS] ?? 0,
+    row: packed[at * PLACE_NUMBERS + 1] ?? 0,
+    width: packed[at * PLACE_NUMBERS + 2] ?? 0,
+    height: packed[at * PLACE_NUMBERS + 3] ?? 0,
   }));
 };
 

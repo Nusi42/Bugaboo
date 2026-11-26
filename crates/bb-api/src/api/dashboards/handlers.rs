@@ -88,6 +88,7 @@ async fn list_dashboards(
     responses(
         (status = 200, description = "The dashboard.", body = DashboardBody),
         InvalidAnswer,
+        ConflictAnswer,
         NotSignedInAnswer
     )
 )]

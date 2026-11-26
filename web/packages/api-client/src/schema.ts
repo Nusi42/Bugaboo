@@ -8776,6 +8776,7 @@ export interface components {
       | "release.in-use"
       | "release.reason-needed"
       | "release.too-many"
+      | "dashboard.too-many-boxes"
       | "workflow.no-such-change"
       | "workflow.not-for-you"
       | "workflow.not-named"
@@ -18638,6 +18639,7 @@ export interface operations {
       };
       400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
+      409: components["responses"]["Conflict"];
       413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];

@@ -240,15 +240,17 @@ pub async fn home<S: AuthStore>(
     }
     // The boxes are kept as the ready-made list writes them, whatever the person may see now: a box
     // they cannot see is left out of the frame like any other, and shows once they may.
-    let mut row = 0;
-    let mut given = Vec::with_capacity(HOME_BOXES.len());
-    for entry in HOME_BOXES.iter().filter_map(|which| ready_made(*which)) {
-        given.push(BoxChange {
+    let given: Vec<BoxChange> = HOME_BOXES
+        .iter()
+        .filter_map(|(which, place)| ready_made(*which).map(|entry| (entry, *place)))
+        .map(|(entry, place)| BoxChange {
             id: None,
-            spec: ready_spec(entry, row),
-        });
-        row += entry.height;
-    }
+            spec: bb_core::dashboard::BoxSpec {
+                place,
+                ..ready_spec(entry, place.row)
+            },
+        })
+        .collect();
     let id = ctx.new_dashboard_id()?;
     let boxes = ctx.placed(id, given, &[])?;
     let name = Message::from(message::DASHBOARD_HOME_NAME).render();

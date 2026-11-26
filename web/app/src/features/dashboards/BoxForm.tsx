@@ -4,7 +4,15 @@ import { useState } from "react";
 
 import { notGroupable } from "../../shared/list-columns.ts";
 import { useSearchFields } from "../search/index.ts";
-import { askedOf, draftOf, noField, readsSearch, type Draft } from "./box-draft.ts";
+import {
+  askedOf,
+  draftOf,
+  hasShape,
+  hasSpan,
+  noField,
+  readsSearch,
+  type Draft,
+} from "./box-draft.ts";
 import { boxKind, kindName, timeSpan, type AskedBox } from "./dashboards.ts";
 
 /** The kinds of box in the order *Add box* offers them (ADR-0050, decision 4). */
@@ -48,7 +56,7 @@ function OptionFields({
 }) {
   return (
     <>
-      {draft.kind === boxKind.timeTotals ? (
+      {hasSpan(draft.kind) ? (
         <SelectField
           label={t("dashboards.box-span")}
           choices={[
@@ -71,9 +79,7 @@ function OptionFields({
           }}
         />
       ) : null}
-      {draft.kind === boxKind.numbersAndChart ? (
-        <GroupByField draft={draft} onChange={change} />
-      ) : null}
+      {hasShape(draft.kind) ? <GroupByField draft={draft} onChange={change} /> : null}
     </>
   );
 }

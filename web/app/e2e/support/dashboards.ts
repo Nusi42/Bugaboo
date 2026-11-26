@@ -3,6 +3,7 @@ import { t } from "@bugaboo/messages";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import type { ApiSession } from "./api.ts";
+import { stepsFrom, type GridSteps } from "../../src/shared/dashboard-grid-steps.ts";
 import { personName } from "../../src/shared/person.ts";
 import { boxOf } from "./geometry.ts";
 import { partIn } from "./parts.ts";
@@ -75,18 +76,18 @@ export async function startChange(page: Page): Promise<void> {
   await expect(page.getByText(t("dashboards.changing"), { exact: true })).toBeVisible();
 }
 
-/** How far one column and one row of the grid are on the screen. */
-export function gridSteps(page: Page): Promise<{ column: number; row: number }> {
-  return partIn(page, "dashboard-grid").evaluate((grid) => {
+/** How far one column and one row of the grid are on the screen: the one measure of the screen (`grid-steps.ts`). */
+export async function gridSteps(page: Page): Promise<GridSteps> {
+  const measure = await partIn(page, "dashboard-grid").evaluate((grid) => {
     const style = getComputedStyle(grid);
-    const gap = Number(style.columnGap.replace("px", "")) || 0;
     return {
-      column: (grid.clientWidth + gap) / 12,
-      row:
-        (Number(style.gridAutoRows.replace("px", "")) || 0) +
-        (Number(style.rowGap.replace("px", "")) || 0),
+      width: grid.clientWidth,
+      columnGap: style.columnGap,
+      rowHeight: style.gridAutoRows,
+      rowGap: style.rowGap,
     };
   });
+  return stepsFrom(measure);
 }
 
 /** Drags from the middle of what the locator shows by a number of columns and rows, and lets go. */
@@ -212,4 +213,40 @@ export async function viewOf(
 /** Where across each element the locator finds starts, in whole pixels. */
 export async function startsOf(shown: Locator): Promise<readonly number[]> {
   return Promise.all((await shown.all()).map(async (each) => Math.round((await boxOf(each)).x)));
+}
+
+/** The titles of the boxes of a dashboard in the order they are read: row by row, and in a row from the start. */
+export function readingTitles(dashboard: Schema<"DashboardBody">): readonly string[] {
+  return dashboard.boxes
+    .toSorted((one, other) => one.row - other.row || one.column - other.column)
+    .map((box) => box.title);
+}
+
+/** How many presses of Tab a test tries before it says that a control cannot be reached by the keyboard. */
+const TAB_PRESSES_MOST = 60;
+
+/** Presses Tab (or Shift+Tab) until the control has the focus, as a person with a keyboard reaches it. */
+export async function tabTo(page: Page, control: Locator, backwards = false): Promise<void> {
+  const key = backwards ? "Shift+Tab" : "Tab";
+  const presses = Array.from({ length: TAB_PRESSES_MOST }, () => async () => {
+    if (!(await control.evaluate((element) => element === document.activeElement))) {
+      await page.keyboard.press(key);
+    }
+  });
+  await inOrder(presses);
+  await expect(control).toBeFocused();
+}
+
+/** Opens the menu of a box by the keyboard alone and chooses one of its actions; the handle then has the keys. */
+export async function chooseByKeys(page: Page, title: string, action: string): Promise<void> {
+  await tabTo(
+    page,
+    page.getByRole("button", { name: t("dashboards.box-menu", { title }), exact: true }),
+  );
+  await page.keyboard.press("Enter");
+  await tabTo(page, page.getByRole("button", { name: action, exact: true }));
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("button", { name: t("dashboards.place", { title }), exact: true }),
+  ).toBeFocused();
 }

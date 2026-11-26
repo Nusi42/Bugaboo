@@ -16,3 +16,9 @@ pub const TIME_SPENT: &str = "time_spent";
 
 /// The word of a sum of an own field of numbers, before the word of the field (`number:budget`).
 pub const NUMBER_SUM: &str = "number:";
+
+/// The kinds of own field a total adds up: whole numbers and decimals.
+pub const SUMMED_KINDS: [crate::own_fields::FieldType; 2] = [
+    crate::own_fields::FieldType::WholeNumber,
+    crate::own_fields::FieldType::Decimal,
+];

@@ -46,4 +46,7 @@ export interface BoxPlace {
  * The places of the boxes of a dashboard packed upwards, as the server packs every change (`bb_core::dashboard::pack`):
  * in the same order, each moved up to the highest row where it meets no box above it.
  */
+/** How many numbers one place is in the flat list the module takes and gives (`pack_places`): column, row, width, height. */
+export const PLACE_NUMBERS = 4;
+
 export type Packer = (places: readonly BoxPlace[]) => readonly BoxPlace[];

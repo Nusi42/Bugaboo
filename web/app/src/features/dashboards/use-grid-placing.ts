@@ -1,4 +1,5 @@
 import { t } from "@bugaboo/messages";
+import type { KeyboardEvent } from "react";
 
 import { dragKinds } from "../../shared/drag-kinds.ts";
 import type { BoxActions } from "./BoxMenu.tsx";
@@ -43,6 +44,40 @@ export interface GridControls {
   /** The box the keys of *Move …* or *Resize …* work on, if one is. */
   readonly keyed: number | undefined;
   readonly actionsOf: (box: Box, at: number, onChangeBox: (box: Box) => void) => BoxActions;
+  /** The keys of the handle of a box while *Move …* or *Resize …* works on it. */
+  readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+  /** The focus left the handle: placing ends unless it stays in the box. */
+  readonly onBlur: (stillInBox: boolean) => void;
+  /** The handle was pressed (Enter, Space): *Move …* of the box starts. */
+  readonly onPressHandle: (at: number) => void;
+}
+
+/** What the boxes are told about placing, from the drag of a pointer and the keys. */
+function controlsOf({
+  draggable,
+  drag,
+  keys,
+  actionsOf,
+}: {
+  readonly draggable: boolean;
+  readonly drag: ReturnType<typeof useGridDrag>;
+  readonly keys: ReturnType<typeof useBoxKeys>;
+  readonly actionsOf: GridControls["actionsOf"];
+}): GridControls {
+  return {
+    draggable,
+    handlers: drag.handlers,
+    dragged: drag.placing?.at,
+    keyed: keys.placing?.at,
+    actionsOf,
+    onKeyDown: keys.onKeyDown,
+    onBlur: keys.onBlur,
+    onPressHandle: (at) => {
+      if (keys.placing === null) {
+        keys.start(at, dragKinds.dashboardBox.kind);
+      }
+    },
+  };
 }
 
 /**
@@ -64,7 +99,7 @@ export function useGridPlacing(
     changes.place(placing.places, t(said, { title }));
   };
   const drag = useGridDrag({ places: boxes, pack, gridOf, onDrop: placed });
-  const keys = useBoxKeys({ places: boxes, pack, onDrop: placed });
+  const keys = useBoxKeys({ places: boxes, pack, changing, onDrop: placed });
   const swap = (at: number, up: boolean): void => {
     const places = pack === null ? undefined : swappedInOrder(boxes, at, up, pack);
     if (places !== undefined) {
@@ -72,7 +107,8 @@ export function useGridPlacing(
     }
   };
   const actionsOf = (box: Box, at: number, onChangeBox: (box: Box) => void): BoxActions => ({
-    ...(phone ? phoneWays(at, swap) : computerWays(at, keys.start)),
+    // Until the packing is loaded nothing can be placed, so the ways to place are not offered yet.
+    ...(pack === null ? {} : phone ? phoneWays(at, swap) : computerWays(at, keys.start)),
     onChange: () => {
       onChangeBox(box);
     },
@@ -84,13 +120,12 @@ export function useGridPlacing(
     },
   });
   // `keyed` of the answer is where the keys of a box put it now, for the words of a screen reader.
-  const controls: GridControls = {
+  const controls = controlsOf({
     draggable: changing && !phone && pack !== null,
-    handlers: drag.handlers,
-    dragged: drag.placing?.at,
-    keyed: keys.placing?.at,
+    drag,
+    keys,
     actionsOf,
-  };
+  });
   return {
     controls,
     refused: changes.refused,
