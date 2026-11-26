@@ -95,22 +95,48 @@ export async function moveAsPreviewed(issues: readonly MovePreviewIssue[]): Prom
 }
 
 /**
+ * Puts a release back to the *Release date* it had, on the version its change made (*Undo* of *Make it
+ * longer*): a change somebody made after it comes back as a clash and is not overwritten.
+ */
+async function releaseBack(
+  release: Schema<"TimelineReleaseBody">,
+  version: number | null | undefined,
+): Promise<void> {
+  try {
+    dataOf(
+      await api.client.PATCH("/api/v1/projects/{project}/releases/{release}", {
+        params: { path: { project: release.project, release: release.id } },
+        body: { version: version ?? release.version + 1, release_date: release.release_date },
+      }),
+    );
+  } catch (error) {
+    undoStore.offer({ message: messageOf(error) });
+  }
+  await refreshTimeline();
+}
+
+/**
  * *Make it longer* of a release's *Delay*, confirmed: the release gets the *Release date* the warning
- * names, by the usual change of the release from the version the page read. The server offers the
- * way only to a person who may manage releases, and judges the change again.
+ * names, by the usual change of the release from the version the page read, with *Undo*. The server
+ * offers the way only to a person who may manage releases, and judges the change again.
  */
 export async function releaseLonger(
   release: Schema<"TimelineReleaseBody">,
   day: string,
 ): Promise<void> {
   try {
-    dataOf(
+    const changed = dataOf(
       await api.client.PATCH("/api/v1/projects/{project}/releases/{release}", {
         params: { path: { project: release.project, release: release.id } },
         body: { version: release.version, release_date: day },
       }),
     );
-    undoStore.offer({ message: t("timeline.release-moved", { name: release.name }) });
+    undoStore.offer({
+      message: t("timeline.release-moved", { name: release.name }),
+      undo: () => {
+        void releaseBack(release, changed.version);
+      },
+    });
   } catch (error) {
     undoStore.offer({ message: messageOf(error) });
   }
