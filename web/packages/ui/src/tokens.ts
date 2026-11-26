@@ -303,7 +303,6 @@ export const tokenNames = [
   "size-map-row-gap",
   "size-map-head",
   "size-map-side",
-  "size-map-box",
   "timeline-day",
   "timeline-days",
   "timeline-rows",

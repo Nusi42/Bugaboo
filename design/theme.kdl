@@ -253,8 +253,6 @@ tokens {
     size "size-map-row-gap" "$space-4"
     size "size-map-head" "calc(32px * $text-scale)"
     size "size-map-side" "280px"
-    // The most the box of the picture is high: a taller picture scrolls inside it, the page stays put.
-    size "size-map-box" "calc(560px * $text-scale)"
     // Where the screen puts things on the timeline, set by the code (UX §4.7, M3-F163): the width of a day at the
     // zoom, how many days and rows the chart has, and for one thing on it its row, its first day counted from the
     // first day of the chart, its length in days and how much of a bar is done. Only numbers come from code; the
@@ -2131,7 +2129,10 @@ part "choice-group.input" {
 part "choice-group.label" {
     display inline-flex
     align-items center
+    justify-content center
     box-sizing border-box
+    // A choice of one short word (*1*, *2*) is as wide as it is high: a whole target on touch (UX §7.4).
+    min-width "$size-control"
     min-height "$size-control"
     padding 0 "$pad-control"
     border "$border-width solid $border-control"
@@ -4872,6 +4873,12 @@ part "map-zoom" {
     gap "$space-1"
 }
 
+// *Fit* is a whole target on touch, however short its word (UX §7.4).
+part "map-zoom button" {
+    min-width "$size-control"
+    justify-content center
+}
+
 part "map-note" {
     margin 0
     color "$fg-muted"
@@ -4893,8 +4900,10 @@ part "map-body" {
 part "map-scroll" {
     position relative
     min-height "$size-list-scroll-least"
-    max-height "$size-map-box"
-    overflow auto
+    // The page is the one box that scrolls up and down (UX §6.5): the picture is as high as it is and scrolls only
+    // sideways, with its shadows at the edges.
+    overflow-x auto
+    overflow-y hidden
     border "$border-width solid $border"
     border-radius "$r-card"
     // A shadow stands at each edge the picture goes on beyond, as in every box that scrolls, here sideways too: covers

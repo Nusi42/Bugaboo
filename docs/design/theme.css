@@ -115,7 +115,6 @@
   --size-map-row-gap: var(--space-4);
   --size-map-head: calc(32px * var(--text-scale));
   --size-map-side: 280px;
-  --size-map-box: calc(560px * var(--text-scale));
   --timeline-day: 0;
   --timeline-days: 0;
   --timeline-rows: 0;

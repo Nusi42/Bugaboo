@@ -773,7 +773,9 @@ textarea,
 [data-part="choice-group.label"] {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   box-sizing: border-box;
+  min-width: var(--size-control);
   min-height: var(--size-control);
   padding: 0 var(--pad-control);
   border: var(--border-width) solid var(--border-control);
@@ -3646,6 +3648,11 @@ textarea,
   gap: var(--space-1);
 }
 
+[data-part="map-zoom"] [data-part="button"] {
+  min-width: var(--size-control);
+  justify-content: center;
+}
+
 [data-part="map-note"] {
   margin: 0;
   color: var(--fg-muted);
@@ -3668,8 +3675,8 @@ textarea,
 [data-part="map-scroll"] {
   position: relative;
   min-height: var(--size-list-scroll-least);
-  max-height: var(--size-map-box);
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   border: var(--border-width) solid var(--border);
   border-radius: var(--r-card);
   --cue-cover: var(--bg-canvas);
