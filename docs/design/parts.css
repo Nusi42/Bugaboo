@@ -7390,6 +7390,7 @@ textarea,
   grid-column: var(--box-column) / span var(--box-width);
   grid-row: var(--box-row) / span var(--box-height);
   position: relative;
+  overflow-x: clip;
 }
 
 [data-part="dashboard-grid"][data-variant~="phone"] [data-part="dashboard-box"] {
@@ -7452,6 +7453,7 @@ textarea,
 [data-part="dashboard-box.body"] {
   flex: 1;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 [data-part="dashboard-box.corner"] {

@@ -8575,6 +8575,9 @@ part "dashboard-box" {
     grid-column "$box-column / span $box-width"
     grid-row "$box-row / span $box-height"
     position relative
+    // What a box holds stays inside its own columns: it wraps, and what still does not fit is cut at the side, never
+    // drawn over the box beside it. Clipped, not scrolled, so the box is no scroll box, and it grows downwards.
+    overflow-x clip
 }
 
 part "dashboard-grid[variant=phone] dashboard-box" {
@@ -8630,6 +8633,8 @@ part "dashboard-box.handle" {
 part "dashboard-box.body" {
     flex 1
     min-width 0
+    // A long word (an address, an ID in a sentence) breaks rather than pushing the box wider.
+    overflow-wrap anywhere
 }
 
 // The corner a pointer drags to resize a box: a target of its own at the end of the bottom edge.
