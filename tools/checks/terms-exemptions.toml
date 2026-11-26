@@ -172,7 +172,7 @@ reason = "The Link button of the Markdown editor and the web addresses it writes
 [[allow]]
 term = "state"
 at = ["api:property AgentItem.state", "api:schema AgentState"]
-reason = "The state of an agent (active, paused, stopped) is the word of ADR-0029 and of the glossary's own entry for the states of agent work; it is not the status of an issue, which the glossary means."
+reason = "The state of an agent (active, paused, stopped) is the word of ADR-0029 and of the glossary's own entry for the states of agent work; it is not the status of an issue, which the glossary means. The glossary names it: State (of a release, of agent work, of an agent)."
 
 [[allow]]
 term = "challenge"
@@ -201,7 +201,7 @@ at = [
   "api:schema GivingState",
   "api:schema ProposalState",
 ]
-reason = "The state of agent work (Waiting for the agent, Agent working, Waiting for you, Ready for review, Agent gave up, Stopped) is the word of ADR-0029 and of the glossary's own entry; the state of a hand-over, a standing rule or a proposal is its open or ended standing. None of them is the status of an issue, which the glossary means."
+reason = "The state of agent work (Waiting for the agent, Agent working, Waiting for you, Ready for review, Agent gave up, Stopped) is the word of ADR-0029 and of the glossary's own entry; the state of a hand-over, a standing rule or a proposal is its open or ended standing. None of them is the status of an issue, which the glossary means. The glossary names it: State (of a release, of agent work, of an agent)."
 
 [[allow]]
 term = "link"
@@ -211,12 +211,12 @@ reason = "A result an agent attached can be a web link to a branch, a pull reque
 [[allow]]
 term = "state"
 at = ["messages/en.json#issue-field.agent-state"]
-reason = "The name of the field that finds agent work by its state (Waiting for you, Agent working and the others); it is the word of ADR-0029 and of the glossary's entry for the states of agent work, not the status of an issue."
+reason = "The name of the field that finds agent work by its state (Waiting for you, Agent working and the others); it is the word of ADR-0029 and of the glossary's entry for the states of agent work, not the status of an issue. The glossary names it: State (of a release, of agent work, of an agent)."
 
 [[allow]]
 term = "state"
 at = ["userDocs/agents/README.md"]
-reason = "The states of agent work (Waiting for the agent, Agent working, Waiting for you, Ready for review, Agent gave up, Stopped) are the words of ADR-0029 and of the glossary's own entry; they are not the status of an issue."
+reason = "The states of agent work (Waiting for the agent, Agent working, Waiting for you, Ready for review, Agent gave up, Stopped) are the words of ADR-0029 and of the glossary's own entry; they are not the status of an issue. The glossary names it: State (of a release, of agent work, of an agent)."
 
 [[allow]]
 term = "discard"
@@ -294,7 +294,7 @@ at = [
   "api:property ReleaseRefBody.state",
   "api:schema ReleaseState",
 ]
-reason = "The state of a release (Planned, Released, Retired) is the word of ADR-0049 and of the glossary's own entry for the three states of a release; it is not the status of an issue, which the glossary means."
+reason = "The state of a release (Planned, Released, Retired) is the word of ADR-0049 and of the glossary's own entry for the three states of a release; it is not the status of an issue, which the glossary means. The glossary names it: State (of a release, of agent work, of an agent)."
 
 [[allow]]
 term = "made"
@@ -316,7 +316,7 @@ reason = "The Space key of the keyboard, which picks up a card of the board. Not
 [[allow]]
 term = "state"
 at = ["messages/en.json#releases.state-line"]
-reason = "The state of a release (Planned, Released, Retired) is the glossary's own word for it (ADR-0049, decision 2); it is not the status of an issue, which the glossary means."
+reason = "The state of a release (Planned, Released, Retired) is the glossary's own word for it (ADR-0049, decision 2); it is not the status of an issue, which the glossary means. The glossary names it: State (of a release, of agent work, of an agent)."
 
 [[allow]]
 term = "made"
