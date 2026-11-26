@@ -266,6 +266,23 @@ tokens {
     size "timeline-start" "0" run-time="true"
     size "timeline-length" "1" run-time="true"
     size "timeline-done" "0" run-time="true"
+    // Where a box stands on the grid of a dashboard (UX §4.10): its first column and row, counted from 1 as the grid
+    // counts its lines, and how many columns and rows it spans; set by the code from the places of the boxes.
+    size "box-column" "1" run-time="true"
+    size "box-row" "1" run-time="true"
+    size "box-width" "1" run-time="true"
+    size "box-height" "1" run-time="true"
+    // The share of the largest value a bar of a chart takes, in percent, set by the code for each bar.
+    size "chart-share" "0" run-time="true"
+    // A row of the grid of a dashboard: a box is at least two of them high (ADR-0050, decision 3).
+    size "size-dashboard-row" "72px"
+    // The column of the names before the bars of a chart.
+    size "size-chart-names" "calc(120px * $text-scale)"
+    // The thickness of a bar of a chart.
+    size "size-chart-bar" "calc(16px * $text-scale)"
+    // A preview of a box in *Add box* shows as much of it as fits this height, and a choice is at least this wide.
+    size "size-box-preview" "160px"
+    size "size-box-choice" "calc(240px * $text-scale)"
     // Where the room a hold keeps stands in the box its grey shapes are placed in, and how large it is, in pixels: the
     // code measures it when the shapes come (the hold is no box of its own), so they lie over that room and nowhere else.
     size "hold-top" "0" run-time="true"
@@ -458,6 +475,8 @@ tokens {
     color "accent" "#5b3fd9" more="#4a30b8" forced="Highlight"
     color "accent-soft" "#eeeafd"
     color "accent-fg" "#4a2fc4" more="#492ec0"
+    // The bars of a chart: one color for every bar, which tells nothing on its own (each bar says its name and value).
+    color "chart-bar" "$accent" forced="CanvasText"
     // The grey chip of a main button that cannot be pressed yet, and its words: a fill and words of their own, so that
     // more contrast and forced colors can change them without touching the dividers (M5 exit, O-gate B1, S7).
     color "disabled-fill" "#d7dbe1" forced="ButtonFace"
@@ -654,6 +673,7 @@ contrast min=4.5 {
 
     non-text "cue" reason="The shadow at the end of a scrolling box is a shade, not text; it is kept clear by the `distinct` rule below and measured in the browser (edge-cue-strength.spec.ts)."
     non-text "cat1-mark" "cat2-mark" "cat3-mark" "cat4-mark" "cat5-mark" "cat6-mark" "cat7-mark" "cat8-mark" "cat9-mark" "cat10-mark" "cat11-mark" "cat12-mark" reason="The square of a label carries no text: it is a fill to see, kept at 3:1 by the `fills` rule below and told apart by its `distinct` rule."
+    non-text "chart-bar" reason="A bar of a chart is a fill that carries no text: its value is written beside it; it is kept at 3:1 by the `fills` rule below."
     non-text "edge-high" "hover-line" "scrim" reason="The edge of High, the line of a hovered row and the dimmed page behind a sheet are lines and fills, not text; the lines are kept at 3:1 by the `lines` rules below, the dimmed page by the `dimmed` rule below."
 
     lines min=3 reason="The ring of a selected or focused row, the line of a hovered row and the edge of its priority carry state on the tint of the row's status group: WCAG 1.4.11 asks 3:1 against it, in every theme and with more contrast." {
@@ -695,6 +715,11 @@ contrast min=4.5 {
 
     fills min=3 reason="The square of a label carries no text, so only its color has to be seen: like a line (WCAG 1.4.11) it reaches 3:1 on every surface it stands on, in every theme, and is no pale fill lost on the card in the light themes nor a dark one in the dark themes (M5-F149)." {
         colors "cat1-mark" "cat2-mark" "cat3-mark" "cat4-mark" "cat5-mark" "cat6-mark" "cat7-mark" "cat8-mark" "cat9-mark" "cat10-mark" "cat11-mark" "cat12-mark"
+        on "bg-canvas" "bg-surface" "bg-raised"
+    }
+
+    fills min=3 reason="A bar of a chart carries no text, so only its color has to be seen: like a line (WCAG 1.4.11) it reaches 3:1 on the raised and plain surfaces a box stands on, in every theme." {
+        colors "chart-bar"
         on "bg-canvas" "bg-surface" "bg-raised"
     }
 
@@ -800,6 +825,7 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
     selector "notification-group.head" role="section"
     selector "search-help.title" role="section"
     selector "search-mail.legend" role="section"
+    selector "dashboard-box.title" role="section"
     selector "timeline-side.heading" role="title"
     selector "map-chain.heading" role="title"
     selector "priority[variant=critical]" role="priority"
@@ -3200,6 +3226,15 @@ part "list-row[variant=grid]" {
 
 part "list-row[variant=grid] list-row.cell" {
     width auto
+}
+
+// The quiet row of totals under a group (QRY-08): the cells of the columns of the list, in the quiet words color on the
+// surface of the head of a group, so it reads as part of the group and not as an issue.
+part "list-row[state=totals]" {
+    background "$bg-surface"
+    color "$fg-muted"
+    font-size "$fs-sm"
+    font-variant-numeric tabular-nums
 }
 
 
@@ -8491,6 +8526,283 @@ part "pinned.row nav-item" {
 
 part "pinned.more" {
     flex none
+}
+
+// ───────────── Dashboards (UX §4.10) ─────────────
+
+// The page of a dashboard: its head, then the grid of its boxes.
+part "dashboard" {
+    display flex
+    flex-direction column
+    gap "$space-4"
+    min-width 0
+}
+
+part "dashboard.actions" {
+    use "wrap-row"
+    align-items center
+}
+
+// The grid: twelve columns on a computer, rows of one height; a box stands on its place and spans its size.
+part "dashboard-grid" {
+    display grid
+    grid-template-columns "repeat(12, minmax(0, 1fr))"
+    grid-auto-rows "$size-dashboard-row"
+    gap "$space-4"
+    position relative
+    use "list-reset"
+}
+
+// On a phone the boxes stand in one column, in the order of the grid, each as high as what it holds.
+part "dashboard-grid[variant=phone]" {
+    grid-template-columns "minmax(0, 1fr)"
+    grid-auto-rows auto
+}
+
+part "dashboard-box" {
+    use "floating-box"
+    display flex
+    flex-direction column
+    gap "$space-2"
+    min-width 0
+    min-height 0
+    padding "$pad-box"
+    border-radius "$r-card"
+    color "$fg"
+    grid-column "$box-column / span $box-width"
+    grid-row "$box-row / span $box-height"
+    position relative
+    // What does not fit scrolls inside the body: nothing is drawn over the next box.
+    overflow hidden
+}
+
+part "dashboard-grid[variant=phone] dashboard-box" {
+    grid-column auto
+    grid-row auto
+}
+
+// The box that is dragged stays where it is, quiet; its shadow shows where it will land (nothing moves under the
+// cursor, UX §6.4).
+part "dashboard-box[state=dragging]" {
+    opacity "$opacity-busy"
+}
+
+// The box that *Move* or *Resize* works on with the keys has the ring of the keyboard.
+part "dashboard-box[state=keys]" {
+    use "ring-keyboard"
+}
+
+// The head of a box: its title, and its menu at the end; in *Change* the title is the handle a pointer drags.
+part "dashboard-box.head" {
+    display flex
+    align-items center
+    gap "$space-2"
+    min-height "$size-control"
+}
+
+part "dashboard-box.title" {
+    flex 1
+    min-width 0
+    margin 0
+    overflow hidden
+    text-overflow ellipsis
+    white-space nowrap
+    font-family "$font-display"
+    font-size "$fs-md"
+    font-weight "$weight-bold"
+}
+
+part "dashboard-box.handle" {
+    display flex
+    flex 1
+    align-items center
+    gap "$space-2"
+    min-width 0
+    min-height "$size-control"
+    cursor grab
+    touch-action none
+}
+
+part "dashboard-box.body" {
+    flex 1
+    min-height 0
+    overflow auto
+}
+
+part "dashboard-grid[variant=phone] dashboard-box.body" {
+    overflow visible
+}
+
+// The corner a pointer drags to resize a box: a target of its own at the end of the bottom edge.
+part "dashboard-box.corner" {
+    position absolute
+    inset-inline-end 0
+    bottom 0
+    width "$size-target-compact"
+    height "$size-target-compact"
+    padding 0
+    border none
+    border-end-end-radius "$r-card"
+    background transparent
+    color "$fg-muted"
+    cursor nwse-resize
+    touch-action none
+}
+
+// Where the box that is dragged will land, drawn on its place in the grid; it takes no pointer.
+part "dashboard-shadow" {
+    grid-column "$box-column / span $box-width"
+    grid-row "$box-row / span $box-height"
+    border "$border-width dashed $accent"
+    border-radius "$r-card"
+    background "$accent-soft"
+    pointer-events none
+    // Placed like the boxes, after them, so it is drawn over the box whose place it shows.
+    position relative
+}
+
+// A dashboard without boxes says so in one line, where its boxes would stand.
+part "dashboard-empty" {
+    use "quiet-text"
+}
+
+// *Add box*: the ready-made boxes, each with its name, what it shows and a preview, then a box of your own.
+part "add-box" {
+    display flex
+    flex-direction column
+    gap "$gap-sections"
+}
+
+part "add-box.list" {
+    display grid
+    grid-template-columns "repeat(auto-fill, minmax(min(100%, $size-box-choice), 1fr))"
+    gap "$space-3"
+    use "list-reset"
+}
+
+part "add-box.choice" {
+    use "surface-box"
+    display flex
+    flex-direction column
+    gap "$space-2"
+    min-width 0
+    padding "$pad-control"
+    overflow hidden
+}
+
+// *Add* stands at the start of its choice, under the words and the preview, as every button under text (R1).
+part "add-box.choice > button" {
+    align-self flex-start
+    margin-top auto
+}
+
+part "add-box.caption" {
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+// The preview shows the box as it reads for the person, cut at a height; it is a picture, not a place to act in (inert).
+part "add-box.preview" {
+    max-height "$size-box-preview"
+    overflow hidden
+    pointer-events none
+}
+
+// The form of a box of your own and of *Change box*.
+part "box-form" {
+    display flex
+    flex-direction column
+    gap "$gap-fields"
+}
+
+// ───────────── Charts (M10-Q13) ─────────────
+
+// A chart and its table: the picture for the eye, the table for screen readers or instead of the picture.
+part "chart" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    margin 0
+    min-width 0
+}
+
+part "chart.picture" {
+    min-width 0
+}
+
+part "chart.table" {
+    min-width 0
+}
+
+part "chart.switch" {
+    display flex
+}
+
+// Horizontal bars: the name of each before it, its value written at its end.
+part "chart-bars" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    use "list-reset"
+}
+
+part "chart-bar" {
+    display grid
+    grid-template-columns "$size-chart-names minmax(0, 1fr)"
+    align-items center
+    gap "$space-3"
+}
+
+part "chart-bar.name" {
+    overflow hidden
+    text-overflow ellipsis
+    white-space nowrap
+    font-size "$fs-base"
+}
+
+part "chart-bar.lane" {
+    display flex
+    align-items center
+    gap "$space-2"
+    min-width 0
+}
+
+// The bar: its share of the largest value, of the room the lane leaves for the value written after it.
+part "chart-bar.fill" {
+    box-sizing border-box
+    width "calc($chart-share * 0.85 * $size-percent)"
+    height "$size-chart-bar"
+    border "$border-width solid $chart-bar"
+    border-radius "$r-ctl"
+    background "$chart-bar"
+}
+
+part "chart-bar.value" {
+    flex none
+    font-size "$fs-base"
+    font-variant-numeric tabular-nums
+}
+
+// Large numbers, each with its name under it, side by side.
+part "chart-numbers" {
+    display flex
+    flex-wrap wrap
+    gap "$space-5"
+    use "list-reset"
+}
+
+part "chart-number" {
+    use "column-tight"
+}
+
+part "chart-number.value" {
+    font-size "$fs-xl"
+    font-variant-numeric tabular-nums
+}
+
+part "chart-number.name" {
+    color "$fg-muted"
+    font-size "$fs-sm"
 }
 
 // The label of *Pin to sidebar* and *Unpin*: both words stand in one place and the one that is not meant is unseen, so

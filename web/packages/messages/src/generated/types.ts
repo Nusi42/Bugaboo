@@ -11,6 +11,7 @@ import type { messages as assistantEntry } from "./assistant-entry.ts";
 import type { messages as board } from "./board.ts";
 import type { messages as calendar } from "./calendar.ts";
 import type { messages as connect } from "./connect.ts";
+import type { messages as dashboards } from "./dashboards.ts";
 import type { messages as fields } from "./fields.ts";
 import type { messages as files } from "./files.ts";
 import type { messages as follow } from "./follow.ts";
@@ -58,6 +59,7 @@ export type MessageKey =
   | keyof typeof board
   | keyof typeof calendar
   | keyof typeof connect
+  | keyof typeof dashboards
   | keyof typeof fields
   | keyof typeof files
   | keyof typeof follow
@@ -351,6 +353,21 @@ export interface MessageArguments {
   "connect.title": { app: string | number };
   "connect.where-web": { address: string | number };
   "connected-apps.take-back-name": { name: string | number };
+  "dashboards.add-this": { title: string | number };
+  "dashboards.added": { title: string | number };
+  "dashboards.box-changed": { title: string | number };
+  "dashboards.box-menu": { title: string | number };
+  "dashboards.change-box-title": { title: string | number };
+  "dashboards.copy-name": { name: string | number };
+  "dashboards.deleted": { name: string | number };
+  "dashboards.full": { most: number };
+  "dashboards.full-unseen": { most: number };
+  "dashboards.more": { name: string | number };
+  "dashboards.moved": { title: string | number };
+  "dashboards.place": { title: string | number };
+  "dashboards.place-now": { column: number; height: number; row: number; width: number };
+  "dashboards.removed": { title: string | number };
+  "dashboards.resized": { title: string | number };
   "data-exports.deleted-on": { date: string | number };
   "data-exports.download-name": { name: string | number };
   "data-exports.file.ready": { size: string | number };
@@ -551,6 +568,10 @@ export interface MessageArguments {
   "issues.total-estimated": { length: string | number };
   "issues.total-left": { length: string | number };
   "issues.total-spent": { length: string | number };
+  "issues.totals-count": { count: number };
+  "issues.totals-of": { group: string | number };
+  "issues.totals-over": { issues: number; total: string | number; valued: number };
+  "issues.totals-over-part": { issues: number; valued: number };
   "issues.unassign-name": { name: string | number };
   "keep-kind.count.agent-requests": { count: number };
   "keep-kind.count.app-grants": { count: number };

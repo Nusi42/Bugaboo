@@ -37,8 +37,7 @@ use crate::access::Actor;
 use crate::ai::Withheld;
 use crate::auth::{AppError, AuthStore, Ctx};
 
-/// The word of a sum of an own field of numbers, before the word of the field (`number:budget`).
-const NUMBER_SUM: &str = "number:";
+use bb_core::totals::{COUNT, ESTIMATED, NUMBER_SUM, TIME_LEFT, TIME_SPENT};
 
 /// A sum a total may ask for, by its word.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -60,10 +59,10 @@ impl SumWord {
     #[must_use]
     pub fn read(word: &str) -> Option<Self> {
         Some(match word {
-            "count" => Self::Count,
-            "estimated" => Self::Estimated,
-            "time_left" => Self::TimeLeft,
-            "time_spent" => Self::TimeSpent,
+            COUNT => Self::Count,
+            ESTIMATED => Self::Estimated,
+            TIME_LEFT => Self::TimeLeft,
+            TIME_SPENT => Self::TimeSpent,
             other => Self::Number(other.strip_prefix(NUMBER_SUM)?.trim().to_owned()),
         })
     }
@@ -72,10 +71,10 @@ impl SumWord {
     #[must_use]
     pub fn word(&self) -> String {
         match self {
-            Self::Count => "count".to_owned(),
-            Self::Estimated => "estimated".to_owned(),
-            Self::TimeLeft => "time_left".to_owned(),
-            Self::TimeSpent => "time_spent".to_owned(),
+            Self::Count => COUNT.to_owned(),
+            Self::Estimated => ESTIMATED.to_owned(),
+            Self::TimeLeft => TIME_LEFT.to_owned(),
+            Self::TimeSpent => TIME_SPENT.to_owned(),
             Self::Number(field) => format!("{NUMBER_SUM}{field}"),
         }
     }

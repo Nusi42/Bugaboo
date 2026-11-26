@@ -1,5 +1,5 @@
 //! WebAssembly bindings for Markdown, the wording of changes and notifications, the rule of the
-//! same name and the readability of an own theme (ADR-0011, ADR-0033, ADR-0026 update M8). The search language has a module of its own, `bb-wasm-search`
+//! same name, the readability of an own theme and the packing of the boxes of a dashboard (ADR-0011, ADR-0033, ADR-0026 update M8). The search language has a module of its own, `bb-wasm-search`
 //! (ADR-0005, amendment M5).
 //!
 //! This crate only passes calls through to the pure crates, so the browser runs the very code the
@@ -10,6 +10,7 @@
 
 pub mod names;
 
+use bb_core::dashboard::{BoxPlace, pack};
 use bb_core::fields::Field;
 use bb_core::history::TimeEvent;
 use bb_core::plan::TimeFactor;
@@ -186,6 +187,31 @@ pub fn factor_of_length(estimate: u32, takes: u32) -> Option<u16> {
     TimeFactor::of_length(Minutes::new(estimate), Minutes::new(takes)).map(TimeFactor::percent)
 }
 
+/// The places of the boxes of a dashboard packed upwards, as the server packs every change
+/// (`bb_core::dashboard::pack`), so a place the screen shows while a box is dragged is the place it
+/// will have. The places come and go as one flat list of numbers, four for each box in order
+/// (column, row, width, height): no reader of JSON is needed for them, which keeps the module small.
+#[must_use]
+#[wasm_bindgen]
+pub fn pack_places(flat: &[u32]) -> Vec<u32> {
+    let places: Vec<BoxPlace> = flat
+        .chunks_exact(PLACE_NUMBERS)
+        .map(|numbers| BoxPlace {
+            column: numbers[0],
+            row: numbers[1],
+            width: numbers[2],
+            height: numbers[3],
+        })
+        .collect();
+    pack(&places)
+        .into_iter()
+        .flat_map(|place| [place.column, place.row, place.width, place.height])
+        .collect()
+}
+
+/// How many numbers one place is in the flat list of [`pack_places`].
+const PLACE_NUMBERS: usize = 4;
+
 /// An own theme as the editor asks about it: the built-in theme it extends and its values, in the
 /// shape of a theme file.
 #[derive(Deserialize)]
@@ -240,6 +266,15 @@ mod tests {
 
     fn theme_readability_text(asked: &str) -> String {
         answer(asked, rate_asked).unwrap_or_default()
+    }
+
+    #[test]
+    fn cfg_03_the_browser_packs_the_places_of_boxes_as_the_server_does() {
+        assert_eq!(
+            pack_places(&[0, 3, 6, 2, 6, 5, 6, 2]),
+            vec![0, 0, 6, 2, 6, 0, 6, 2]
+        );
+        assert!(pack_places(&[1]).is_empty());
     }
 
     #[test]

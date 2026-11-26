@@ -2259,6 +2259,178 @@ pub const COOKIE_SESSION_PURPOSE: MessageKey = MessageKey::new("cookie.session.p
 /// The message `dashboard.home-name`.
 pub const DASHBOARD_HOME_NAME: MessageKey = MessageKey::new("dashboard.home-name");
 
+/// The message `dashboards.add-box`.
+pub const DASHBOARDS_ADD_BOX: MessageKey = MessageKey::new("dashboards.add-box");
+
+/// The message `dashboards.add-the-box`.
+pub const DASHBOARDS_ADD_THE_BOX: MessageKey = MessageKey::new("dashboards.add-the-box");
+
+/// The message `dashboards.as-table`.
+pub const DASHBOARDS_AS_TABLE: MessageKey = MessageKey::new("dashboards.as-table");
+
+/// The message `dashboards.box-by`.
+pub const DASHBOARDS_BOX_BY: MessageKey = MessageKey::new("dashboards.box-by");
+
+/// The message `dashboards.box-by-none`.
+pub const DASHBOARDS_BOX_BY_NONE: MessageKey = MessageKey::new("dashboards.box-by-none");
+
+/// The message `dashboards.box-kind`.
+pub const DASHBOARDS_BOX_KIND: MessageKey = MessageKey::new("dashboards.box-kind");
+
+/// The message `dashboards.box-search`.
+pub const DASHBOARDS_BOX_SEARCH: MessageKey = MessageKey::new("dashboards.box-search");
+
+/// The message `dashboards.box-search-hint`.
+pub const DASHBOARDS_BOX_SEARCH_HINT: MessageKey = MessageKey::new("dashboards.box-search-hint");
+
+/// The message `dashboards.box-span`.
+pub const DASHBOARDS_BOX_SPAN: MessageKey = MessageKey::new("dashboards.box-span");
+
+/// The message `dashboards.box-title`.
+pub const DASHBOARDS_BOX_TITLE: MessageKey = MessageKey::new("dashboards.box-title");
+
+/// The message `dashboards.change`.
+pub const DASHBOARDS_CHANGE: MessageKey = MessageKey::new("dashboards.change");
+
+/// The message `dashboards.change-box`.
+pub const DASHBOARDS_CHANGE_BOX: MessageKey = MessageKey::new("dashboards.change-box");
+
+/// The message `dashboards.changing`.
+pub const DASHBOARDS_CHANGING: MessageKey = MessageKey::new("dashboards.changing");
+
+/// The message `dashboards.changing-home`.
+pub const DASHBOARDS_CHANGING_HOME: MessageKey = MessageKey::new("dashboards.changing-home");
+
+/// The message `dashboards.create`.
+pub const DASHBOARDS_CREATE: MessageKey = MessageKey::new("dashboards.create");
+
+/// The message `dashboards.create-confirm`.
+pub const DASHBOARDS_CREATE_CONFIRM: MessageKey = MessageKey::new("dashboards.create-confirm");
+
+/// The message `dashboards.create-text`.
+pub const DASHBOARDS_CREATE_TEXT: MessageKey = MessageKey::new("dashboards.create-text");
+
+/// The message `dashboards.customize`.
+pub const DASHBOARDS_CUSTOMIZE: MessageKey = MessageKey::new("dashboards.customize");
+
+/// The message `dashboards.day`.
+pub const DASHBOARDS_DAY: MessageKey = MessageKey::new("dashboards.day");
+
+/// The message `dashboards.delete`.
+pub const DASHBOARDS_DELETE: MessageKey = MessageKey::new("dashboards.delete");
+
+/// The message `dashboards.done`.
+pub const DASHBOARDS_DONE: MessageKey = MessageKey::new("dashboards.done");
+
+/// The message `dashboards.empty`.
+pub const DASHBOARDS_EMPTY: MessageKey = MessageKey::new("dashboards.empty");
+
+/// The message `dashboards.empty-mine`.
+pub const DASHBOARDS_EMPTY_MINE: MessageKey = MessageKey::new("dashboards.empty-mine");
+
+/// The message `dashboards.heading`.
+pub const DASHBOARDS_HEADING: MessageKey = MessageKey::new("dashboards.heading");
+
+/// The message `dashboards.issues`.
+pub const DASHBOARDS_ISSUES: MessageKey = MessageKey::new("dashboards.issues");
+
+/// The message `dashboards.issues-found`.
+pub const DASHBOARDS_ISSUES_FOUND: MessageKey = MessageKey::new("dashboards.issues-found");
+
+/// The message `dashboards.kind.my-timer`.
+pub const DASHBOARDS_KIND_MY_TIMER: MessageKey = MessageKey::new("dashboards.kind.my-timer");
+
+/// The message `dashboards.kind.numbers-and-chart`.
+pub const DASHBOARDS_KIND_NUMBERS_AND_CHART: MessageKey =
+    MessageKey::new("dashboards.kind.numbers-and-chart");
+
+/// The message `dashboards.kind.recent-changes`.
+pub const DASHBOARDS_KIND_RECENT_CHANGES: MessageKey =
+    MessageKey::new("dashboards.kind.recent-changes");
+
+/// The message `dashboards.kind.search-results`.
+pub const DASHBOARDS_KIND_SEARCH_RESULTS: MessageKey =
+    MessageKey::new("dashboards.kind.search-results");
+
+/// The message `dashboards.kind.small-timeline`.
+pub const DASHBOARDS_KIND_SMALL_TIMELINE: MessageKey =
+    MessageKey::new("dashboards.kind.small-timeline");
+
+/// The message `dashboards.kind.time-totals`.
+pub const DASHBOARDS_KIND_TIME_TOTALS: MessageKey = MessageKey::new("dashboards.kind.time-totals");
+
+/// The message `dashboards.move`.
+pub const DASHBOARDS_MOVE: MessageKey = MessageKey::new("dashboards.move");
+
+/// The message `dashboards.move-down`.
+pub const DASHBOARDS_MOVE_DOWN: MessageKey = MessageKey::new("dashboards.move-down");
+
+/// The message `dashboards.move-up`.
+pub const DASHBOARDS_MOVE_UP: MessageKey = MessageKey::new("dashboards.move-up");
+
+/// The message `dashboards.name`.
+pub const DASHBOARDS_NAME: MessageKey = MessageKey::new("dashboards.name");
+
+/// The message `dashboards.name-need`.
+pub const DASHBOARDS_NAME_NEED: MessageKey = MessageKey::new("dashboards.name-need");
+
+/// The message `dashboards.no-changes`.
+pub const DASHBOARDS_NO_CHANGES: MessageKey = MessageKey::new("dashboards.no-changes");
+
+/// The message `dashboards.no-issues`.
+pub const DASHBOARDS_NO_ISSUES: MessageKey = MessageKey::new("dashboards.no-issues");
+
+/// The message `dashboards.no-time`.
+pub const DASHBOARDS_NO_TIME: MessageKey = MessageKey::new("dashboards.no-time");
+
+/// The message `dashboards.no-value`.
+pub const DASHBOARDS_NO_VALUE: MessageKey = MessageKey::new("dashboards.no-value");
+
+/// The message `dashboards.none`.
+pub const DASHBOARDS_NONE: MessageKey = MessageKey::new("dashboards.none");
+
+/// The message `dashboards.own-box`.
+pub const DASHBOARDS_OWN_BOX: MessageKey = MessageKey::new("dashboards.own-box");
+
+/// The message `dashboards.ready-made`.
+pub const DASHBOARDS_READY_MADE: MessageKey = MessageKey::new("dashboards.ready-made");
+
+/// The message `dashboards.remove`.
+pub const DASHBOARDS_REMOVE: MessageKey = MessageKey::new("dashboards.remove");
+
+/// The message `dashboards.rename`.
+pub const DASHBOARDS_RENAME: MessageKey = MessageKey::new("dashboards.rename");
+
+/// The message `dashboards.rename-text`.
+pub const DASHBOARDS_RENAME_TEXT: MessageKey = MessageKey::new("dashboards.rename-text");
+
+/// The message `dashboards.resize`.
+pub const DASHBOARDS_RESIZE: MessageKey = MessageKey::new("dashboards.resize");
+
+/// The message `dashboards.save-copy`.
+pub const DASHBOARDS_SAVE_COPY: MessageKey = MessageKey::new("dashboards.save-copy");
+
+/// The message `dashboards.save-copy-text`.
+pub const DASHBOARDS_SAVE_COPY_TEXT: MessageKey = MessageKey::new("dashboards.save-copy-text");
+
+/// The message `dashboards.share-note`.
+pub const DASHBOARDS_SHARE_NOTE: MessageKey = MessageKey::new("dashboards.share-note");
+
+/// The message `dashboards.span.my-week`.
+pub const DASHBOARDS_SPAN_MY_WEEK: MessageKey = MessageKey::new("dashboards.span.my-week");
+
+/// The message `dashboards.span.search`.
+pub const DASHBOARDS_SPAN_SEARCH: MessageKey = MessageKey::new("dashboards.span.search");
+
+/// The message `dashboards.stale`.
+pub const DASHBOARDS_STALE: MessageKey = MessageKey::new("dashboards.stale");
+
+/// The message `dashboards.time`.
+pub const DASHBOARDS_TIME: MessageKey = MessageKey::new("dashboards.time");
+
+/// The message `dashboards.what`.
+pub const DASHBOARDS_WHAT: MessageKey = MessageKey::new("dashboards.what");
+
 /// The message `data-exports.col.actions`.
 pub const DATA_EXPORTS_COL_ACTIONS: MessageKey = MessageKey::new("data-exports.col.actions");
 
@@ -4300,6 +4472,12 @@ pub const ISSUES_TIME_FACTOR_WAY: MessageKey = MessageKey::new("issues.time-fact
 
 /// The message `issues.title`.
 pub const ISSUES_TITLE: MessageKey = MessageKey::new("issues.title");
+
+/// The message `issues.totals`.
+pub const ISSUES_TOTALS: MessageKey = MessageKey::new("issues.totals");
+
+/// The message `issues.totals-separator`.
+pub const ISSUES_TOTALS_SEPARATOR: MessageKey = MessageKey::new("issues.totals-separator");
 
 /// The message `issues.type`.
 pub const ISSUES_TYPE: MessageKey = MessageKey::new("issues.type");
@@ -11614,6 +11792,9 @@ pub const THEME_COLOR_BORDER_CONTROL: MessageKey = MessageKey::new("theme-color.
 /// The message `theme-color.border-subtle`.
 pub const THEME_COLOR_BORDER_SUBTLE: MessageKey = MessageKey::new("theme-color.border-subtle");
 
+/// The message `theme-color.chart-bar`.
+pub const THEME_COLOR_CHART_BAR: MessageKey = MessageKey::new("theme-color.chart-bar");
+
 /// The message `theme-color.cue`.
 pub const THEME_COLOR_CUE: MessageKey = MessageKey::new("theme-color.cue");
 
@@ -16286,6 +16467,159 @@ pub fn connected_apps_take_back_name(name: impl std::fmt::Display) -> Message {
     )
 }
 
+/// The message `dashboards.add-this`.
+#[must_use]
+pub fn dashboards_add_this(title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.add-this"),
+        vec![("title", Value::Text(title.to_string()))],
+    )
+}
+
+/// The message `dashboards.added`.
+#[must_use]
+pub fn dashboards_added(title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.added"),
+        vec![("title", Value::Text(title.to_string()))],
+    )
+}
+
+/// The message `dashboards.box-changed`.
+#[must_use]
+pub fn dashboards_box_changed(title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.box-changed"),
+        vec![("title", Value::Text(title.to_string()))],
+    )
+}
+
+/// The message `dashboards.box-menu`.
+#[must_use]
+pub fn dashboards_box_menu(title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.box-menu"),
+        vec![("title", Value::Text(title.to_string()))],
+    )
+}
+
+/// The message `dashboards.change-box-title`.
+#[must_use]
+pub fn dashboards_change_box_title(title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.change-box-title"),
+        vec![("title", Value::Text(title.to_string()))],
+    )
+}
+
+/// The message `dashboards.copy-name`.
+#[must_use]
+pub fn dashboards_copy_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.copy-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `dashboards.deleted`.
+#[must_use]
+pub fn dashboards_deleted(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.deleted"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `dashboards.full`.
+#[must_use]
+pub fn dashboards_full(most: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.full"),
+        vec![("most", Value::Number(most))],
+    )
+}
+
+/// The message `dashboards.full-unseen`.
+#[must_use]
+pub fn dashboards_full_unseen(most: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.full-unseen"),
+        vec![("most", Value::Number(most))],
+    )
+}
+
+/// The message `dashboards.more`.
+#[must_use]
+pub fn dashboards_more(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.more"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `dashboards.moved`.
+#[must_use]
+pub fn dashboards_moved(title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.moved"),
+        vec![("title", Value::Text(title.to_string()))],
+    )
+}
+
+/// The message `dashboards.place`.
+#[must_use]
+pub fn dashboards_place(title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.place"),
+        vec![("title", Value::Text(title.to_string()))],
+    )
+}
+
+/// The values of the message `dashboards.place-now`, by name.
+#[derive(Clone, Copy)]
+pub struct DashboardsPlaceNow {
+    /// The value of `{column}`.
+    pub column: i64,
+    /// The value of `{height}`.
+    pub height: i64,
+    /// The value of `{row}`.
+    pub row: i64,
+    /// The value of `{width}`.
+    pub width: i64,
+}
+
+/// The message `dashboards.place-now`.
+#[must_use]
+pub fn dashboards_place_now(values: DashboardsPlaceNow) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.place-now"),
+        vec![
+            ("column", Value::Number(values.column)),
+            ("height", Value::Number(values.height)),
+            ("row", Value::Number(values.row)),
+            ("width", Value::Number(values.width)),
+        ],
+    )
+}
+
+/// The message `dashboards.removed`.
+#[must_use]
+pub fn dashboards_removed(title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.removed"),
+        vec![("title", Value::Text(title.to_string()))],
+    )
+}
+
+/// The message `dashboards.resized`.
+#[must_use]
+pub fn dashboards_resized(title: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("dashboards.resized"),
+        vec![("title", Value::Text(title.to_string()))],
+    )
+}
+
 /// The message `data-exports.deleted-on`.
 #[must_use]
 pub fn data_exports_deleted_on(date: impl std::fmt::Display) -> Message {
@@ -18643,6 +18977,69 @@ pub fn issues_total_spent(length: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("issues.total-spent"),
         vec![("length", Value::Text(length.to_string()))],
+    )
+}
+
+/// The message `issues.totals-count`.
+#[must_use]
+pub fn issues_totals_count(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.totals-count"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `issues.totals-of`.
+#[must_use]
+pub fn issues_totals_of(group: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.totals-of"),
+        vec![("group", Value::Text(group.to_string()))],
+    )
+}
+
+/// The values of the message `issues.totals-over`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesTotalsOver<'a> {
+    /// The value of `{issues}`.
+    pub issues: i64,
+    /// The value of `{total}`.
+    pub total: &'a dyn std::fmt::Display,
+    /// The value of `{valued}`.
+    pub valued: i64,
+}
+
+/// The message `issues.totals-over`.
+#[must_use]
+pub fn issues_totals_over(values: IssuesTotalsOver<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.totals-over"),
+        vec![
+            ("issues", Value::Number(values.issues)),
+            ("total", Value::Text(values.total.to_string())),
+            ("valued", Value::Number(values.valued)),
+        ],
+    )
+}
+
+/// The values of the message `issues.totals-over-part`, by name.
+#[derive(Clone, Copy)]
+pub struct IssuesTotalsOverPart {
+    /// The value of `{issues}`.
+    pub issues: i64,
+    /// The value of `{valued}`.
+    pub valued: i64,
+}
+
+/// The message `issues.totals-over-part`.
+#[must_use]
+pub fn issues_totals_over_part(values: IssuesTotalsOverPart) -> Message {
+    Message::with_arguments(
+        MessageKey::new("issues.totals-over-part"),
+        vec![
+            ("issues", Value::Number(values.issues)),
+            ("valued", Value::Number(values.valued)),
+        ],
     )
 }
 

@@ -30,6 +30,7 @@ export {
 } from "./appearance.ts";
 export { Button, type ButtonProps } from "./Button.tsx";
 export { Card, type CardProps } from "./Card.tsx";
+export { BarChart, NumberChart, type ChartLabels, type ChartRow } from "./Chart.tsx";
 export { DataCell, DataRow, DataRowHead, DataTable } from "./DataTable.tsx";
 export { StatesInPlace } from "./StatesInPlace.tsx";
 export { live } from "./live.ts";
@@ -204,6 +205,7 @@ export {
   alertTone,
   appLayoutLook,
   buttonLook,
+  buttonShape,
   cardLook,
   choiceGroupLook,
   dataCellVariant,

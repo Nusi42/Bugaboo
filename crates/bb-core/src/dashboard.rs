@@ -252,19 +252,21 @@ pub fn boxes_are_valid(boxes: &[BoxSpec]) -> bool {
 #[must_use]
 pub fn pack(places: &[BoxPlace]) -> Vec<BoxPlace> {
     let mut order: Vec<usize> = (0..places.len()).collect();
-    order.sort_by_key(|&at| (places[at].row, places[at].column, at));
+    // The index is part of the key, so no two keys are equal and an unstable sort gives the one order.
+    order.sort_unstable_by_key(|&at| (places[at].row, places[at].column, at));
     let mut packed: Vec<BoxPlace> = places.to_vec();
-    let mut settled: Vec<BoxPlace> = Vec::with_capacity(places.len());
-    for at in order {
-        let mut place = places[at];
-        place.row = (0..=place.row)
-            .find(|&row| {
-                let tried = BoxPlace { row, ..place };
-                settled.iter().all(|other| !other.overlaps(tried))
-            })
-            .unwrap_or(place.row);
-        settled.push(place);
-        packed[at] = place;
+    // The places settled so far are the entries of `packed` at the indices already passed.
+    for (done, &at) in order.iter().enumerate() {
+        let place = places[at];
+        let mut row = 0;
+        while row < place.row
+            && order[..done]
+                .iter()
+                .any(|&other| packed[other].overlaps(BoxPlace { row, ..place }))
+        {
+            row += 1;
+        }
+        packed[at] = BoxPlace { row, ..place };
     }
     packed
 }

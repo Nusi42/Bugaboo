@@ -5,11 +5,11 @@ import { useState } from "react";
 import { pinsShown, pinsShownLow } from "../../shared/pin-folds.ts";
 import { NavButton, SectionFrame, type SidebarSectionView } from "../shell/index.ts";
 import { PinRow } from "./PinRow.tsx";
-import { pinKind, pinsHeading, usePins } from "./pins.ts";
+import { pinsHeading, usePins } from "./pins.ts";
 import { useFocusAfterUnpin } from "./use-focus-after-unpin.ts";
 
 /**
- * *Pinned* in the sidebar and at the top of *More* (UX §3.1, §3.3, CFG-05): the projects and saved searches the person pinned,
+ * *Pinned* in the sidebar and at the top of *More* (UX §3.1, §3.3, CFG-05): the projects, saved searches and dashboards the person pinned,
  * in their order, each with its icon and its name and, beside it, its menu. With more than eight the sidebar shows eight and
  * *Show all pinned*, and in a window 600 px high one, so it needs no more scrolling than without pins; narrowed to icons it
  * shows the icons, named for screen readers and on pointing, and *Show all pinned* as an icon too. Nothing is shown for a
@@ -22,8 +22,7 @@ export function PinnedSection({ view }: { readonly view: SidebarSectionView }) {
   const read = usePins();
   useHoldWhileReading(read.isLoading);
   const items = read.data?.items;
-  // A dashboard has no screen to lead to yet (M10-F86): its pin stays in the list and keeps its place.
-  const pins = (items ?? []).filter((pin) => pin.kind !== pinKind.dashboard);
+  const pins = items ?? [];
   const { list, unpinning, keepMenu } = useFocusAfterUnpin(items);
   if (pins.length === 0) {
     return null;

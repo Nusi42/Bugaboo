@@ -65,6 +65,10 @@ export const messages = {
   "issues.time-left-worked-out": "Worked out: {length}",
   "issues.time-left-worked-out-short": "{length}, worked out",
   "issues.group-empty": "None",
+  "issues.totals": "Total",
+  "issues.totals-of": "Total of {group}",
+  "issues.totals-count": "{count, plural, one {# issue} other {# issues}}",
+  "issues.totals-separator": ", ",
   "issues.group-unnamed": "Other",
   "issues.group-unlisted": "The issues of this group cannot be listed here yet.",
   "issues.groups-cut":

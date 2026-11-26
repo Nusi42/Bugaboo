@@ -69,6 +69,16 @@ export const searchKeys = {
     text,
     by,
   ],
+  /** The totals of the groups of a search: the count and the sums of the columns asked for. */
+  totals: (text: string, within: string | undefined, by: string, sums: string) => [
+    "issues",
+    "list",
+    "totals",
+    within ?? null,
+    text,
+    by,
+    sums,
+  ],
   /** The names that a suggestion asks the server for (people, groups, projects, issues). */
   names: (kind: string, startingWith: string) => ["search", "names", kind, startingWith],
   /** Every saved search and every list of them. */

@@ -2,6 +2,8 @@ import type { EditTarget } from "@bugaboo/api-client";
 
 import { queryClient } from "./query-client.ts";
 import { checkAccessKeys } from "./check-access-keys.ts";
+import { dashboardKeys } from "./dashboard-keys.ts";
+import { historyKeys } from "./history-keys.ts";
 import { searchKeys } from "./search-keys.ts";
 
 /**
@@ -81,6 +83,7 @@ export const queryKeys = {
     list: () => ["relation-kinds", "list"],
   },
   search: searchKeys,
+  dashboards: dashboardKeys,
   tags: {
     all: ["tags"],
     list: () => ["tags", "list"],
@@ -93,23 +96,7 @@ export const queryKeys = {
     /** The key of the changes of relations and parts (a mutation), not of an answer. */
     changing: ["issue-relations", "changing"],
   },
-  history: {
-    all: ["history"],
-    list: (issue: string, tab: string) => ["history", "list", issue, tab],
-    /** Every tab of the history of one issue: what a change of the issue reads again. */
-    listsOf: (issue: string) => ["history", "list", issue],
-    /** Who changed the texts of one issue, at every version. */
-    changedByOf: (issue: string) => ["history", "changed-by", issue],
-    versions: (comment: string) => ["history", "versions", comment],
-    /** Who changed a long text last, as of one version of the issue. */
-    changedBy: (issue: string, part: string, version: number) => [
-      "history",
-      "changed-by",
-      issue,
-      part,
-      version,
-    ],
-  },
+  history: historyKeys,
   followers: {
     all: ["followers"],
     state: (issue: string) => ["followers", "state", issue],

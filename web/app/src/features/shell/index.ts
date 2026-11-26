@@ -19,6 +19,12 @@ export { startOf } from "./screen-start.ts";
 export { useItemTrail, usePageTrail, type TrailStep } from "./page-trail.ts";
 export { SectionFrame, type SectionFrameProps } from "./SectionFrame.tsx";
 export {
+  MineAndShared,
+  type MadeList,
+  type MadeThing,
+  type MineAndSharedProps,
+} from "./MineAndShared.tsx";
+export {
   addSidebarSection,
   type SidebarSection,
   type SidebarSectionView,

@@ -75,6 +75,9 @@ export async function screenValues(server: Instance): Promise<ScreenValues> {
       [routeParam.issue]: ISSUE,
       [routeParam.run]: made.run,
       [routeParam.search]: search,
+      [routeParam.dashboard]: dataOf(
+        await admin.client.POST("/api/v1/dashboards", { body: { name } }),
+      ).id,
       [routeParam.agent]: await createAgent(admin, name),
       [routeParam.theme]: await theme("for-everyone"),
       personalTheme: await theme("personal"),

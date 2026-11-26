@@ -4,7 +4,7 @@
  * It is imported with `import()` only when a preview, an editor or a sentence of a history or of a
  * notification needs it, so the module is not part of the first page (coding-standards section 6).
  */
-import { markSafeHtml, type SafeHtml, type Schema } from "@bugaboo/api-client";
+import { markSafeHtml, type SafeHtml } from "@bugaboo/api-client";
 
 import init, {
   change_sentences,
@@ -16,6 +16,7 @@ import init, {
   length_sentence,
   name_key,
   notification_sentences,
+  pack_places,
   read_length,
   read_time_entry,
   render,
@@ -23,7 +24,7 @@ import init, {
   theme_readability,
   time_sentence,
 } from "../generated/bb_wasm.js";
-import type { ThemeRead } from "./readability.generated.ts";
+import { isThemeRead, type Packer, type ThemeReader } from "./answers.ts";
 import type {
   Change as WordedChange,
   File as WordedFile,
@@ -45,6 +46,8 @@ export type {
   Side as WordedSide,
   Time as WordedTime,
 } from "./wording.generated.ts";
+
+export type { BoxPlace, Packer, ThemeReader } from "./answers.ts";
 
 export type {
   ColorRating,
@@ -197,35 +200,6 @@ const wording: Wording = {
   factorOfLength: (estimate, takes) => factor_of_length(estimate, takes),
 };
 
-/**
- * Rates an own theme that extends the built-in theme `extends` with `values`, as the server rates
- * it when it is saved; `null` for values a save would refuse.
- */
-export type ThemeReader = (
-  extendsTheme: string,
-  values: Schema<"ThemeValuesBody">,
-) => ThemeRead | null;
-
-/** Whether the answer of the module is what the editor is told; anything else is a defect. */
-function isThemeRead(value: unknown): value is ThemeRead {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "hard" in value &&
-    Array.isArray(value.hard) &&
-    "hard_colors" in value &&
-    Array.isArray(value.hard_colors) &&
-    "ratings" in value &&
-    Array.isArray(value.ratings) &&
-    "summary" in value &&
-    typeof value.summary === "object" &&
-    "colors" in value &&
-    Array.isArray(value.colors) &&
-    "upside_down" in value &&
-    Array.isArray(value.upside_down)
-  );
-}
-
 const themeReader: ThemeReader = (extendsTheme, values) => {
   const parsed: unknown = JSON.parse(
     ask(() => theme_readability(JSON.stringify({ extends: extendsTheme, values }))),
@@ -235,6 +209,21 @@ const themeReader: ThemeReader = (extendsTheme, values) => {
   }
   broken(new Error("The readability of bb-core gave something that is no rating."));
   return null;
+};
+
+/** The places go to the module and come back as one flat list, four numbers for each (`pack_places`). */
+const packer: Packer = (places) => {
+  const packed = pack_places(
+    Uint32Array.from(
+      places.flatMap((place) => [place.column, place.row, place.width, place.height]),
+    ),
+  );
+  return places.map((_, at) => ({
+    column: packed[at * 4] ?? 0,
+    row: packed[at * 4 + 1] ?? 0,
+    width: packed[at * 4 + 2] ?? 0,
+    height: packed[at * 4 + 3] ?? 0,
+  }));
 };
 
 let loading: Promise<void> | undefined;
@@ -268,6 +257,17 @@ export function loadNameKey(): Promise<NameKey> {
 /** Loads the module and gives the wording of changes and notifications. */
 export function loadWording(): Promise<Wording> {
   return ready().then(() => wording);
+}
+
+/** Loads the module and gives the packing of the boxes of a dashboard, as the server packs them. */
+export function loadPacker(): Promise<Packer> {
+  return ready().then(() => packer);
+}
+
+/** Starts the module from its bytes, without the network, and gives the packing of boxes: for tests that run under Node. */
+export function startPacker(read: () => BufferSource): Packer {
+  initSync({ module: read() });
+  return packer;
 }
 
 /** Loads the module and gives the readability of an own theme, as the server rates it. */

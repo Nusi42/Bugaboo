@@ -129,6 +129,7 @@ export const messages = {
   "theme-color.accent": "Highlight",
   "theme-color.accent-soft": "Soft highlight",
   "theme-color.accent-fg": "Highlighted text and links",
+  "theme-color.chart-bar": "Bars of a chart",
   "theme-color.on-accent": "Text on the highlight color",
   "theme-color.danger": "Danger",
   "theme-color.danger-soft": "Danger background",

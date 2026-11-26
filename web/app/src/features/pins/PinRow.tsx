@@ -1,7 +1,7 @@
-import { iconName, part, partOf } from "@bugaboo/ui";
+import { iconName, part, partOf, type IconName } from "@bugaboo/ui";
 import { useLocation } from "@tanstack/react-router";
 
-import { projectAddress, savedSearchAddress } from "../../shared/paths.ts";
+import { dashboardAddress, projectAddress, savedSearchAddress } from "../../shared/paths.ts";
 import { howCurrent, placeCurrent } from "../../shared/places.ts";
 import { NavLink, type SidebarSectionView } from "../shell/index.ts";
 import { PinMenu } from "./PinMenu.tsx";
@@ -9,10 +9,18 @@ import { pinKind, type Pin } from "./pins.ts";
 
 /** Where a pin leads. */
 function addressOf(pin: Pin): string {
-  return pin.kind === pinKind.project
-    ? projectAddress(pin.short_name ?? pin.id)
-    : savedSearchAddress(pin.id);
+  if (pin.kind === pinKind.project) {
+    return projectAddress(pin.short_name ?? pin.id);
+  }
+  return pin.kind === pinKind.dashboard ? dashboardAddress(pin.id) : savedSearchAddress(pin.id);
 }
+
+/** The icon of a pin: the icon of what it points to, as the sidebar shows it. */
+const pinIcon = {
+  project: iconName.projects,
+  "saved-search": iconName.search,
+  dashboard: iconName.dashboards,
+} as const satisfies Record<Pin["kind"], IconName>;
 
 /** One pin: its link with its icon and, beside it, its menu (not in the sidebar narrowed to icons). */
 export function PinRow({
@@ -35,7 +43,7 @@ export function PinRow({
   return (
     <li {...partOf(part.pinnedRow)}>
       <NavLink
-        icon={pin.kind === pinKind.project ? iconName.projects : iconName.search}
+        icon={pinIcon[pin.kind]}
         label={pin.name}
         narrow={narrow}
         href={addressOf(pin)}

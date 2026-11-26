@@ -1,4 +1,4 @@
-import { startWording } from "@bugaboo/wasm";
+import { startPacker, startWording } from "@bugaboo/wasm";
 
 import { lengthTyped, type LengthReader } from "./length.ts";
 import { deviceRegion } from "./region.ts";
@@ -22,3 +22,6 @@ export const testWording = startWording(() => bytesOf(moduleAsData));
 /** The one reader of lengths without a bound, for a person whose numbers have a point before the decimals. */
 export const testLengthReader: LengthReader = (text) =>
   testWording.readLength(lengthTyped(text, { ...deviceRegion, numberFormat: "point" }));
+
+/** The packing of the boxes of a dashboard (`bb-core`, through `bb-wasm`), started from the same module, for tests. */
+export const testPacker = startPacker(() => bytesOf(moduleAsData));

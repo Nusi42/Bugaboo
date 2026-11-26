@@ -7,8 +7,8 @@ import { personName } from "../../shared/person.ts";
 import type { OwnColumn } from "./own-columns.ts";
 import { noLengthName, rangeText } from "./time-words.ts";
 
-/** A group of a search as the server sends it. */
-type FoundGroup = Schema<"SearchGroupBody">;
+/** A group of a search as the server sends it: a group of the list, or a row of its totals. */
+type FoundGroup = Pick<Schema<"SearchGroupBody">, "key" | "filter" | "issues" | "name">;
 
 /** A group of a list: what it is called, and the filter that gives its rows. */
 export interface GroupOfKey {

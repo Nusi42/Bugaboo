@@ -148,6 +148,17 @@ static RULES: Rules = Rules {
                 ]),
                 faded_by: None,
             },
+            PlainLines {
+                drawn: Drawn::Fill,
+                min: 3.0,
+                colors: Cow::Borrowed(&[Cow::Borrowed("chart-bar")]),
+                on: Cow::Borrowed(&[
+                    Cow::Borrowed("bg-canvas"),
+                    Cow::Borrowed("bg-surface"),
+                    Cow::Borrowed("bg-raised"),
+                ]),
+                faded_by: None,
+            },
         ]),
         hovered: Cow::Borrowed(&[Hovered {
             text: Cow::Borrowed("on-accent"),
@@ -511,6 +522,7 @@ static RULES: Rules = Rules {
             Cow::Borrowed("cat10-mark"),
             Cow::Borrowed("cat11-mark"),
             Cow::Borrowed("cat12-mark"),
+            Cow::Borrowed("chart-bar"),
             Cow::Borrowed("edge-high"),
             Cow::Borrowed("hover-line"),
             Cow::Borrowed("scrim"),

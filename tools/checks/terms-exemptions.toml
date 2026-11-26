@@ -299,6 +299,7 @@ at = [
   "api:schema ReadyMade",
   "api:schema ReadyMadeBody",
   "api:schema ReadyMadeItem",
+  "messages/en.json#dashboards.ready-made",
 ]
 reason = "Ready-made is the glossary's own term (Ready-made box): a box Bugaboo offers ready to use. It does not mean creating something, which the glossary calls Create."
 

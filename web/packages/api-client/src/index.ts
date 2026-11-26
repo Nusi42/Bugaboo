@@ -91,6 +91,14 @@ export {
   agentsAtOnceMost,
   agentsMost,
 } from "./agents.generated.ts";
+export {
+  boxesMost,
+  boxHeightLeast,
+  boxHeightMost,
+  boxWidthLeast,
+  gridColumns,
+  sumWords,
+} from "./dashboards.generated.ts";
 export { reasonMax } from "./texts.generated.ts";
 export { searchWords, type SearchWord } from "./search-words.generated.ts";
 export { issueMemberOf } from "./issue-member.ts";

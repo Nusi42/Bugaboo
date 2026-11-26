@@ -84,6 +84,7 @@ export const paths = {
   run: "/runs/$run",
   search: "/search",
   savedSearch: appPaths.savedSearch,
+  dashboard: "/d/$dashboard",
 } as const;
 
 /** An address of the app, as the routes know it. */
@@ -99,6 +100,7 @@ export const routeParam = {
   issue: "issue",
   run: "run",
   search: "search",
+  dashboard: "dashboard",
   agent: "agent",
   theme: "theme",
 } as const;
@@ -283,6 +285,11 @@ export function projectIssuesAddress(shortName: string): string {
 /** The address of a saved search, `/s/<ID>`: its own address, which is shared. */
 export function savedSearchAddress(id: string): string {
   return filled(paths.savedSearch, routeParam.search, id);
+}
+
+/** The address of a dashboard, `/d/<ID>`: its own address, which is shared (ADR-0050, decision 1). */
+export function dashboardAddress(id: string): string {
+  return filled(paths.dashboard, routeParam.dashboard, id);
 }
 
 /** The name of the parameter that asks for the menu of the settings of a project instead of a section. */

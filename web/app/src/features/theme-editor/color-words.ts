@@ -84,6 +84,7 @@ export const colorWords: Readonly<Record<ColorToken, ColorWord>> = {
   accent: { group: "highlight", label: t("theme-color.accent") },
   "accent-soft": { group: "highlight", label: t("theme-color.accent-soft") },
   "accent-fg": { group: "highlight", label: t("theme-color.accent-fg") },
+  "chart-bar": { group: "highlight", label: t("theme-color.chart-bar") },
   "disabled-fill": { group: "backgrounds", label: t("theme-color.disabled-fill") },
   "on-disabled": { group: "text", label: t("theme-color.on-disabled") },
   "on-accent": { group: "highlight", label: t("theme-color.on-accent") },

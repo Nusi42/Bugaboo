@@ -6,11 +6,12 @@
 //! suite, so a new page cannot be added without being checked; the suite itself runs in
 //! `cargo xtask ci` (the browser end-to-end tests).
 //!
-//! Every drag of the timeline and of the board has a key (UX §4.6, §4.7, ADR-0043): each kind of
-//! thing the screens drag is named in the shared `drag-kinds.ts` together with the message of the
-//! typed way that does the same (`typed:`), a drag in the timeline or the board takes its kind from
-//! there and never writes one of its own, and the timeline that drags a bar with the pointer also
-//! moves it with keys (`keyMoveOf`).
+//! Every drag has a key (UX §4.6, §4.7, §4.10, ADR-0043): each kind of thing the timeline, the
+//! board, the calendar or a dashboard drags is named in the one list `shared/drag-kinds.ts` together
+//! with the message of the typed way that does the same (`typed:`), a drag takes its kind from there
+//! and never writes one of its own, the timeline that drags a bar with the pointer also moves it with
+//! keys (`keyMoveOf`), and the dashboard that drags a box with the pointer also places it with keys
+//! (`useBoxKeys`).
 //!
 //! The EN 301 549 report answers every clause of the standard (COMP-15): see `a11y_report`.
 
@@ -25,13 +26,20 @@ const PATHS_FILE: &str = "web/app/src/shared/paths.ts";
 pub(crate) const SUITE_FOLDER: &str = "web/app/e2e";
 const SUITE_PREFIX: &str = "a11y";
 /// The features whose drags each have a key.
-const DRAG_FOLDERS: [&str; 3] = [
+const DRAG_FOLDERS: [&str; 4] = [
     "web/app/src/features/timeline",
     "web/app/src/features/board",
     "web/app/src/features/calendar",
+    "web/app/src/features/dashboards",
 ];
 /// The one place that names what the screens drag, each with its typed way.
 const DRAG_KINDS_FILE: &str = "web/app/src/shared/drag-kinds.ts";
+/// A drag with the pointer and the call of the keys that does the same, for each kind of drag that
+/// is not a drop: a bar of the timeline, a box of a dashboard.
+const POINTER_DRAGS: [(&str, &str); 2] = [
+    ("useBarDrag(", "keyMoveOf("),
+    ("useGridDrag(", "useBoxKeys("),
+];
 /// The catalog the typed ways are messages of.
 const MESSAGES_FILE: &str = "messages/en.json";
 
@@ -52,17 +60,17 @@ impl Check for TestA11y {
             }
         }
         let mut findings = evaluate(&paths, &suite);
-        let timeline = drag_files(repo)?;
+        let dragging = dragging_files(repo)?;
         let messages = read_text(repo, MESSAGES_FILE)?;
-        findings.extend(drags_have_keys(&timeline, &messages));
+        findings.extend(drags_have_keys(&dragging, &messages));
         findings.extend(report_of(repo)?);
         Ok(findings)
     }
 }
 
-/// The code of the screens that drag (the timeline and the board), by path: their TypeScript files, tests left out, and the
-/// shared list of what they drag.
-fn drag_files(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String)>> {
+/// The code of the features that drag, by path (their TypeScript files, tests left out), and the
+/// list of the kinds of drag.
+fn dragging_files(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String)>> {
     let mut files = Vec::new();
     for folder in DRAG_FOLDERS {
         for name in sorted_files(repo, folder, |name| {
@@ -80,36 +88,41 @@ fn drag_files(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String)>>
     Ok(files)
 }
 
-/// Every drag of the timeline has a key: the kinds of `drag-kinds.ts` each name their typed way, no
-/// file of the timeline writes a kind of its own, and a drag of a bar comes with its keys.
+/// Every drag has a key: the kinds of `drag-kinds.ts` each name their typed way, no file of a
+/// feature that drags writes a kind of its own, and a drag with the pointer comes with its keys.
 fn drags_have_keys(files: &[(String, String)], messages: &str) -> Vec<Finding> {
     let mut findings = Vec::new();
     match files.iter().find(|(path, _)| path == DRAG_KINDS_FILE) {
         None => findings.push(Finding::at(
             DRAG_KINDS_FILE,
-            "There is no shared `drag-kinds.ts`: name each kind the timeline and the board drag there, with its typed way.",
+            "There is no `shared/drag-kinds.ts`: name each kind the screens drag there, with its typed way.",
         )),
         Some((_, text)) => findings.extend(kinds_have_typed_ways(&code(text), messages)),
     }
-    let mut keys_called = false;
     for (path, text) in files.iter().filter(|(path, _)| path != DRAG_KINDS_FILE) {
-        let text = code(text);
-        // A call, not the definition of the function.
-        keys_called |=
-            text.matches("keyMoveOf(").count() > text.matches("function keyMoveOf(").count();
-        if writes_a_kind(&text) {
+        if writes_a_kind(&code(text)) {
             findings.push(Finding::at(
                 path,
-                "A drag of the timeline or the board writes its own kind. Take it from `dragKinds`, where its typed way is named.",
+                "A drag writes its own kind. Take it from `dragKinds`, where its typed way is named.",
             ));
         }
     }
-    for (path, text) in files {
-        if code(text).contains("useBarDrag(") && !keys_called {
-            findings.push(Finding::at(
-                path,
-                "A bar is dragged with the pointer but no key moves it: call `keyMoveOf` where the keys of a bar are read.",
-            ));
+    for (drag, keys) in POINTER_DRAGS {
+        let definition = format!("function {keys}");
+        // A call, not the definition of the function.
+        let keys_called = files.iter().any(|(_, text)| {
+            let text = code(text);
+            text.matches(keys).count() > text.matches(definition.as_str()).count()
+        });
+        for (path, text) in files {
+            if code(text).contains(drag) && !keys_called {
+                findings.push(Finding::at(
+                    path,
+                    format!(
+                        "A drag with the pointer (`{drag}…`) has no keys that do the same: call `{keys}…` where its keys are read."
+                    ),
+                ));
+            }
         }
     }
     findings
@@ -352,6 +365,23 @@ visit(paths.longer); // paths.home and paths.signIn
     }
 
     #[test]
+    fn a_box_dragged_without_its_keys_is_a_finding() {
+        let mut files = timeline();
+        files.push((
+            format!("{}/BoxGrid.tsx", DRAG_FOLDERS[1]),
+            "useGridDrag({ places });".to_owned(),
+        ));
+        let messages = found(&files);
+        assert_eq!(messages.len(), 1, "{messages:?}");
+        assert!(messages[0].contains("useBoxKeys"));
+        files.push((
+            format!("{}/use-grid-placing.ts", DRAG_FOLDERS[1]),
+            "useBoxKeys({ places });".to_owned(),
+        ));
+        assert!(found(&files).is_empty());
+    }
+
+    #[test]
     fn a_kind_written_in_place_is_a_finding_wherever_it_is_given() {
         for written in [
             "<DragHandle kind=\"a-dot\" />",
@@ -396,9 +426,9 @@ visit(paths.longer); // paths.home and paths.signIn
     }
 
     #[test]
-    fn the_real_timeline_has_a_key_for_every_drag() {
+    fn the_real_screens_have_a_key_for_every_drag() {
         let repo = crate::repo::Repo::discover().unwrap();
-        let files = drag_files(&repo).unwrap();
+        let files = dragging_files(&repo).unwrap();
         let messages = read_text(&repo, MESSAGES_FILE).unwrap();
         assert!(drags_have_keys(&files, &messages).is_empty());
     }

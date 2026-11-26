@@ -22,6 +22,8 @@ export { sortOf } from "./list-sort.ts";
 export { TimeLeftLength } from "./TimeFacts.tsx";
 export { timeLeftOf } from "./time-words.ts";
 export { issueCells, priorityCell } from "./issue-cells.tsx";
+export { SlimIssueList } from "./SlimIssueList.tsx";
+export { lineOf } from "./issues.ts";
 export { AskFor, type AskForProps } from "./AskFor.tsx";
 export { needsAsking, type OfferedChange } from "./ask-for.ts";
 export { priorityChoices } from "./issue-choices.ts";
@@ -54,7 +56,7 @@ export {
   takeVersion,
 } from "./dates-in-order.ts";
 export { useFoundGroups } from "./found-issues.ts";
-export { groupName, groupOfKey, type GroupOfKey } from "./group-keys.ts";
+export { groupName, groupOfKey, groupsOfKeys, type GroupOfKey } from "./group-keys.ts";
 export {
   dateFieldOfWord,
   dayKeptIn,

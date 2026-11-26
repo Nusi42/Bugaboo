@@ -14,6 +14,10 @@ import { useSearchNavigation, useSearchState } from "./search-address.ts";
 // (coding-standards section 6).
 
 const SearchScreen = lazyRouteComponent(() => import("../features/search/index.ts"), "SearchPage");
+const DashboardScreen = lazyRouteComponent(
+  () => import("../features/dashboards/index.ts"),
+  "DashboardPage",
+);
 const SavedSearchScreen = lazyRouteComponent(
   () => import("../features/search/index.ts"),
   "SavedSearchPage",
@@ -73,5 +77,16 @@ export const savedSearchRoute = createRoute({
         notFound={<NotFoundPage />}
       />
     );
+  },
+});
+
+/** A dashboard, `/d/<ID>`: its own address, which is shared (ADR-0050, decision 1). */
+export const dashboardRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: paths.dashboard,
+  loader: loadsScreen(DashboardScreen),
+  component: function Dashboard() {
+    const id = useAddressPart(routeParam.dashboard);
+    return id === undefined ? null : <DashboardScreen id={id} notFound={<NotFoundPage />} />;
   },
 });

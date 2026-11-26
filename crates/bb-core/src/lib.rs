@@ -86,6 +86,7 @@ pub mod text_index;
 pub mod text_words;
 pub mod theme;
 pub mod time;
+pub mod totals;
 pub mod version;
 pub mod walk_index;
 pub mod whose;

@@ -11,6 +11,7 @@ export { messages as assistantEntry } from "./assistant-entry.ts";
 export { messages as board } from "./board.ts";
 export { messages as calendar } from "./calendar.ts";
 export { messages as connect } from "./connect.ts";
+export { messages as dashboards } from "./dashboards.ts";
 export { messages as fields } from "./fields.ts";
 export { messages as files } from "./files.ts";
 export { messages as follow } from "./follow.ts";

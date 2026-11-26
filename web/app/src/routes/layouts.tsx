@@ -125,6 +125,7 @@ async function joinIssues(): Promise<void> {
     agents,
     files,
     search,
+    dashboards,
   ] = await Promise.all([
     import("../features/issues/index.ts"),
     import("../features/fields/index.ts"),
@@ -137,6 +138,7 @@ async function joinIssues(): Promise<void> {
     import("../features/agents/index.ts"),
     import("../features/files/index.ts"),
     import("../features/search/index.ts"),
+    import("../features/dashboards/index.ts"),
   ]);
   if (!issuesJoined) {
     issuesJoined = true;
@@ -152,6 +154,7 @@ async function joinIssues(): Promise<void> {
     agents.registerAgents();
     files.registerFileBlocks();
     search.registerSearch();
+    dashboards.registerDashboards();
   }
 }
 

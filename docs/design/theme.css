@@ -122,6 +122,16 @@
   --timeline-start: 0;
   --timeline-length: 1;
   --timeline-done: 0;
+  --box-column: 1;
+  --box-row: 1;
+  --box-width: 1;
+  --box-height: 1;
+  --chart-share: 0;
+  --size-dashboard-row: 72px;
+  --size-chart-names: calc(120px * var(--text-scale));
+  --size-chart-bar: calc(16px * var(--text-scale));
+  --size-box-preview: 160px;
+  --size-box-choice: calc(240px * var(--text-scale));
   --hold-top: 0;
   --hold-left: 0;
   --hold-width: 0;
@@ -233,6 +243,7 @@
   --accent: #5b3fd9;
   --accent-soft: #eeeafd;
   --accent-fg: #4a2fc4;
+  --chart-bar: var(--accent);
   --disabled-fill: #d7dbe1;
   --on-disabled: #4d5461;
   --on-accent: #ffffff;
@@ -338,6 +349,7 @@
     --accent: #a495ff;
     --accent-soft: #37325a;
     --accent-fg: #c2b8ff;
+    --chart-bar: var(--accent);
     --disabled-fill: #434955;
     --on-disabled: #c0c6d1;
     --on-accent: #1a1530;
@@ -443,6 +455,7 @@
   --accent: #a495ff;
   --accent-soft: #37325a;
   --accent-fg: #c2b8ff;
+  --chart-bar: var(--accent);
   --disabled-fill: #434955;
   --on-disabled: #c0c6d1;
   --on-accent: #1a1530;
@@ -548,6 +561,7 @@
   --accent: #5b3fd9;
   --accent-soft: #eeeafd;
   --accent-fg: #4a2fc4;
+  --chart-bar: var(--accent);
   --disabled-fill: #d7dbe1;
   --on-disabled: #4d5461;
   --on-accent: #ffffff;
@@ -653,6 +667,7 @@
   --accent: #1d58a8;
   --accent-soft: #dbe7f8;
   --accent-fg: #1b4f96;
+  --chart-bar: var(--accent);
   --disabled-fill: #d3d1ce;
   --on-disabled: #564e45;
   --on-accent: #ffffff;
@@ -758,6 +773,7 @@
   --accent: #a495ff;
   --accent-soft: #37325a;
   --accent-fg: #c2b8ff;
+  --chart-bar: var(--accent);
   --disabled-fill: #434955;
   --on-disabled: #c0c6d1;
   --on-accent: #1a1530;
@@ -863,6 +879,7 @@
   --accent: #9483ff;
   --accent-soft: #221d47;
   --accent-fg: #b7abff;
+  --chart-bar: var(--accent);
   --disabled-fill: #30333a;
   --on-disabled: #9ca3af;
   --on-accent: #0b0820;
@@ -1198,6 +1215,7 @@
     --border-control: ButtonText;
     --divider: ButtonText;
     --accent: Highlight;
+    --chart-bar: CanvasText;
     --disabled-fill: ButtonFace;
     --on-disabled: GrayText;
     --on-accent: HighlightText;

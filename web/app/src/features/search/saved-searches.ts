@@ -7,6 +7,7 @@ import { pageSize, usePaged } from "../../shared/paged.ts";
 import { queryClient } from "../../shared/query-client.ts";
 import { refreshPins } from "../../shared/refresh-pins.ts";
 import { queryKeys } from "../../shared/query-keys.ts";
+import type { ShareTarget } from "../../shared/share.ts";
 
 /** A saved search as the person sees it. */
 export type SavedSearch = Schema<"SavedSearchItem">;
@@ -130,26 +131,17 @@ export function useChangeSearch(id: string) {
 }
 
 /** The groups or the projects the person may share a saved search with, a page at a time. */
-export function useShareChoices(kind: Schema<"ShareKind">) {
-  return usePaged({
-    queryKey: queryKeys.search.shareChoices(kind),
-    read: (after) =>
-      api.client.GET("/api/v1/saved-searches/share-choices", {
-        params: { query: { kind, limit: pageSize.largest, ...after } },
-      }),
-  });
-}
-
-/** The words of the two kinds a search is shared with. */
-export const shareKind = { group: "group", project: "project" } as const satisfies Record<
-  string,
-  Schema<"ShareKind">
->;
-
-/** What a share is about: a group or a project. */
-export interface ShareTarget {
-  readonly kind: Schema<"ShareKind">;
-  readonly id: string;
+export function useShareChoices(kind: Schema<"ShareKind">, enabled: boolean) {
+  return usePaged(
+    {
+      queryKey: queryKeys.search.shareChoices(kind),
+      read: (after) =>
+        api.client.GET("/api/v1/saved-searches/share-choices", {
+          params: { query: { kind, limit: pageSize.largest, ...after } },
+        }),
+    },
+    { enabled },
+  );
 }
 
 /** Shares a saved search with a group or a project, or stops sharing it. */

@@ -77,6 +77,7 @@ use crate::source::{Kind, Source, read_sources};
 use crate::tools;
 
 mod calendar_days;
+mod dashboards;
 mod request_time;
 mod search_mail;
 mod time_zones;
@@ -114,6 +115,8 @@ pub(crate) const RELATION_MAP_PATH: &str = "web/packages/api-client/src/relation
 pub(crate) const CALENDAR_PATH: &str = "web/packages/api-client/src/calendar.generated.ts";
 /// The limits of a question to the assistant, for the browser app.
 pub(crate) const ASSISTANT_PATH: &str = "web/packages/api-client/src/assistant.generated.ts";
+/// The grid and the limits of dashboards, for the browser app.
+pub(crate) const DASHBOARDS_PATH: &str = "web/packages/api-client/src/dashboards.generated.ts";
 /// The numbers of agents the browser app shows or checks.
 pub(crate) const AGENTS_PATH: &str = "web/packages/api-client/src/agents.generated.ts";
 /// The limits of texts people type.
@@ -161,6 +164,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         CALENDAR_PATH,
         ASSISTANT_PATH,
         AGENTS_PATH,
+        DASHBOARDS_PATH,
         TEXTS_PATH,
         SEARCH_WORDS_PATH,
         AGENT_WORK_PATH,
@@ -209,12 +213,17 @@ fn limits_files(repo: &Repo, sources: &[Source]) -> anyhow::Result<[Generated; 3
 }
 
 /// The words and numbers the browser takes from the linked crates: what a search names fields by,
-/// what a hand-over can name, the numbers of agents and the limits of texts.
-fn words_of_linked_crates(repo: &Repo) -> anyhow::Result<[Generated; 4]> {
+/// what a hand-over can name, the numbers of agents, the grid of dashboards and the limits of
+/// texts.
+fn words_of_linked_crates(repo: &Repo) -> anyhow::Result<[Generated; 5]> {
     Ok([
         Generated::new(
             AGENTS_PATH,
             format_with_oxfmt(repo, AGENTS_PATH, &web_constants::agents())?,
+        ),
+        Generated::new(
+            DASHBOARDS_PATH,
+            format_with_oxfmt(repo, DASHBOARDS_PATH, &dashboards::dashboards())?,
         ),
         Generated::new(
             TEXTS_PATH,

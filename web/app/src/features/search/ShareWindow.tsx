@@ -1,22 +1,9 @@
 import { t } from "@bugaboo/messages";
-import {
-  Alert,
-  alertTone,
-  Button,
-  buttonLook,
-  Checkbox,
-  part,
-  partOf,
-  Window,
-  ShowMoreOf,
-} from "@bugaboo/ui";
-import type { Schema } from "@bugaboo/api-client";
 
-import { messageOf } from "../../shared/errors.ts";
-import { itemsOf } from "../../shared/paged.ts";
-import { windowLabels } from "../../shared/window-labels.ts";
+import { shareKind } from "../../shared/share.ts";
+import { ShareWindow as SharingWindow } from "../../shared/ShareWindow.tsx";
 import { ProjectListToggle } from "./ProjectListToggle.tsx";
-import { shareKind, useChangeShare, useShareChoices, type SavedSearch } from "./saved-searches.ts";
+import { useChangeShare, useShareChoices, type SavedSearch } from "./saved-searches.ts";
 
 export interface ShareWindowProps {
   readonly search: SavedSearch;
@@ -24,131 +11,32 @@ export interface ShareWindowProps {
   readonly onClose: () => void;
 }
 
-/** Whether the saved search is shared with this group or project already. */
-function isSharedWith(search: SavedSearch, kind: Schema<"ShareKind">, id: string): boolean {
-  return search.shared_with.some((share) => share.kind === kind && share.id === id);
-}
-
-/** One group or project: its tick box, and for a project of this search its quiet *Use as the list* button. */
-function ShareRow({
-  search,
-  kind,
-  item,
-  onToggle,
-}: {
-  readonly search: SavedSearch;
-  readonly kind: Schema<"ShareKind">;
-  readonly item: {
-    readonly id: string;
-    readonly name: string;
-    readonly short_name?: string | null;
-  };
-  readonly onToggle: (on: boolean) => void;
-}) {
-  return (
-    <li {...partOf(part.shareRow)}>
-      <div {...partOf(part.shareChoice)}>
-        <Checkbox
-          label={item.name}
-          isSelected={isSharedWith(search, kind, item.id)}
-          onChange={onToggle}
-        />
-        {kind === shareKind.project &&
-        isSharedWith(search, kind, item.id) &&
-        item.short_name !== undefined &&
-        item.short_name !== null ? (
-          <ProjectListToggle search={search} project={item.short_name} name={item.name} />
-        ) : null}
-      </div>
-    </li>
-  );
-}
-
-/** The groups or the projects the person may share with, each a box to tick; a tick shares at once. */
-function Choices({
-  search,
-  kind,
-  legend,
-  none,
-  more,
-}: {
-  readonly search: SavedSearch;
-  readonly kind: Schema<"ShareKind">;
-  readonly legend: string;
-  readonly none: string;
-  /** The words of *Show more*, which name what the list holds. */
-  readonly more: string;
-}) {
-  const choices = useShareChoices(kind);
-  const change = useChangeShare(search.id);
-  const items = itemsOf(choices.data?.pages);
-  return (
-    <fieldset {...partOf(part.searchHelpGroup)}>
-      <legend {...partOf(part.searchHelpTitle)}>{legend}</legend>
-      {choices.isError ? <Alert tone={alertTone.danger}>{messageOf(choices.error)}</Alert> : null}
-      {items.length === 0 && !choices.isPending && !choices.isError ? (
-        <p {...partOf(part.muted)}>{none}</p>
-      ) : null}
-      <ul {...partOf(part.searchList)}>
-        {items.map((item) => (
-          <ShareRow
-            key={item.id}
-            search={search}
-            kind={kind}
-            item={item}
-            onToggle={(on) => {
-              change.mutate({ on, target: { kind, id: item.id } });
-            }}
-          />
-        ))}
-      </ul>
-      <ShowMoreOf label={more} list={choices} />
-      {change.isError ? <Alert tone={alertTone.danger}>{messageOf(change.error)}</Alert> : null}
-    </fieldset>
-  );
-}
-
 /**
- * The *Share* window (ADR-0034, UX design section 4.3): a tick shares the saved search with a group
- * or a project, and only those the person may share with are listed. Under them, the words that
- * a receiver still sees only what their own rights allow.
+ * The *Share* window of a saved search (ADR-0034, UX design section 4.3): the one window of sharing, with the quiet
+ * *Use as the list* button beside a project the search is shared with.
  */
 export function ShareWindow({ search, isOpen, onClose }: ShareWindowProps) {
+  const groups = useShareChoices(shareKind.group, isOpen);
+  const projects = useShareChoices(shareKind.project, isOpen);
+  const change = useChangeShare(search.id);
   return (
-    <Window
-      isOpen={isOpen}
-      onOpenChange={(open) => {
-        if (!open) {
-          onClose();
-        }
-      }}
+    <SharingWindow
       title={t("search.share-title", { name: search.name })}
-      labels={windowLabels()}
-      footer={
-        <div {...partOf(part.windowFooterActions)}>
-          <Button look={buttonLook.primary} onPress={onClose}>
-            {t("search.share-done")}
-          </Button>
-        </div>
-      }
-    >
-      <div {...partOf(part.shareBody)}>
-        <Choices
-          search={search}
-          kind={shareKind.group}
-          legend={t("search.share-groups")}
-          none={t("search.share-none-groups")}
-          more={t("search.share-more-groups")}
-        />
-        <Choices
-          search={search}
-          kind={shareKind.project}
-          legend={t("search.share-projects")}
-          none={t("search.share-none-projects")}
-          more={t("search.share-more-projects")}
-        />
-        <p {...partOf(part.muted)}>{t("search.share-note")}</p>
-      </div>
-    </Window>
+      note={t("search.share-note")}
+      isOpen={isOpen}
+      onClose={onClose}
+      sharing={{
+        sharedWith: search.shared_with,
+        choices: { group: groups, project: projects },
+        change,
+        renderExtra: (kind, item, shared) =>
+          kind === shareKind.project &&
+          shared &&
+          item.short_name !== undefined &&
+          item.short_name !== null ? (
+            <ProjectListToggle search={search} project={item.short_name} name={item.name} />
+          ) : null,
+      }}
+    />
   );
 }

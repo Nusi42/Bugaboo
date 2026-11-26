@@ -2,3 +2,4 @@
 import "@bugaboo/messages/parts/timeline";
 
 export { TimelineResults, type TimelineResultsProps } from "./TimelineResults.tsx";
+export { SmallTimeline } from "./SmallTimeline.tsx";

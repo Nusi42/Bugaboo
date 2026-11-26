@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { FoundLine } from "./found-issues.ts";
 import type { GroupOfKey } from "./group-keys.ts";
 import { GroupHeader } from "./GroupHeader.tsx";
+import { GroupTotals } from "./GroupTotals.tsx";
 import { RowsOf } from "./ListRows.tsx";
 import { useGroupRows } from "./use-group-rows.ts";
 import { useReportShown } from "./use-report-shown.ts";
@@ -45,6 +46,7 @@ export function GroupSection({ group, count }: GroupSectionProps) {
           onMore={rows.onMore}
         />
       ) : null}
+      {open && rows.listable && !rows.hasMore ? <GroupTotals group={group} /> : null}
     </>
   );
 }

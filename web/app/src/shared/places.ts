@@ -73,6 +73,14 @@ export const places: readonly Place[] = [
     parent: paths.search,
     listed: false,
   },
+  {
+    // A dashboard: reached from the menu's *Dashboards*, a pin or its address, `/d/<id>`.
+    path: paths.dashboard,
+    name: "dashboards.heading",
+    icon: iconName.dashboards,
+    parent: paths.home,
+    listed: false,
+  },
 ];
 
 /**
