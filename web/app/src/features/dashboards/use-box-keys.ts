@@ -70,6 +70,15 @@ export function useBoxKeys({ places, pack, changing, onDrop }: BoxKeysInput): {
   readonly onBlur: (stillInBox: boolean) => void;
 } {
   const [placing, setPlacing] = useState<Placing | null>(null);
+  // The end of *Change* ends placing, so a later *Change* does not start with a box still being placed. It is cleared
+  // while drawing, when `changing` turns false (React's way to reset state on a change of what it is told).
+  const [wasChanging, setWasChanging] = useState(changing);
+  if (wasChanging !== changing) {
+    setWasChanging(changing);
+    if (!changing) {
+      setPlacing(null);
+    }
+  }
   const shown = changing ? placing : null;
   return {
     placing: shown,
@@ -95,7 +104,7 @@ export function useBoxKeys({ places, pack, changing, onDrop }: BoxKeysInput): {
       }
     },
     // The menu that chose *Move …* gives the focus back to its own button in the box, which the handle takes again;
-    // the focus going anywhere else ends placing.
+    // the focus leaving the box ends placing.
     onBlur: (stillInBox) => {
       if (!stillInBox) {
         setPlacing(null);

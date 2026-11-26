@@ -46,7 +46,7 @@ export interface GridControls {
   readonly actionsOf: (box: Box, at: number, onChangeBox: (box: Box) => void) => BoxActions;
   /** The keys of the handle of a box while *Move …* or *Resize …* works on it. */
   readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
-  /** The focus left the handle: placing ends unless it stays in the box. */
+  /** The focus left something in a box: placing ends unless it stays in the box. */
   readonly onBlur: (stillInBox: boolean) => void;
   /** The handle was pressed (Enter, Space): *Move …* of the box starts. */
   readonly onPressHandle: (at: number) => void;

@@ -1,7 +1,5 @@
 import { t } from "@bugaboo/messages";
 import { iconName } from "@bugaboo/ui";
-import { useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 
 import { itemsOf } from "../../shared/paged.ts";
 import { dashboardAddress } from "../../shared/paths.ts";
@@ -11,50 +9,22 @@ import {
   NavButton,
   type SidebarSectionView,
 } from "../shell/index.ts";
-import {
-  dashboardSet,
-  dashboardsHeading,
-  useCreateDashboard,
-  useDashboardList,
-  type Dashboard,
-} from "./dashboards.ts";
-import { NameDialog } from "./NameDialog.tsx";
+import { useCreateDashboardWindow } from "./CreateDashboard.tsx";
+import { dashboardSet, dashboardsHeading, useDashboardList } from "./dashboards.ts";
 
-/** A new dashboard has no name until the person types one. */
-const noName = "";
-
-/** *Create a dashboard*: asks for its name and opens it, private and empty, in *Change*. */
-function CreateDashboard({ view }: { readonly view: SidebarSectionView }) {
-  const [open, setOpen] = useState(false);
-  const create = useCreateDashboard();
-  const navigate = useNavigate();
+/** *Create a dashboard* in the sidebar: a row of it. */
+function CreateRow({ view }: { readonly view: SidebarSectionView }) {
+  const create = useCreateDashboardWindow(view.onNavigate);
   return (
     <li>
       <NavButton
         icon={iconName.plus}
         narrow={view.narrow}
         label={t("dashboards.create")}
-        isPending={create.isPending}
-        onPress={() => {
-          setOpen(true);
-        }}
+        isPending={create.pending}
+        onPress={create.open}
       />
-      <NameDialog
-        isOpen={open}
-        onOpenChange={setOpen}
-        title={t("dashboards.create")}
-        text={t("dashboards.create-text")}
-        confirm={t("dashboards.create-confirm")}
-        start={noName}
-        onConfirm={(name) => {
-          create.mutate(name, {
-            onSuccess: (made: Dashboard) => {
-              view.onNavigate?.();
-              void navigate({ href: dashboardAddress(made.id) });
-            },
-          });
-        }}
-      />
+      {create.window}
     </li>
   );
 }
@@ -75,7 +45,7 @@ export function DashboardsSection({ view }: { readonly view: SidebarSectionView 
       shared={{ ...shared, items: itemsOf(shared.data?.pages) }}
       addressOf={dashboardAddress}
       none={t("dashboards.none")}
-      after={<CreateDashboard view={view} />}
+      after={<CreateRow view={view} />}
     />
   );
 }

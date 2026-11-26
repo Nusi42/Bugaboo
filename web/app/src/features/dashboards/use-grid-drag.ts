@@ -1,6 +1,5 @@
-import { pixelsOf } from "@bugaboo/ui";
 import type { Packer } from "@bugaboo/wasm";
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { dragKinds } from "../../shared/drag-kinds.ts";
 import { usePointerDrag, type DragDistance, type DragHandlers } from "../../shared/pointer-drag.ts";
@@ -48,14 +47,6 @@ function placesAfter(
       );
 }
 
-/** A pointer near the bottom of the window scrolls the page down by a step, so a box can go below what is shown. */
-function scrollNearTheEnd(event: PointerEvent<HTMLElement>): void {
-  const edge = pixelsOf("size-control");
-  if (event.clientY > window.innerHeight - edge) {
-    window.scrollBy(0, edge);
-  }
-}
-
 /** While `on`, Escape (with no modifier) calls `cancel`. */
 function useEscapeWhile(on: boolean, cancel: () => void): void {
   useEffect(() => {
@@ -88,8 +79,8 @@ export interface GridDragInput {
 /**
  * Placing a box with a pointer (UX §4.10, `shared/pointer-drag.ts`): while it is dragged by its title or its corner,
  * the boxes stay where they are and only the shadow shows where it will land (nothing moves under the cursor, UX §6.4);
- * when it is let go, the others make room once. Escape lets go without placing it, and the pointer near the bottom of the
- * window scrolls the page. Every drag has its keys too (*Move …*, *Resize …*).
+ * when it is let go, the others make room once. Escape lets go without placing it, and the pointer near the top or bottom of
+ * what is shown scrolls the page. Every drag has its keys too (*Move …*, *Resize …*).
  */
 export function useGridDrag({ places, pack, gridOf, onDrop }: GridDragInput): {
   readonly placing: Placing | null;
@@ -117,8 +108,8 @@ export function useGridDrag({ places, pack, gridOf, onDrop }: GridDragInput): {
       steps.current = grid === null ? steps.current : stepsFrom(measureOf(grid));
       setPlacing({ ...part, places });
     },
-    onMove: (part, distance, event) => {
-      scrollNearTheEnd(event);
+    scrollsAtTheEdge: true,
+    onMove: (part, distance) => {
       setPlacing({ ...part, places: after(part, distance) });
     },
     onEnd: (part, distance) => {

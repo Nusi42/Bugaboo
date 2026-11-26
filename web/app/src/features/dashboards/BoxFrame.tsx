@@ -11,7 +11,14 @@ import {
   usePlace,
 } from "@bugaboo/ui";
 import { useKeyboardScroll } from "@bugaboo/ui/scroll-reach";
-import { useEffect, useRef, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  type KeyboardEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
 import type { Box } from "./dashboards.ts";
 import { gridPlaceOf } from "./grid-layout.ts";
@@ -30,7 +37,7 @@ export interface BoxPlacing {
   readonly keys: boolean;
   /** The keys of the handle while it works. */
   readonly onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
-  /** The handle lost the focus: whether it went to something else in the box. */
+  /** The focus left something in the box: whether it went to something else in the box (`focusout`). */
   readonly onBlur: (stillInBox: boolean) => void;
   /** The handle was pressed with the keyboard: *Move …* starts. */
   readonly onPress: () => void;
@@ -64,6 +71,34 @@ function useFocusWhile(element: Readonly<RefObject<HTMLElement | null>>, on: boo
   }, [element, on]);
 }
 
+/**
+ * Tells `onBlur` each time the focus leaves something in the element (`focusout`) whether it stays in it: Tab past the
+ * menu of a box or a click elsewhere ends *Move …* or *Resize …*, while the menu that chose it gives the focus back to its
+ * own button in the box, which is not leaving it.
+ */
+function useFocusLeaving(
+  element: Readonly<RefObject<HTMLElement | null>>,
+  onBlur: (stillInBox: boolean) => void,
+): void {
+  const told = useEffectEvent((stillInBox: boolean) => {
+    onBlur(stillInBox);
+  });
+  useEffect(() => {
+    const frame = element.current;
+    if (frame === null) {
+      return () => {};
+    }
+    const listen = (event: { readonly relatedTarget: unknown }): void => {
+      const next = event.relatedTarget;
+      told(next instanceof Node && frame.contains(next));
+    };
+    frame.addEventListener("focusout", listen);
+    return () => {
+      frame.removeEventListener("focusout", listen);
+    };
+  }, [element]);
+}
+
 /** The head of a box: its title (in *Change* the handle a pointer drags, with the button that takes the keys), its menu. */
 function BoxHead({
   box,
@@ -91,11 +126,6 @@ function BoxHead({
             aria-label={t("dashboards.place", { title: box.title })}
             onKeyDown={placing.onKeyDown}
             onClick={placing.onPress}
-            onBlur={(event: { readonly relatedTarget: unknown }) => {
-              const next = event.relatedTarget;
-              const frame = keys.current?.closest("li");
-              placing.onBlur(next instanceof Node && frame?.contains(next) === true);
-            }}
           >
             <Icon name={iconName.grip} size={iconSize.small} />
           </button>
@@ -137,6 +167,7 @@ export interface BoxFrameProps {
 export function BoxFrame({ box, placing, menu, children }: BoxFrameProps) {
   const ref = useRef<HTMLLIElement>(null);
   usePlace(ref, gridPlaceOf(box));
+  useFocusLeaving(ref, placing.onBlur);
   const { drag } = placing;
   return (
     <li

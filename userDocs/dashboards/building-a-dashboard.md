@@ -21,7 +21,7 @@ A new dashboard opens in **Change** by itself.
 
 Press **Add** under one to put it at the bottom of the dashboard. Under the ready-made boxes, **A box of your own** lets you choose the kind, the title and the search, in the search language of the search bar. For **Numbers and chart**, **Group by** chooses the field of the bars, or **Nothing: one number**. For **Time totals**, **Whose time** chooses the issues of the search or your own week.
 
-A dashboard holds at most 20 boxes. If a dashboard you created holds boxes you cannot see now (their search names something you may no longer read), they count too, and Bugaboo says so. A box whose search has a mistake is not added, and Bugaboo says why.
+A dashboard holds at most 20 boxes, and boxes you cannot see now (their search names something you may no longer read) count too. A box whose search has a mistake is not added, and Bugaboo says why.
 
 ## Place and resize a box
 
@@ -37,7 +37,7 @@ Open the menu of a box (the button **Actions for** and its title), or press the 
 - **Move…**: the arrow keys move the box, left and right by a column, up before the box above it and down after the box below it.
 - **Resize…**: the arrow keys change it by a column narrower or wider, a row lower or higher.
 
-The shadow shows where the box will be, and screen readers say its column and row. **Enter** keeps it, **Escape** goes back, and so does leaving the box with **Tab** or ending with **Done**. While you drag a box with the pointer, **Escape** lets go without moving it, and near the bottom of the window the page scrolls.
+The shadow shows where the box will be, and screen readers say its column and row. **Enter** keeps it, **Escape** goes back, and so does leaving the box (with **Tab** or a click elsewhere) or ending with **Done**. While you drag a box with the pointer, **Escape** lets go without moving it, and near the top or bottom of the page what is shown scrolls.
 
 ### On a phone
 

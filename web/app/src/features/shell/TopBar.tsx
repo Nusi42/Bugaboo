@@ -36,16 +36,22 @@ function Trail({ steps }: { readonly steps: readonly TrailStep[] }) {
         {steps.map((step, index) => {
           const last = index === steps.length - 1;
           return (
-            <li key={step.href} {...partOf(part.topBarCrumb)}>
+            <li key={step.href ?? step.label} {...partOf(part.topBarCrumb)}>
               {last ? (
                 <span aria-current={ariaCurrent.page} {...partOf(part.strong)}>
                   <StepLabel step={step} />
                 </span>
               ) : (
                 <>
-                  <Link href={step.href} {...partOf(part.topBarUp)}>
-                    <StepLabel step={step} />
-                  </Link>
+                  {step.href === undefined ? (
+                    <span>
+                      <StepLabel step={step} />
+                    </span>
+                  ) : (
+                    <Link href={step.href} {...partOf(part.topBarUp)}>
+                      <StepLabel step={step} />
+                    </Link>
+                  )}
                   <Icon name={iconName.next} size={iconSize.small} />
                 </>
               )}

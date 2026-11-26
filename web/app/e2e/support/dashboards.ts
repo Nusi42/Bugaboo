@@ -122,6 +122,32 @@ export async function dragBy(
   }
 }
 
+/**
+ * Drags what the locator shows to the bottom edge of the window and holds it there, without moving, until the page has
+ * scrolled to its end (UX §4.10), then lets go.
+ */
+export async function holdAtTheBottomEdge(page: Page, from: Locator): Promise<void> {
+  const box = await from.boundingBox();
+  const window = page.viewportSize();
+  if (box === null || window === null) {
+    throw new TypeError("Nothing to drag on the screen.");
+  }
+  const x = box.x + box.width / 2;
+  await page.mouse.move(x, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(x, window.height / 2);
+  await page.mouse.move(x, window.height - 2);
+  const main = page.getByRole("main");
+  await expect
+    .poll(() =>
+      main.evaluate(
+        (scrolled) => scrolled.scrollHeight - scrolled.clientHeight - scrolled.scrollTop,
+      ),
+    )
+    .toBeLessThan(1);
+  await page.mouse.up();
+}
+
 /** Waits until the dashboard the server keeps has the places the test expects of one box. */
 export async function expectPlace(
   api: ApiSession,

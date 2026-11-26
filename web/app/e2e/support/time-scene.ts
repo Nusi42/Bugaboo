@@ -1,9 +1,11 @@
 import { t } from "@bugaboo/messages";
 import { expect, type Page } from "@playwright/test";
 
+import { paths } from "../../src/shared/paths.ts";
 import { signedInAdmin } from "./access.ts";
 import { thisDevice } from "./api.ts";
 import { createIssue } from "./issues.ts";
+import { layoutOf } from "./layout.ts";
 import {
   clearTimer,
   giveDefaults,
@@ -12,6 +14,8 @@ import {
   startTimerOn,
 } from "./time.ts";
 import { endWorkDayIfRunning, workDayRuns } from "./work-day.ts";
+
+export { endWorkDayIfRunning, workDayRuns } from "./work-day.ts";
 
 /** The button that is the running timer, on the issue with this ID. */
 export function chipOf(page: Page, issue: string) {
@@ -85,4 +89,12 @@ export async function idleScene(server: Parameters<typeof signedInAdmin>[0]) {
   const start = (): Promise<void> => startTimerOn(admin, issue);
   const workDayStarted = (): Promise<boolean> => workDayRuns(admin);
   return { admin, issue, reset, start, workDayStarted, dispose: () => admin.dispose() };
+}
+
+/**
+ * Opens a page that shows the timer and the work day once. On a computer *Home* holds the box *My timer* beside the
+ * timer of the sidebar, so the test opens *Notifications*; on a phone the box *My timer* of *Home* is the timer.
+ */
+export async function openTimerPage(page: Page): Promise<void> {
+  await page.goto(layoutOf(page) === "phone" ? paths.home : paths.notifications);
 }

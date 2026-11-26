@@ -2489,7 +2489,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ),
     (
         "error.dashboard.too-many-boxes",
-        "A dashboard holds at most {most, number} boxes. This one also holds boxes you cannot see now, and they count too: remove a box first.",
+        "A dashboard holds at most {most, number} boxes, and boxes you cannot see now count too: remove a box first.",
     ),
     (
         "error.data-export.reason-needed",

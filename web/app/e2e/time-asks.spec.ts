@@ -7,7 +7,7 @@ import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
-import { chipOf, idleScene, scene } from "./support/time-scene.ts";
+import { chipOf, idleScene, openTimerPage, scene } from "./support/time-scene.ts";
 
 // Every window and question of the timer and the work day, open, is good in every look (TEST-A11Y,
 // UX §4.9): *Stop timer*, the timer menu, *Change start time*, *Switch issue*, *Throw away*, and the
@@ -24,7 +24,7 @@ async function chooseFromTimer(page: Page, issue: string, entry: string): Promis
 test("time_01 the windows of the timer are good in every look", async ({ page, server }) => {
   const { admin, issue } = await scene(server);
   await signIn(page, ada);
-  await page.goto("/");
+  await openTimerPage(page);
   await chipOf(page, issue.key).click();
   await expect(
     page.getByRole("button", { name: t("time.timer.throw-away"), exact: true }),
@@ -60,7 +60,7 @@ test("time_08 the questions of the work day are good in every look", async ({ pa
   await asked.getByRole("button", { name: t("time.work-day.too-yes"), exact: true }).click();
   // The work day ends while the timer runs: *Stop the timer on … too?*.
   await expect.poll(workDayStarted).toBe(true);
-  await page.goto("/");
+  await openTimerPage(page);
   await expect(page.getByText(/^Working since/u)).toBeVisible();
   await page.waitForTimeout(1100);
   await page.getByRole("button", { name: t("time.work-day.end"), exact: true }).click();
@@ -76,7 +76,7 @@ test("time_01 a stop under one minute is one question with nothing to fill in", 
   const { issue, start, dispose } = await idleScene(server);
   await start();
   await signIn(page, ada);
-  await page.goto("/");
+  await openTimerPage(page);
   await chipOf(page, issue.key).click();
   await page.getByRole("button", { name: t("time.timer.stop"), exact: true }).click();
   const question = page.getByRole("alertdialog", {

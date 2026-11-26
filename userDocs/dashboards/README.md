@@ -6,7 +6,7 @@ A dashboard is a page of boxes. Each box reads a search and shows it: the first 
 
 ## Where your dashboards are
 
-**Dashboards** in the sidebar lists the dashboards you created under **Mine** and the ones others shared with you under **Shared with me**, each with who created it. **Create a dashboard** at its end asks for a name and opens the new dashboard. On a phone, **Dashboards** is in **More**.
+**Dashboards** in the sidebar lists the dashboards you created under **Mine** and the ones others shared with you under **Shared with me**, each with who created it. **Create a dashboard** at its end, and beside **Customize** on **Home**, asks for a name and opens the new dashboard. On a phone, **Dashboards** is in **More**.
 
 Each dashboard has an address of its own, `/d/` and its ID. You can send it to someone you shared it with. Someone it is not shared with sees the page of an address that does not exist.
 

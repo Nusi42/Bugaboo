@@ -56,3 +56,37 @@ test("cfg_03_done_ends_moving_a_box_by_keys", async ({ page, server }) => {
   await startChange(page);
   await expect(boxOnScreen(page, "Second")).not.toHaveAttribute("data-state", "keys");
 });
+
+test("cfg_03_tab_from_the_menu_of_a_box_out_of_it_ends_moving_it_by_keys", async ({
+  page,
+  server,
+}) => {
+  await signIn(page, ada);
+  await openTwo(page, server);
+  await chooseByKeys(page, "First", t("dashboards.move"));
+  // The menu of the box is still in the box: placing goes on.
+  const menu = page.getByRole("button", {
+    name: t("dashboards.box-menu", { title: "First" }),
+    exact: true,
+  });
+  await tabTo(page, menu);
+  await expect(boxOnScreen(page, "First")).toHaveAttribute("data-state", "keys");
+  // On past it, out of the box: placing ends.
+  await tabTo(
+    page,
+    page.getByRole("button", { name: t("dashboards.place", { title: "Second" }), exact: true }),
+  );
+  await expect(boxOnScreen(page, "First")).not.toHaveAttribute("data-state", "keys");
+});
+
+test("cfg_03_a_click_elsewhere_ends_moving_a_box_by_keys", async ({ page, server }) => {
+  await signIn(page, ada);
+  await openTwo(page, server);
+  await chooseByKeys(page, "Second", t("dashboards.move"));
+  await expect(boxOnScreen(page, "Second")).toHaveAttribute("data-state", "keys");
+  await page.getByRole("heading", { name: "Keys", exact: true }).click();
+  await expect(boxOnScreen(page, "Second")).not.toHaveAttribute("data-state", "keys");
+  // The arrow keys are the page's again: the box stays where it is.
+  await page.keyboard.press("ArrowLeft");
+  await expect(boxOnScreen(page, "Second")).not.toHaveAttribute("data-state", "keys");
+});

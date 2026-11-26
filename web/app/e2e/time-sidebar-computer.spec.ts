@@ -8,7 +8,14 @@ import { expectGoodInEveryLook, inEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
-import { chipOf, growWorkDayLine, idleScene, scene, waitForParts } from "./support/time-scene.ts";
+import {
+  chipOf,
+  growWorkDayLine,
+  idleScene,
+  openTimerPage,
+  scene,
+  waitForParts,
+} from "./support/time-scene.ts";
 
 // The sidebar with the timer and the work day fits a window 600 px high, and its group at the bottom is
 // a menu that rises from its button (M5-F150, UX §3.1). A spec for a computer: it is a sidebar.
@@ -39,7 +46,7 @@ test("ux_01 the sidebar fits a window 600 px high in every state of the timer an
   await start();
   await page.setViewportSize({ width: 1280, height: WINDOW_HEIGHT });
   await signIn(page, ada);
-  await page.goto("/");
+  await openTimerPage(page);
   await expect(chipOf(page, issue.key)).toBeVisible();
   // The timer runs and the day has not started.
   await expect(
@@ -75,7 +82,7 @@ test("ux_01 the menu of the group at the bottom rises over the page and gives th
   const { admin, issue } = await scene(server);
   await page.setViewportSize({ width: 1280, height: WINDOW_HEIGHT });
   await signIn(page, ada);
-  await page.goto("/");
+  await openTimerPage(page);
   await waitForParts(page, issue.key);
   await inEveryLook(page, () => expectSidebarFits(page));
   // The line of today's hours may wrap to one more line than it has, as it does after hours of work: it

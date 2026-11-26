@@ -8,7 +8,7 @@ import { expect, test } from "./support/fixtures.ts";
 import { openIssueWithDetails, signIn } from "./support/flows.ts";
 import { createIssue, prepareWeb } from "./support/issues.ts";
 import { clearTimer, startedMinutesAgo, startTimerOn, timerRunsOn } from "./support/time.ts";
-import { endWorkDayIfRunning, workDayRuns } from "./support/work-day.ts";
+import { endWorkDayIfRunning, openTimerPage, workDayRuns } from "./support/time-scene.ts";
 
 // The work day on screen (TIME-08): the four buttons and the line of today's hours, the question
 // "Start your work day too?" when a timer starts before the work day, and "Stop the timer on WEB-142
@@ -42,7 +42,7 @@ test("time_08 start break, end break and end work day from the sidebar", async (
   const admin = await signedInAdmin(server);
   await endWorkDayIfRunning(admin);
   await signIn(page, ada);
-  await page.goto("/");
+  await openTimerPage(page);
   await tap(page, "time.work-day.start");
   await expect(line(page, "Working since")).toBeVisible();
   await expectGoodInEveryLook(page);
@@ -68,7 +68,7 @@ test("time_08 ending the work day while a timer runs asks to stop the timer too"
   await startTimerOn(admin, issue);
   await startedMinutesAgo(admin, 5);
   await signIn(page, ada);
-  await page.goto("/");
+  await openTimerPage(page);
   await tap(page, "time.work-day.start");
   await expect(line(page, "Working since")).toBeVisible();
   // "Keep it running" ends the day only.

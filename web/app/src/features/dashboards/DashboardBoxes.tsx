@@ -1,7 +1,7 @@
 import { boxesMost } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 import { Alert, alertTone, Button, buttonLook, part, partOf, useLayout, Window } from "@bugaboo/ui";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { windowLabels } from "../../shared/window-labels.ts";
 import { AddBoxWindow } from "./AddBoxWindow.tsx";
@@ -88,17 +88,22 @@ function BoxWindows({
   );
 }
 
-/** The line of *Change*: *Change* (on *Home* *Customize*), or while it is on, *Add box* and *Done*. */
+/**
+ * The line of *Change*: *Change* (on *Home* *Customize*) with what the page adds to it, or while it is on, *Add box* and
+ * *Done*.
+ */
 function ChangeLine({
   dashboard,
   changing,
   onChanging,
   onAdd,
+  also,
 }: {
   readonly dashboard: Dashboard;
   readonly changing: boolean;
   readonly onChanging: (on: boolean) => void;
   readonly onAdd: () => void;
+  readonly also: ReactNode;
 }) {
   const full = dashboard.boxes.length >= boxesMost;
   return (
@@ -124,23 +129,28 @@ function ChangeLine({
           ) : null}
         </>
       ) : (
-        <Button
-          onPress={() => {
-            onChanging(true);
-          }}
-        >
-          {dashboard.home ? t("dashboards.customize") : t("dashboards.change")}
-        </Button>
+        <>
+          <Button onPress={onChanging.bind(null, true)}>
+            {dashboard.home ? t("dashboards.customize") : t("dashboards.change")}
+          </Button>
+          {also}
+        </>
       )}
     </div>
   );
+}
+
+export interface DashboardBoxesProps {
+  readonly dashboard: Dashboard;
+  /** More in the line of *Change* while it is off (on *Home* *Create a dashboard*). */
+  readonly also?: ReactNode;
 }
 
 /**
  * The boxes of a dashboard with *Change* for its maker (UX §4.10; on *Home* *Customize*, §4.1): the grid, *Add box*
  * with its previews, and *Change box*. A dashboard of another person only shows its boxes.
  */
-export function DashboardBoxes({ dashboard }: { readonly dashboard: Dashboard }) {
+export function DashboardBoxes({ dashboard, also = null }: DashboardBoxesProps) {
   const phone = useLayout() === "phone";
   const [changing, setChanging] = useState(dashboard.mine && dashboard.boxes.length === 0);
   const [adding, setAdding] = useState(false);
@@ -153,6 +163,7 @@ export function DashboardBoxes({ dashboard }: { readonly dashboard: Dashboard })
           dashboard={dashboard}
           changing={changing}
           onChanging={setChanging}
+          also={also}
           onAdd={() => {
             setAdding(true);
           }}

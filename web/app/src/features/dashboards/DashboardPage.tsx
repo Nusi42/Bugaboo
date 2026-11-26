@@ -24,15 +24,12 @@ export function DashboardPage({ id, notFound }: DashboardPageProps) {
   const name = read.data?.name;
   usePageTitle(name ?? t("dashboards.heading"));
   // The top bar says where the page is: *Dashboards* and its name. *Dashboards* has no page of its own (the list is in
-  // the sidebar), so both lead to the dashboard.
+  // the sidebar), so it is a name only, not a link.
   const trail = useMemo(
     () =>
       name === undefined
         ? undefined
-        : [
-            { label: t("dashboards.heading"), href: dashboardAddress(id) },
-            { label: name, href: dashboardAddress(id) },
-          ],
+        : [{ label: t("dashboards.heading") }, { label: name, href: dashboardAddress(id) }],
     [name, id],
   );
   usePageTrail(trail);

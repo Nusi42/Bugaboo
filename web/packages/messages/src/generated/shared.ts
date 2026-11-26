@@ -710,7 +710,7 @@ export const messages = {
   "error.release.too-many":
     "An issue can name at most {most, number} releases in Found in release.",
   "error.dashboard.too-many-boxes":
-    "A dashboard holds at most {most, number} boxes. This one also holds boxes you cannot see now, and they count too: remove a box first.",
+    "A dashboard holds at most {most, number} boxes, and boxes you cannot see now count too: remove a box first.",
   "release-state.planned": "Planned",
   "release-state.released": "Released",
   "release-state.retired": "Retired",
