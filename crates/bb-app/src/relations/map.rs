@@ -73,6 +73,9 @@ pub struct SearchMapQuery {
     pub session_token: String,
     /// The text of the search.
     pub text: String,
+    /// The project whose results it is (it and the projects inside it), by ID or short name; none
+    /// for every project the person sees (PRJ-06).
+    pub project: Option<String>,
     /// Which relations between the results are drawn.
     pub shown: KindsShown,
 }
@@ -320,8 +323,9 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
         query: &SearchMapQuery,
         withheld: Option<&Withheld>,
     ) -> Result<Authorized<RelationMap>, AppError> {
+        let (scope, _) = self.view_scope(query.project.as_deref()).await?;
         let mut prepared = self
-            .prepare_search_as(actor, &query.text, SearchScope::Everywhere, withheld)
+            .prepare_search_as(actor, &query.text, scope, withheld)
             .await?;
         prepared.request.limit = u64::try_from(MAP_ISSUES_MOST + 1).unwrap_or(u64::MAX);
         let mut hits = self

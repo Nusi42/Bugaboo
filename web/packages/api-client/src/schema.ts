@@ -3413,8 +3413,8 @@ export interface paths {
     put?: never;
     /**
      * The map of a search: its results (at most the issues a map holds, `MAP_ISSUES_MOST`, in its
-     *     order) and the relations between them,
-     *     with no walk beyond them. It reads and changes nothing.
+     *     order), in a project and the projects inside it when one is named, and the relations between
+     *     them, with no walk beyond them. It reads and changes nothing.
      */
     post: operations["getSearchMap"];
     delete?: never;
@@ -13574,6 +13574,11 @@ export interface components {
       kinds?: string[] | null;
       /** @description Whether sub-issues and their parents are shown (*part of*); shown when left out. */
       part_of?: boolean | null;
+      /**
+       * @description The project whose results the map draws (it and the projects inside it), by ID or short
+       *     name; left out for every project the person sees.
+       */
+      project?: string | null;
       /** @description The search text; left out or empty for every issue the person sees. */
       search_text?: string;
     };
@@ -22427,6 +22432,7 @@ export interface operations {
       };
       400: components["responses"]["BadRequest"];
       401: components["responses"]["NotSignedIn"];
+      404: components["responses"]["NotFound"];
       413: components["responses"]["TooLarge"];
       429: components["responses"]["TooManyRequests"];
       500: components["responses"]["InternalError"];

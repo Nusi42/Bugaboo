@@ -3,6 +3,7 @@
 //! with `more`, fields the reader may not read left out, loops of *blocks* named, and the map of a
 //! search. Every flow runs on SQLite and PostgreSQL.
 
+use axum::http::StatusCode;
 use bb_app::access::{Permission, StartingRole};
 use bb_app::relations::MAP_ISSUES_MOST;
 use bb_app::search::MAX_STEPS;
@@ -402,6 +403,26 @@ async fn iss_16_the_map_of_a_search_holds_its_results_and_the_relations_between_
         assert!(on_map(&answer).iter().all(|(_, away)| away.is_none()));
         assert_eq!(answer["lines"].as_array().map(Vec::len), Some(1));
         assert_eq!(answer["truncated"], false);
+        // The map of a project's search holds the results of that project only (PRJ-06).
+        let in_other = ok(&ada
+            .send(
+                "POST",
+                SEARCH_MAP,
+                Some(json!({"search_text": "", "project": "OTHER"})),
+            )
+            .await?)?
+        .clone();
+        assert_eq!(keys(&in_other), made[2..].to_vec());
+        assert_eq!(in_other["lines"].as_array().map(Vec::len), Some(0));
+        // A project the person may not see is not found.
+        let unknown = ada
+            .send(
+                "POST",
+                SEARCH_MAP,
+                Some(json!({"search_text": "", "project": "NOWHERE"})),
+            )
+            .await?;
+        assert_eq!(unknown.status, StatusCode::NOT_FOUND);
         // A reader of ACME only sees no issue of another project on the map of everything, and
         // no line to one.
         let secret = ok(&ada

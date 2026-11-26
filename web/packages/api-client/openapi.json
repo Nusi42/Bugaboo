@@ -12041,7 +12041,7 @@
     "/api/v1/map": {
       "post": {
         "tags": ["relations"],
-        "summary": "The map of a search: its results (at most the issues a map holds, `MAP_ISSUES_MOST`, in its\norder) and the relations between them,\nwith no walk beyond them. It reads and changes nothing.",
+        "summary": "The map of a search: its results (at most the issues a map holds, `MAP_ISSUES_MOST`, in its\norder), in a project and the projects inside it when one is named, and the relations between\nthem, with no walk beyond them. It reads and changes nothing.",
         "operationId": "getSearchMap",
         "requestBody": {
           "content": {
@@ -12069,6 +12069,9 @@
           },
           "401": {
             "$ref": "#/components/responses/NotSignedIn"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "413": {
             "$ref": "#/components/responses/TooLarge"
@@ -37285,6 +37288,10 @@
           "part_of": {
             "type": ["boolean", "null"],
             "description": "Whether sub-issues and their parents are shown (*part of*); shown when left out."
+          },
+          "project": {
+            "type": ["string", "null"],
+            "description": "The project whose results the map draws (it and the projects inside it), by ID or short\nname; left out for every project the person sees."
           },
           "search_text": {
             "type": "string",

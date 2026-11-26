@@ -28,6 +28,8 @@
 //!   as `src/files.generated.ts`;
 //! - the most issues one change to many issues names (`crates/bb-core/src/many_changes.rs`) is
 //!   written as `src/many-changes.generated.ts`;
+//! - the most issues one relation map holds (`crates/bb-app/src/relations/map.rs`) is written as
+//!   `src/relation-map.generated.ts`;
 //! - the limits of a question to the assistant (`crates/bb-core/src/ai/assistant.rs`) are written as
 //!   `src/assistant.generated.ts`;
 //! - the numbers of agents (how long a standing rule lasts and when it is about to run out, the
@@ -99,6 +101,8 @@ pub(crate) const FIELDS_PATH: &str = "web/packages/api-client/src/fields.generat
 pub(crate) const FILES_PATH: &str = "web/packages/api-client/src/files.generated.ts";
 /// The most issues one change to many issues names, for the browser app.
 pub(crate) const MANY_CHANGES_PATH: &str = "web/packages/api-client/src/many-changes.generated.ts";
+/// The most issues one relation map holds, for the browser app.
+pub(crate) const RELATION_MAP_PATH: &str = "web/packages/api-client/src/relation-map.generated.ts";
 /// The limits of a question to the assistant, for the browser app.
 pub(crate) const ASSISTANT_PATH: &str = "web/packages/api-client/src/assistant.generated.ts";
 /// The numbers of agents the browser app shows or checks.
@@ -143,6 +147,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         EDITING_PATH,
         FILES_PATH,
         MANY_CHANGES_PATH,
+        RELATION_MAP_PATH,
         ASSISTANT_PATH,
         AGENTS_PATH,
         TEXTS_PATH,
@@ -252,14 +257,6 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
             format_with_oxfmt(repo, FILES_PATH, &web_constants::files(&sources)?)?,
         ),
         Generated::new(
-            MANY_CHANGES_PATH,
-            format_with_oxfmt(
-                repo,
-                MANY_CHANGES_PATH,
-                &web_constants::many_changes(&sources)?,
-            )?,
-        ),
-        Generated::new(
             WORDS_PATH,
             format_with_oxfmt(repo, WORDS_PATH, &web_constants::words(&spec, &sources)?)?,
         ),
@@ -295,6 +292,12 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
     ];
     files.extend(words_of_linked_crates(repo)?);
     // The user pages whose numbers come from the code.
+    for (path, text) in [
+        (MANY_CHANGES_PATH, web_constants::many_changes(&sources)?),
+        (RELATION_MAP_PATH, web_constants::relation_map(&sources)?),
+    ] {
+        files.push(Generated::new(path, format_with_oxfmt(repo, path, &text)?));
+    }
     for (path, text) in web_constants::user_pages::pages(&sources)? {
         files.push(Generated::new(path, text));
     }

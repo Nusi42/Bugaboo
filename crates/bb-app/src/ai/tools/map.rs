@@ -43,6 +43,7 @@ impl<S: AuthStore> Ctx<'_, S> {
                 let query = SearchMapQuery {
                     session_token: run.token.to_owned(),
                     text,
+                    project: None,
                     shown,
                 };
                 self.search_map_for(run.actor, &query, Some(run.withheld))

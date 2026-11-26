@@ -32,7 +32,6 @@ const TIME_SOURCE: &str = "crates/bb-core/src/time/mod.rs";
 const DRAFT_KEPT_LIST: &str = "DRAFT_KEPT_BY";
 const FIELDS_SOURCE: &str = "crates/bb-core/src/own_fields.rs";
 const FILES_SOURCE: &str = "crates/bb-core/src/files.rs";
-const MANY_CHANGES_SOURCE: &str = "crates/bb-core/src/many_changes.rs";
 const ASSISTANT_SOURCE: &str = "crates/bb-core/src/ai/assistant.rs";
 const PAGE_SIZE_MAX: &str = "PAGE_SIZE_MAX";
 const PAGE_SIZE_DEFAULT: &str = "PAGE_SIZE_DEFAULT";
@@ -621,22 +620,6 @@ export const megabyte = {megabyte};
     ))
 }
 
-/// The most issues one change to many issues names, as a constant for the browser client: the rule
-/// of *Tick all results* is this number and is not written a second time.
-pub(super) fn many_changes(sources: &[Source]) -> anyhow::Result<String> {
-    let Some((_, text)) = sources.iter().find(|(path, _)| path == MANY_CHANGES_SOURCE) else {
-        bail!("{MANY_CHANGES_SOURCE} is missing");
-    };
-    let file =
-        syn::parse_file(text).with_context(|| format!("{MANY_CHANGES_SOURCE} is not Rust"))?;
-    let most = number_const(&file, MANY_CHANGES_SOURCE, "MANY_CHANGES_ISSUES_MAX")?;
-    Ok(format!(
-        "{TS_HEADER}/** The most issues one change to many issues names (`MANY_CHANGES_ISSUES_MAX` of the server). */
-export const manyChangesIssuesMax = {most};
-"
-    ))
-}
-
 /// The limits of a question to the assistant, as constants for the browser client: how many turns
 /// and how long a question and a turn may be. The panel keeps within them and does not write them
 /// a second time.
@@ -786,11 +769,13 @@ export const ownThemeSheets = \"{sheets}\";
     ))
 }
 mod notifications;
+mod numbers;
 mod safe_html;
 pub(super) mod settings_page;
 mod texts;
 pub(super) mod user_pages;
 pub(super) use notifications::notifications;
+pub(super) use numbers::{many_changes, relation_map};
 pub(super) use safe_html::safe_html;
 #[cfg(test)]
 use safe_html::safe_html_paths;

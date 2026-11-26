@@ -51,6 +51,9 @@ pub(crate) struct SearchMapBody {
     /// The search text; left out or empty for every issue the person sees.
     #[serde(default)]
     search_text: String,
+    /// The project whose results the map draws (it and the projects inside it), by ID or short
+    /// name; left out for every project the person sees.
+    project: Option<String>,
     /// The IDs of the kinds of relation shown; left out for every kind.
     kinds: Option<Vec<String>>,
     /// Whether sub-issues and their parents are shown (*part of*); shown when left out.
@@ -208,8 +211,8 @@ async fn get_issue_map(
 }
 
 /// The map of a search: its results (at most the issues a map holds, `MAP_ISSUES_MOST`, in its
-/// order) and the relations between them,
-/// with no walk beyond them. It reads and changes nothing.
+/// order), in a project and the projects inside it when one is named, and the relations between
+/// them, with no walk beyond them. It reads and changes nothing.
 #[utoipa::path(
     post,
     path = "/api/v1/map",
@@ -219,7 +222,8 @@ async fn get_issue_map(
     responses(
         (status = 200, description = "The relation map of the search.", body = RelationMapBody),
         InvalidAnswer,
-        NotSignedInAnswer
+        NotSignedInAnswer,
+        NotFoundAnswer
     )
 )]
 async fn get_search_map(
@@ -242,6 +246,7 @@ async fn get_search_map(
             SearchMapQuery {
                 session_token,
                 text: body.search_text,
+                project: body.project,
                 shown: KindsShown {
                     kinds,
                     part_of: body.part_of.unwrap_or(true),
