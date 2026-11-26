@@ -40,6 +40,9 @@ const PAGE: u64 = 1000;
 pub(crate) struct DumpProjectIssues {
     short_name: String,
     total: u64,
+    /// The codes of its issue IDs, in order: the random ones come from the seed too (the clock of the
+    /// sample draws them), so two samples of one seed name their issues alike.
+    codes: BTreeSet<String>,
     by_type: BTreeMap<String, u64>,
     by_status: BTreeMap<String, u64>,
     by_priority: BTreeMap<String, u64>,
@@ -134,6 +137,7 @@ impl Sample {
                 for issue in page {
                     let kind = types.get(&issue.issue_type).cloned().unwrap_or_default();
                     here.total += 1;
+                    here.codes.insert(issue.code.to_string());
                     *dump.by_type.entry(kind.clone()).or_default() += 1;
                     *here.by_type.entry(kind).or_default() += 1;
                     *here

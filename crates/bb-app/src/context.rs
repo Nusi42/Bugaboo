@@ -7,10 +7,19 @@
 use bb_core::id::IdSource;
 use jiff::Timestamp;
 
-/// The current moment. A port, so a test can stop the clock.
+/// The current moment, and the random part of the IDs made at it. A port, so a test can stop the
+/// clock and the sample can be made the same from its seed every time.
 pub trait Clock {
     /// The current moment.
     fn now(&self) -> Timestamp;
+
+    /// Sixteen random bytes for a new ID or the random code of an issue ID: the secure random
+    /// source of the operating system. A clock that fixes the moment for the sample fixes these too,
+    /// from its seed. The secrets of sessions, links and keys never come from here: they are drawn
+    /// from the operating system where they are made (`SecretToken`).
+    fn random(&self) -> [u8; 16] {
+        SystemIds.random()
+    }
 }
 
 /// The real clock of the computer.

@@ -355,7 +355,7 @@ pub async fn create<L: Later>(
         options.start,
         -(count * STEP_SECONDS + LATER_SECONDS + later.history_seconds()),
     )?;
-    let clock = Arc::new(SampleClock::at(first_moment));
+    let clock = Arc::new(SampleClock::at(first_moment, options.seed));
 
     let Opened {
         database,

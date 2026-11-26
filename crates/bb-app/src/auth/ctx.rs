@@ -24,7 +24,7 @@ use crate::access::Actor as ActingPerson;
 use crate::agents::{AgentReach, Hold};
 use crate::ai::{AiProvider, NoAiProvider};
 use crate::backups::{BackupFiles, NoBackupFiles};
-use crate::context::{Clock, SystemIds};
+use crate::context::Clock;
 use crate::editing::{EditableRecords, NoRecords};
 use crate::files::{FileStore, NoFileStore};
 use crate::mailer::{Mailer, NoMailer};
@@ -448,7 +448,7 @@ pub struct Ctx<'a, S> {
     pub(crate) reason: Mutex<Option<String>>,
 }
 
-/// Makes IDs from the clock of the context and the secure random source.
+/// Makes IDs from the clock of the context and its random bytes ([`Clock::random`]).
 struct ClockIds<'a>(&'a (dyn Clock + Send + Sync));
 
 impl IdSource for ClockIds<'_> {
@@ -457,11 +457,11 @@ impl IdSource for ClockIds<'_> {
     }
 
     fn random(&mut self) -> [u8; 16] {
-        SystemIds.random()
+        self.0.random()
     }
 }
 
-/// Makes IDs from a clock it owns and the secure random source.
+/// Makes IDs from a clock it owns and its random bytes ([`Clock::random`]).
 struct OwnedClockIds(Arc<dyn Clock + Send + Sync>);
 
 impl IdSource for OwnedClockIds {
@@ -470,7 +470,7 @@ impl IdSource for OwnedClockIds {
     }
 
     fn random(&mut self) -> [u8; 16] {
-        SystemIds.random()
+        self.0.random()
     }
 }
 
