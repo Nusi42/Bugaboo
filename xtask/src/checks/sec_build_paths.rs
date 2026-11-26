@@ -4,13 +4,16 @@
 //! A file is read as bytes and searched for the start of a profile or home folder (a drive with
 //! `Users`, and `/home/`, `/Users/` and `/root/`, which also find `/mnt/c/Users/…` of WSL) and for
 //! the folders of this computer that a build reads from ([`build_paths::of_this_computer`]), with
-//! either separator. The release command searches its programs before it copies them into the
-//! release folder, the whole folder when it is written and again before it signs it, so a file
-//! that names a folder is never signed (`release::refuse_build_paths`). In the full run the check
-//! searches what the browser loads: the WebAssembly modules and their glue, and the built browser
-//! app when it is there. The toolchain's own standard library names its sources `/rustc/<commit>/…`,
-//! which says nothing about the computer and is not searched for. A finding names the kind of
-//! folder and how often it was found, never the text found, which holds the account.
+//! either separator; a backslash may be doubled, as JSON and JavaScript escape it, and a drive
+//! with `Users` is also found in UTF-16 and as WSL names it (`/mnt/c/users/…` in any case). The
+//! release command searches its programs before it copies them into the release folder, the whole
+//! folder when it is written and again before it signs it, so a file that names a folder is never
+//! signed (`release::refuse_build_paths`); `release check` searches the folder too. In the full
+//! run the check searches what the browser loads: the WebAssembly modules and their glue, and the
+//! built browser app when it is there. The toolchain's own standard library names its sources
+//! `/rustc/<commit>/…`, which says nothing about the computer and is not searched for. A finding
+//! names the kind of folder and how often it was found, never the text found, which holds the
+//! account.
 
 use std::path::{Path, PathBuf};
 
@@ -26,6 +29,8 @@ use crate::wasm;
 const HOME_FOLDERS: [&str; 3] = ["home", "Users", "root"];
 /// The folder of the profiles on a drive of Windows, after `<drive>:\`; any case.
 const PROFILES_ON_A_DRIVE: &str = "users";
+/// The folder under the root of WSL that holds the drives of Windows, one folder per letter.
+const WSL_DRIVES: &str = "mnt";
 
 pub(crate) struct SecBuildPaths;
 
@@ -42,7 +47,7 @@ impl Check for SecBuildPaths {
             files.extend(shipped_in(&module.dir(root))?);
         }
         files.extend(shipped_in(&root.join(WEB_APP).join(WEB_DIST))?);
-        let marks = marks(&build_paths::of_this_computer(root)?);
+        let marks = marks(build_paths::of_this_computer(root)?);
         let mut findings = Vec::new();
         for file in files {
             if let Some(problem) = problem(&file, &marks)? {
@@ -92,10 +97,15 @@ pub(crate) struct Mark {
 enum Test {
     /// These bytes.
     Exact(Vec<u8>),
-    /// `/<name>/`.
+    /// `/<name>/`, also with the separator after it doubled.
     HomeFolder(&'static str),
-    /// `<letter>:\Users\` with either separator, in any case.
+    /// `<letter>:\Users\` with either separator, single or doubled (escaped in JSON and
+    /// JavaScript), in any case.
     ProfilesOnADrive,
+    /// The same in UTF-16 (little-endian), as Windows keeps some texts.
+    WideProfilesOnADrive,
+    /// `/mnt/<letter>/users/` of WSL in any case.
+    MountedProfiles,
 }
 
 impl Test {
@@ -103,8 +113,8 @@ impl Test {
     fn anchor(&self) -> u8 {
         match self {
             Self::Exact(bytes) => bytes[0],
-            Self::HomeFolder(_) => b'/',
-            Self::ProfilesOnADrive => b':',
+            Self::HomeFolder(_) | Self::MountedProfiles => b'/',
+            Self::ProfilesOnADrive | Self::WideProfilesOnADrive => b':',
         }
     }
 
@@ -116,18 +126,69 @@ impl Test {
             Self::HomeFolder(name) => rest
                 .get(1..)
                 .and_then(|after| after.strip_prefix(name.as_bytes()))
-                .is_some_and(|after| after.first() == Some(&b'/')),
+                .is_some_and(|after| separators(after) > 0),
             Self::ProfilesOnADrive => {
-                let folder = PROFILES_ON_A_DRIVE.len();
                 at.checked_sub(1)
                     .is_some_and(|letter| bytes[letter].is_ascii_alphabetic())
-                    && rest.len() > folder + 2
-                    && is_separator(rest[1])
-                    && rest[2..2 + folder].eq_ignore_ascii_case(PROFILES_ON_A_DRIVE.as_bytes())
-                    && is_separator(rest[2 + folder])
+                    && profiles_after_colon(rest)
             }
+            Self::WideProfilesOnADrive => {
+                let letter = at.checked_sub(2).is_some_and(|letter| {
+                    bytes[letter].is_ascii_alphabetic() && bytes[letter + 1] == 0
+                });
+                letter && profiles_after_colon(&narrow(rest))
+            }
+            Self::MountedProfiles => rest
+                .get(1..)
+                .and_then(|after| after.strip_prefix(WSL_DRIVES.as_bytes()))
+                .and_then(|after| after.strip_prefix(b"/"))
+                .filter(|after| {
+                    after.len() > 2 && after[0].is_ascii_alphabetic() && after[1] == b'/'
+                })
+                .and_then(|after| after.get(2..2 + PROFILES_ON_A_DRIVE.len() + 1))
+                .is_some_and(|folder| {
+                    folder[..PROFILES_ON_A_DRIVE.len()]
+                        .eq_ignore_ascii_case(PROFILES_ON_A_DRIVE.as_bytes())
+                        && folder[PROFILES_ON_A_DRIVE.len()] == b'/'
+                }),
         }
     }
+}
+
+/// How many separators `bytes` starts with, when they are one or two (a doubled backslash is an
+/// escaped one); 0 otherwise.
+fn separators(bytes: &[u8]) -> usize {
+    let run = bytes
+        .iter()
+        .take(3)
+        .take_while(|byte| is_separator(**byte))
+        .count();
+    if run <= 2 { run } else { 0 }
+}
+
+/// Whether `rest`, which starts at the colon after a drive letter, goes on with `\Users\`.
+fn profiles_after_colon(rest: &[u8]) -> bool {
+    let Some(after) = rest.get(1..) else {
+        return false;
+    };
+    let before = separators(after);
+    if before == 0 {
+        return false;
+    }
+    let folder = &after[before..];
+    folder.len() > PROFILES_ON_A_DRIVE.len()
+        && folder[..PROFILES_ON_A_DRIVE.len()].eq_ignore_ascii_case(PROFILES_ON_A_DRIVE.as_bytes())
+        && separators(&folder[PROFILES_ON_A_DRIVE.len()..]) > 0
+}
+
+/// The start of UTF-16 (little-endian) text as one byte per character, up to the first character
+/// that is not ASCII.
+fn narrow(wide: &[u8]) -> Vec<u8> {
+    wide.chunks_exact(2)
+        .take(PROFILES_ON_A_DRIVE.len() + 6)
+        .take_while(|unit| unit[1] == 0 && unit[0].is_ascii())
+        .map(|unit| unit[0])
+        .collect()
 }
 
 fn is_separator(byte: u8) -> bool {
@@ -135,21 +196,34 @@ fn is_separator(byte: u8) -> bool {
 }
 
 /// The kinds of folders no file that ships may name: the profile and home folders of every
-/// system, and the `folders` of this computer, each with both separators.
+/// system, and the `folders` of this computer, with either separator and with the backslash
+/// escaped.
 pub(crate) fn marks(folders: &[Folder]) -> Vec<Mark> {
-    let mut marks = vec![Mark {
-        what: "a profile folder on a drive of Windows".to_owned(),
-        test: Test::ProfilesOnADrive,
-    }];
+    let mut marks = vec![
+        Mark {
+            what: "a profile folder on a drive of Windows".to_owned(),
+            test: Test::ProfilesOnADrive,
+        },
+        Mark {
+            what: "a profile folder on a drive of Windows, in UTF-16".to_owned(),
+            test: Test::WideProfilesOnADrive,
+        },
+        Mark {
+            what: "a profile folder on a drive of Windows, as WSL names it".to_owned(),
+            test: Test::MountedProfiles,
+        },
+    ];
     marks.extend(HOME_FOLDERS.map(|name| Mark {
         what: format!("the folder /{name}"),
         test: Test::HomeFolder(name),
     }));
     for folder in folders {
+        let backslashed = folder.path.replace('/', "\\");
         let mut forms = vec![
             folder.path.clone(),
             folder.path.replace('\\', "/"),
-            folder.path.replace('/', "\\"),
+            backslashed.replace('\\', "\\\\"),
+            backslashed,
         ];
         forms.sort();
         forms.dedup();
@@ -242,6 +316,10 @@ mod tests {
             r"D:\work\bugaboo\target\release\build\a\out\generated.rs",
             "D:/work/bugaboo/crates/a/src/lib.rs",
             r"\opt\cargo\git\checkouts\a\src\lib.rs",
+            // Escaped in JSON or JavaScript.
+            r#"{"file":"C:\\Users\\someone\\.cargo\\registry\\a.rs"}"#,
+            r#"{"file":"D:\\work\\bugaboo\\crates\\a\\src\\lib.rs"}"#,
+            "/mnt/c/users/someone/work/bugaboo/crates/a/src/lib.rs",
         ] {
             let program = [
                 b"\0\x7fELF called `Option::unwrap()`\0".as_slice(),
@@ -253,6 +331,12 @@ mod tests {
             assert!(!problem.contains("someone"), "{problem}");
             assert!(problem.contains("(once)"), "{problem}");
         }
+        let wide: Vec<u8> = r"C:\Users\someone\.cargo\registry\a.rs"
+            .encode_utf16()
+            .flat_map(u16::to_le_bytes)
+            .collect();
+        let problem = problem_in(&wide, &marks).unwrap();
+        assert!(problem.contains("in UTF-16 (once)"), "{problem}");
         let twice = b"/root/.cargo/a.rs\0/root/.cargo/b.rs";
         assert!(
             problem_in(twice, &marks)
@@ -268,10 +352,14 @@ mod tests {
             /rustup/toolchain/lib/rustlib/src/rust/library/std/src/lib.rs\0\
             /rustc/0123456789abcdef0123456789abcdef01234567/library/core/src/panic.rs\0\
             /bugaboo/crates/a/src/lib.rs\0crates/a/src/lib.rs\0\
-            https://github.com/someone/Bugaboo\0users: 3\0a:b\0/homepage/\0D:\\other\0";
+            https://github.com/someone/Bugaboo\0users: 3\0a:b\0/homepage/\0D:\\other\0\
+            /api/users/1\0/mnt/data/users/\0";
         assert_eq!(problem_in(program, &marks), None);
         assert_eq!(problem_in(b"", &marks), None);
         assert_eq!(problem_in(b"C:", &marks), None);
+        // A colon after a letter that looks like UTF-16 but goes on as one byte per character.
+        assert_eq!(problem_in(b"A\0:", &marks), None);
+        assert_eq!(problem_in(b"A\0:x", &marks), None);
     }
 
     #[test]

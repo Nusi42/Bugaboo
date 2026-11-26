@@ -86,7 +86,7 @@ fn this_folder(repo: &crate::repo::Repo) -> anyhow::Result<(std::path::PathBuf, 
 /// Refuses the files at `paths` when one of them names a folder of a computer (SEC-BUILD-PATHS),
 /// so that such a file never goes into the release folder or gets signed.
 pub(crate) fn refuse_build_paths(root: &Path, paths: &[std::path::PathBuf]) -> anyhow::Result<()> {
-    let marks = sec_build_paths::marks(&crate::build_paths::of_this_computer(root)?);
+    let marks = sec_build_paths::marks(crate::build_paths::of_this_computer(root)?);
     let mut problems = Vec::new();
     for path in paths {
         if let Some(problem) = sec_build_paths::problem(path, &marks)? {

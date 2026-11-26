@@ -293,29 +293,6 @@ pub(crate) fn lock_checksums(lock: &str) -> anyhow::Result<BTreeMap<(String, Str
     Ok(sums)
 }
 
-/// `cargo metadata` for `target`, filtered to what that system compiles.
-fn cargo_metadata(root: &Path, target: &str) -> anyhow::Result<String> {
-    let out = crate::tools::command("cargo")
-        .args([
-            "metadata",
-            "--locked",
-            "--format-version",
-            "1",
-            "--filter-platform",
-            target,
-        ])
-        .current_dir(root)
-        .output()
-        .context("could not run cargo; is Rust installed?")?;
-    if !out.status.success() {
-        bail!(
-            "cargo metadata failed: {}",
-            String::from_utf8_lossy(&out.stderr).trim()
-        );
-    }
-    Ok(String::from_utf8_lossy(&out.stdout).into_owned())
-}
-
 /// Each program of the release as `(system, crate)`, and each WebAssembly module of the browser
 /// app: what the parts list covers.
 pub(crate) fn programs() -> Vec<(&'static str, &'static str)> {
@@ -393,7 +370,10 @@ fn compiled_crates(root: &Path) -> anyhow::Result<Closure> {
     let mut metadata: BTreeMap<&str, String> = BTreeMap::new();
     for (target, package) in programs() {
         if !metadata.contains_key(target) {
-            metadata.insert(target, cargo_metadata(root, target)?);
+            metadata.insert(
+                target,
+                crate::metadata::cargo_metadata(root, &["--locked", "--filter-platform", target])?,
+            );
         }
         let only = tree_crates(root, target, package)?;
         let part = rust_closure(&metadata[target], &[package], Some(&only))?;

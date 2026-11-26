@@ -60,7 +60,7 @@ struct Metadata {
 }
 
 /// Runs `cargo metadata <options> --format-version 1` in `root` and returns what it printed.
-fn cargo_metadata(root: &Path, options: &[&str]) -> anyhow::Result<String> {
+pub(crate) fn cargo_metadata(root: &Path, options: &[&str]) -> anyhow::Result<String> {
     let out = crate::tools::command("cargo")
         .arg("metadata")
         .args(options)
@@ -167,7 +167,7 @@ pub(crate) struct BuildFolders {
 
 /// Runs `cargo metadata` in `root` and returns the folders a build reads from and writes into.
 pub(crate) fn build_folders(root: &Path) -> anyhow::Result<BuildFolders> {
-    build_folders_from(&cargo_metadata(root, &[])?)
+    build_folders_from(&cargo_metadata(root, &["--locked"])?)
 }
 
 fn build_folders_from(json: &str) -> anyhow::Result<BuildFolders> {

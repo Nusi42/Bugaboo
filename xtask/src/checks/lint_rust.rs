@@ -180,23 +180,10 @@ fn stand_in_compiler(target: &str) -> anyhow::Result<Vec<(String, String)>> {
 /// `cc` crate is switched off for this run only (a Cargo `links` override): no C compiler for the
 /// other system is needed, and every workspace crate is still linted. Real builds are untouched.
 fn c_build_packages(root: &Path, target: &str) -> anyhow::Result<Vec<CBuild>> {
-    let output = tools::command("cargo")
-        .args([
-            "metadata",
-            "--format-version",
-            "1",
-            "--filter-platform",
-            target,
-        ])
-        .current_dir(root)
-        .output()
-        .context("could not run cargo metadata")?;
-    anyhow::ensure!(
-        output.status.success(),
-        "cargo metadata failed: {}",
-        String::from_utf8_lossy(&output.stderr).trim()
-    );
-    c_builds_in(&String::from_utf8_lossy(&output.stdout))
+    c_builds_in(&crate::metadata::cargo_metadata(
+        root,
+        &["--filter-platform", target],
+    )?)
 }
 
 fn c_builds_in(metadata: &str) -> anyhow::Result<Vec<CBuild>> {

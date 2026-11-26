@@ -9,13 +9,18 @@ use crate::{build_paths, release};
 /// Release builds embed `web/app/dist`, so the web build comes first. The program names no folder
 /// of this computer (SEC-BUILD-PATHS).
 pub(crate) fn plan(root: &Path, target: Option<&str>) -> anyhow::Result<Vec<Step>> {
-    let mut server = build_paths::neutral(steps::server_build(Profile::Release), root)?;
+    let server = build_paths::neutral(steps::server_build(Profile::Release), root)?;
+    Ok(plan_with(root, target, server))
+}
+
+/// The plan around the build of the program, `server`.
+fn plan_with(root: &Path, target: Option<&str>, mut server: Step) -> Vec<Step> {
     if let Some(target) = target {
         server
             .args
             .extend(["--target".to_owned(), target.to_owned()]);
     }
-    Ok(vec![steps::web_build(root), server])
+    vec![steps::web_build(root), server]
 }
 
 pub(crate) fn run(root: &Path, target: Option<&str>) -> anyhow::Result<bool> {
@@ -31,8 +36,10 @@ mod tests {
 
     #[test]
     fn the_web_build_comes_before_the_release_binary() {
-        let plan = plan(&release::repository_root(), None).unwrap();
+        let root = tempfile::tempdir().unwrap();
+        let plan = plan_with(root.path(), None, steps::server_build(Profile::Release));
         assert_eq!(plan[0].name, "build the browser app");
+        assert!(plan[0].skip.is_some(), "no web/app in the empty folder");
         assert!(plan[1].args.contains(&"--release".to_owned()));
         assert_eq!(plan[1].skip, None);
     }
@@ -44,18 +51,18 @@ mod tests {
         let at = args.iter().position(|arg| arg == "--config").unwrap();
         assert!(
             args[at + 1].contains("--remap-path-prefix=") && args[at + 1].contains("=/cargo"),
-            "{}",
-            args.len()
+            "the setting after --config renames no folder, or not the home of cargo"
         );
     }
 
     #[test]
     fn another_system_is_built_with_target() {
-        let plan = plan(
-            &release::repository_root(),
+        let root = tempfile::tempdir().unwrap();
+        let plan = plan_with(
+            root.path(),
             Some("x86_64-unknown-linux-musl"),
-        )
-        .unwrap();
+            steps::server_build(Profile::Release),
+        );
         let args = &plan[1].args;
         let at = args.iter().position(|arg| arg == "--target").unwrap();
         assert_eq!(args[at + 1], "x86_64-unknown-linux-musl");

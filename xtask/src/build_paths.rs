@@ -34,9 +34,31 @@ const BUILD_FOLDER: &str = "/bugaboo-build";
 const CARGO_HOME: &str = "/cargo";
 const TOOLCHAIN: &str = "/rustup/toolchain";
 
+/// The variables that hand the compiler its options, which replace the ones the settings files
+/// name; the second splits them at `\x1f` instead of at spaces.
+pub(crate) const RUSTFLAGS: &str = "RUSTFLAGS";
+pub(crate) const ENCODED_RUSTFLAGS: &str = "CARGO_ENCODED_RUSTFLAGS";
+/// What separates the options in [`ENCODED_RUSTFLAGS`].
+const ENCODED_SEPARATOR: char = '\x1f';
+
 /// The folders of this computer that the build of the workspace at `root` reads from, from cargo
-/// (`cargo metadata`) and from rustc (`rustc --print sysroot`).
-pub(crate) fn of_this_computer(root: &Path) -> anyhow::Result<Vec<Folder>> {
+/// (`cargo metadata`) and from rustc (`rustc --print sysroot`). They are asked once per command:
+/// one run of xtask builds one repository.
+pub(crate) fn of_this_computer(root: &Path) -> anyhow::Result<&'static [Folder]> {
+    static FOLDERS: std::sync::OnceLock<(std::path::PathBuf, Vec<Folder>)> =
+        std::sync::OnceLock::new();
+    if let Some((asked_for, folders)) = FOLDERS.get() {
+        debug_assert_eq!(
+            asked_for, root,
+            "the folders are asked once per command, for one repository"
+        );
+        return Ok(folders);
+    }
+    let found = asked(root)?;
+    Ok(&FOLDERS.get_or_init(|| (root.to_path_buf(), found)).1)
+}
+
+fn asked(root: &Path) -> anyhow::Result<Vec<Folder>> {
     let cargo = crate::metadata::build_folders(root)?;
     let mut folders = vec![
         folder(&cargo.workspace, REPOSITORY, "the folder of the repository")?,
@@ -112,7 +134,16 @@ fn cargo_setting(folders: &[Folder]) -> String {
 /// renamed in what it makes. Every optimised build of a program asks for it, the ones that do not
 /// ship too, so that they share what cargo compiled.
 pub(crate) fn neutral(step: Step, root: &Path) -> anyhow::Result<Step> {
-    Ok(renamed(step, &of_this_computer(root)?))
+    for variable in [RUSTFLAGS, ENCODED_RUSTFLAGS] {
+        if std::env::var_os(variable).is_some() {
+            crate::output::note(&format!(
+                "{variable} is set: cargo then ignores the options of the settings files, so this \
+                 build names the folders of this computer and leaves out the C runtime of \
+                 Windows; unset it"
+            ));
+        }
+    }
+    Ok(renamed(step, of_this_computer(root)?))
 }
 
 fn renamed(mut step: Step, folders: &[Folder]) -> Step {
@@ -121,24 +152,35 @@ fn renamed(mut step: Step, folders: &[Folder]) -> Step {
     step
 }
 
-/// `rustflags` (the text of `RUSTFLAGS`) with the folders of this computer renamed. `RUSTFLAGS`
-/// splits at spaces, so a folder with a space in its path keeps its name, with a note: the build
-/// works, and SEC-BUILD-PATHS refuses what it made.
-pub(crate) fn with_rustflags(root: &Path, rustflags: &str) -> anyhow::Result<String> {
-    let folders = of_this_computer(root)?;
-    let (fit, unfit): (Vec<Folder>, Vec<Folder>) = folders
-        .into_iter()
-        .partition(|folder| !folder.path.contains(char::is_whitespace));
-    for folder in &unfit {
-        crate::output::note(&format!(
-            "{} has a space in its path, which RUSTFLAGS cannot carry: the WebAssembly modules name \
-             it, and a release refuses them",
-            folder.what
-        ));
-    }
-    let mut options = vec![rustflags.trim().to_owned()];
-    options.extend(compiler_options(&fit));
-    Ok(options.join(" ").trim().to_owned())
+/// The value of [`ENCODED_RUSTFLAGS`] for a build that sets its own options (`extra`): the options
+/// of the environment (that variable, else `RUSTFLAGS` split at spaces), the folders of this
+/// computer renamed, then `extra`. A folder with a space in its path stays one option.
+pub(crate) fn encoded_rustflags(root: &Path, extra: &[&str]) -> anyhow::Result<String> {
+    Ok(encoded(
+        std::env::var(ENCODED_RUSTFLAGS).ok().as_deref(),
+        std::env::var(RUSTFLAGS).ok().as_deref(),
+        of_this_computer(root)?,
+        extra,
+    ))
+}
+
+fn encoded(
+    encoded: Option<&str>,
+    plain: Option<&str>,
+    folders: &[Folder],
+    extra: &[&str],
+) -> String {
+    let mut options: Vec<String> = match (encoded, plain) {
+        (Some(encoded), _) if !encoded.is_empty() => encoded
+            .split(ENCODED_SEPARATOR)
+            .map(str::to_owned)
+            .collect(),
+        (_, Some(plain)) => plain.split_whitespace().map(str::to_owned).collect(),
+        _ => Vec::new(),
+    };
+    options.extend(compiler_options(folders));
+    options.extend(extra.iter().map(|option| (*option).to_owned()));
+    options.join(&ENCODED_SEPARATOR.to_string())
 }
 
 #[cfg(test)]
@@ -194,14 +236,40 @@ mod tests {
                 .iter()
                 .find(|folder| folder.neutral == neutral)
                 .unwrap_or_else(|| panic!("no folder for {neutral}"));
-            assert!(Path::new(&folder.path).is_absolute(), "{}", folder.what);
-            assert!(Path::new(&folder.path).is_dir(), "{}", folder.what);
+            assert!(
+                Path::new(&folder.path).is_absolute(),
+                "cargo or rustc named {} by a relative path",
+                folder.what
+            );
+            assert!(
+                Path::new(&folder.path).is_dir(),
+                "{} is not a folder on this computer",
+                folder.what
+            );
         }
-        let flags = with_rustflags(&root, " -Zfmt-debug=none ").unwrap();
+        let flags = encoded_rustflags(&root, &["-Zfmt-debug=none"]).unwrap();
         assert!(
-            flags.starts_with("-Zfmt-debug=none --remap-path-prefix="),
-            "{}",
+            flags.matches("--remap-path-prefix=").count() == folders.len()
+                && flags.ends_with("\x1f-Zfmt-debug=none"),
+            "the module is built with every folder renamed ({} of them) and its own options last",
             folders.len()
         );
+    }
+
+    #[test]
+    fn sec_18_the_options_of_a_module_keep_a_folder_with_a_space_whole() {
+        let folders = [named(r"C:\Users\someone\a b\.cargo", CARGO_HOME)];
+        assert_eq!(
+            encoded(None, Some(" -Ca=1  -Cb=2 "), &folders, &["-Zx"]),
+            "-Ca=1\x1f-Cb=2\x1f--remap-path-prefix=C:\\Users\\someone\\a b\\.cargo=/cargo\x1f-Zx"
+        );
+        // The encoded options of the environment win over RUSTFLAGS, as they do for cargo.
+        let from_encoded = encoded(Some("-Ca=1 x\x1f-Cb=2"), Some("-Cignored"), &folders, &[]);
+        assert!(
+            from_encoded.starts_with("-Ca=1 x\x1f-Cb=2\x1f--remap")
+                && !from_encoded.contains("ignored"),
+            "{from_encoded:?}"
+        );
+        assert_eq!(encoded(None, None, &[], &["-Zx"]), "-Zx");
     }
 }

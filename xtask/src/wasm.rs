@@ -284,9 +284,15 @@ fn run_tool(root: &Path, program: &Path, args: &[&str]) -> anyhow::Result<()> {
 /// Runs cargo and returns the module it wrote. Cargo says where: a different `target-dir` in the
 /// settings of the machine needs no guessing.
 fn cargo_build(root: &Path, module: Module) -> anyhow::Result<PathBuf> {
-    // No folder of this computer in the module (SEC-BUILD-PATHS).
-    let existing =
-        crate::build_paths::with_rustflags(root, &std::env::var("RUSTFLAGS").unwrap_or_default())?;
+    // No folder of this computer in the module (SEC-BUILD-PATHS). The options go to cargo split
+    // at `\x1f`, so a folder with a space in its path keeps it.
+    let flags = crate::build_paths::encoded_rustflags(
+        root,
+        &[PANIC_AT_ONCE, NO_DEBUG_TEXT, NO_PANIC_PLACE]
+            .iter()
+            .flat_map(|options| options.split_whitespace())
+            .collect::<Vec<_>>(),
+    )?;
     let out = tools::command("cargo")
         .args([
             "build",
@@ -303,10 +309,8 @@ fn cargo_build(root: &Path, module: Module) -> anyhow::Result<PathBuf> {
         // panic are unstable features of the compiler; this build asks for them, and no other build of the program
         // does.
         .env("RUSTC_BOOTSTRAP", "1")
-        .env(
-            "RUSTFLAGS",
-            format!("{existing} {PANIC_AT_ONCE} {NO_DEBUG_TEXT} {NO_PANIC_PLACE}").trim(),
-        )
+        .env(crate::build_paths::ENCODED_RUSTFLAGS, flags)
+        .env_remove(crate::build_paths::RUSTFLAGS)
         .current_dir(root)
         .stderr(Stdio::inherit())
         .output()
