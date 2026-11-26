@@ -1,8 +1,7 @@
 import type { Schema } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
-import { IssueId, part, partOf } from "@bugaboo/ui";
+import { part, partOf } from "@bugaboo/ui";
 
-import { ChangeEntry } from "../history/index.ts";
 import { lineOf, SlimIssueList } from "../issues/index.ts";
 
 /** No issue of the slim list is the open one: a box only lists them. */
@@ -18,27 +17,5 @@ export function Results({ issues }: { readonly issues: readonly Schema<"IssueIte
     <p {...partOf(part.muted)}>{t("dashboards.no-issues")}</p>
   ) : (
     <SlimIssueList lines={lines} open={noneOpen} />
-  );
-}
-
-/** What tells the changes of the box apart: the issue and the event of its first entry. */
-function changeKey(change: Schema<"RecentChangeBody">): string {
-  return [change.issue, change.entries[0]?.event ?? ""].join(" ");
-}
-
-/** *Recent changes*: the newest changes of the issues of the search, each issue with its entries as its history words them. */
-export function Changes({ changes }: { readonly changes: readonly Schema<"RecentChangeBody">[] }) {
-  if (changes.length === 0) {
-    return <p {...partOf(part.muted)}>{t("dashboards.no-changes")}</p>;
-  }
-  return (
-    <ul {...partOf(part.list)}>
-      {changes.map((change) => (
-        <li key={changeKey(change)}>
-          <IssueId id={change.issue} />
-          <ChangeEntry items={change.entries} />
-        </li>
-      ))}
-    </ul>
   );
 }

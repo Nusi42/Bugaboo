@@ -1,12 +1,21 @@
 import { Alert, alertTone, DelayedSkeleton } from "@bugaboo/ui";
+import { lazyRouteComponent } from "@tanstack/react-router";
+import { Suspense } from "react";
 
 import { messageOf } from "../../shared/errors.ts";
 import { TimeSlot, timePlace } from "../shell/index.ts";
-import { SmallTimeline } from "../timeline/index.ts";
 import { boxKind, type Box, type BoxAnswer } from "./dashboards.ts";
-import { Changes, Results } from "./IssueBoxes.tsx";
+import { Results } from "./IssueBoxes.tsx";
 import { NumbersChart, TimeNumbers } from "./TotalsChart.tsx";
 import { WeekChart } from "./WeekChart.tsx";
+
+/**
+ * The boxes that draw with a screen of their own are loaded when such a box is shown: the phone list of the timeline and
+ * the sentences of the history. *Home* starts with neither, and they bring much with them that a slow phone would load
+ * before *Home* shows.
+ */
+const SmallTimeline = lazyRouteComponent(() => import("../timeline/index.ts"), "SmallTimeline");
+const Changes = lazyRouteComponent(() => import("./ChangesBox.tsx"), "Changes");
 
 /** What a box shows of the answer of its read, by the kind of the answer and of the box. */
 function Answered({ box, answer }: { readonly box: Box; readonly answer: BoxAnswer }) {
@@ -24,13 +33,21 @@ function Answered({ box, answer }: { readonly box: Box; readonly answer: BoxAnsw
     return <WeekChart box={box} entries={answer.entries} />;
   }
   if (answer.answer === "timeline") {
-    return <SmallTimeline page={answer.timeline} />;
+    return (
+      <Suspense fallback={<DelayedSkeleton lines={3} />}>
+        <SmallTimeline page={answer.timeline} />
+      </Suspense>
+    );
   }
   if (answer.answer === "timer") {
     // The timer's own block, which reads the timer itself and is the same wherever it stands.
     return <TimeSlot place={timePlace.home} />;
   }
-  return <Changes changes={answer.changes} />;
+  return (
+    <Suspense fallback={<DelayedSkeleton lines={3} />}>
+      <Changes changes={answer.changes} />
+    </Suspense>
+  );
 }
 
 export interface BoxContentProps {
