@@ -14,8 +14,10 @@ import { useSearchNavigation, useSearchState } from "./search-address.ts";
 // (coding-standards section 6).
 
 const SearchScreen = lazyRouteComponent(() => import("../features/search/index.ts"), "SearchPage");
+// The page of a dashboard comes from its own file, which the entry of the dashboards loads: one lazy step, so the
+// loader of the route has the page before it opens.
 const DashboardScreen = lazyRouteComponent(
-  () => import("../features/dashboards/index.ts"),
+  async () => (await import("../features/dashboards/index.ts")).loadDashboardPage(),
   "DashboardPage",
 );
 const SavedSearchScreen = lazyRouteComponent(

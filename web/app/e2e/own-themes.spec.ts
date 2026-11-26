@@ -26,7 +26,10 @@ test.beforeEach(async ({ server }) => {
   await forgetChoices(server);
 });
 
-test("thm_04 the page uses an own theme without an inline style", async ({ page, server }) => {
+test("thm_04 the page uses an own theme with no inline style but the run-time variables", async ({
+  page,
+  server,
+}) => {
   await watchThePolicy(page);
   const theme = await chooseOwnDarkTheme(server, ada, { accent: { value: ACCENT } });
 
