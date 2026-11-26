@@ -1630,6 +1630,54 @@ pub const BOARD_SHOW_MORE: MessageKey = MessageKey::new("board.show-more");
 /// The message `board.tabs`.
 pub const BOARD_TABS: MessageKey = MessageKey::new("board.tabs");
 
+/// The message `calendar.change-due-date`.
+pub const CALENDAR_CHANGE_DUE_DATE: MessageKey = MessageKey::new("calendar.change-due-date");
+
+/// The message `calendar.change-start-date`.
+pub const CALENDAR_CHANGE_START_DATE: MessageKey = MessageKey::new("calendar.change-start-date");
+
+/// The message `calendar.dates-from`.
+pub const CALENDAR_DATES_FROM: MessageKey = MessageKey::new("calendar.dates-from");
+
+/// The message `calendar.due-date`.
+pub const CALENDAR_DUE_DATE: MessageKey = MessageKey::new("calendar.due-date");
+
+/// The message `calendar.earlier`.
+pub const CALENDAR_EARLIER: MessageKey = MessageKey::new("calendar.earlier");
+
+/// The message `calendar.empty`.
+pub const CALENDAR_EMPTY: MessageKey = MessageKey::new("calendar.empty");
+
+/// The message `calendar.keys`.
+pub const CALENDAR_KEYS: MessageKey = MessageKey::new("calendar.keys");
+
+/// The message `calendar.later`.
+pub const CALENDAR_LATER: MessageKey = MessageKey::new("calendar.later");
+
+/// The message `calendar.save-day`.
+pub const CALENDAR_SAVE_DAY: MessageKey = MessageKey::new("calendar.save-day");
+
+/// The message `calendar.show-as-calendar`.
+pub const CALENDAR_SHOW_AS_CALENDAR: MessageKey = MessageKey::new("calendar.show-as-calendar");
+
+/// The message `calendar.span`.
+pub const CALENDAR_SPAN: MessageKey = MessageKey::new("calendar.span");
+
+/// The message `calendar.span-month`.
+pub const CALENDAR_SPAN_MONTH: MessageKey = MessageKey::new("calendar.span-month");
+
+/// The message `calendar.span-week`.
+pub const CALENDAR_SPAN_WEEK: MessageKey = MessageKey::new("calendar.span-week");
+
+/// The message `calendar.start-date`.
+pub const CALENDAR_START_DATE: MessageKey = MessageKey::new("calendar.start-date");
+
+/// The message `calendar.today`.
+pub const CALENDAR_TODAY: MessageKey = MessageKey::new("calendar.today");
+
+/// The message `calendar.too-many`.
+pub const CALENDAR_TOO_MANY: MessageKey = MessageKey::new("calendar.too-many");
+
 /// The message `check-access.all-fields`.
 pub const CHECK_ACCESS_ALL_FIELDS: MessageKey = MessageKey::new("check-access.all-fields");
 
@@ -8752,6 +8800,90 @@ pub const RELEASE_STATE_RELEASED: MessageKey = MessageKey::new("release-state.re
 /// The message `release-state.retired`.
 pub const RELEASE_STATE_RETIRED: MessageKey = MessageKey::new("release-state.retired");
 
+/// The message `releases.actions`.
+pub const RELEASES_ACTIONS: MessageKey = MessageKey::new("releases.actions");
+
+/// The message `releases.back-to-planned`.
+pub const RELEASES_BACK_TO_PLANNED: MessageKey = MessageKey::new("releases.back-to-planned");
+
+/// The message `releases.change`.
+pub const RELEASES_CHANGE: MessageKey = MessageKey::new("releases.change");
+
+/// The message `releases.changed-first`.
+pub const RELEASES_CHANGED_FIRST: MessageKey = MessageKey::new("releases.changed-first");
+
+/// The message `releases.choose`.
+pub const RELEASES_CHOOSE: MessageKey = MessageKey::new("releases.choose");
+
+/// The message `releases.choose-one`.
+pub const RELEASES_CHOOSE_ONE: MessageKey = MessageKey::new("releases.choose-one");
+
+/// The message `releases.create`.
+pub const RELEASES_CREATE: MessageKey = MessageKey::new("releases.create");
+
+/// The message `releases.create-it`.
+pub const RELEASES_CREATE_IT: MessageKey = MessageKey::new("releases.create-it");
+
+/// The message `releases.delete`.
+pub const RELEASES_DELETE: MessageKey = MessageKey::new("releases.delete");
+
+/// The message `releases.intro`.
+pub const RELEASES_INTRO: MessageKey = MessageKey::new("releases.intro");
+
+/// The message `releases.issues`.
+pub const RELEASES_ISSUES: MessageKey = MessageKey::new("releases.issues");
+
+/// The message `releases.list`.
+pub const RELEASES_LIST: MessageKey = MessageKey::new("releases.list");
+
+/// The message `releases.mark-released`.
+pub const RELEASES_MARK_RELEASED: MessageKey = MessageKey::new("releases.mark-released");
+
+/// The message `releases.name`.
+pub const RELEASES_NAME: MessageKey = MessageKey::new("releases.name");
+
+/// The message `releases.nav`.
+pub const RELEASES_NAV: MessageKey = MessageKey::new("releases.nav");
+
+/// The message `releases.no-date`.
+pub const RELEASES_NO_DATE: MessageKey = MessageKey::new("releases.no-date");
+
+/// The message `releases.none`.
+pub const RELEASES_NONE: MessageKey = MessageKey::new("releases.none");
+
+/// The message `releases.not-read`.
+pub const RELEASES_NOT_READ: MessageKey = MessageKey::new("releases.not-read");
+
+/// The message `releases.nothing`.
+pub const RELEASES_NOTHING: MessageKey = MessageKey::new("releases.nothing");
+
+/// The message `releases.reason`.
+pub const RELEASES_REASON: MessageKey = MessageKey::new("releases.reason");
+
+/// The message `releases.reason-help`.
+pub const RELEASES_REASON_HELP: MessageKey = MessageKey::new("releases.reason-help");
+
+/// The message `releases.release-date`.
+pub const RELEASES_RELEASE_DATE: MessageKey = MessageKey::new("releases.release-date");
+
+/// The message `releases.released-on`.
+pub const RELEASES_RELEASED_ON: MessageKey = MessageKey::new("releases.released-on");
+
+/// The message `releases.retire`.
+pub const RELEASES_RETIRE: MessageKey = MessageKey::new("releases.retire");
+
+/// The message `releases.retired-note`.
+pub const RELEASES_RETIRED_NOTE: MessageKey = MessageKey::new("releases.retired-note");
+
+/// The message `releases.save`.
+pub const RELEASES_SAVE: MessageKey = MessageKey::new("releases.save");
+
+/// The message `releases.search`.
+pub const RELEASES_SEARCH: MessageKey = MessageKey::new("releases.search");
+
+/// The message `releases.take-out`.
+pub const RELEASES_TAKE_OUT: MessageKey = MessageKey::new("releases.take-out");
+
 /// The message `removal.deleted-now`.
 pub const REMOVAL_DELETED_NOW: MessageKey = MessageKey::new("removal.deleted-now");
 
@@ -14944,6 +15076,222 @@ pub fn board_tab(values: BoardTab<'_>) -> Message {
         vec![
             ("count", Value::Number(values.count)),
             ("name", Value::Text(values.name.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `calendar.carried`, by name.
+#[derive(Clone, Copy)]
+pub struct CalendarCarried<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+}
+
+/// The message `calendar.carried`.
+#[must_use]
+pub fn calendar_carried(values: CalendarCarried<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("calendar.carried"),
+        vec![
+            ("day", Value::Text(values.day.to_string())),
+            ("key", Value::Text(values.key.to_string())),
+        ],
+    )
+}
+
+/// The message `calendar.change-own-date`.
+#[must_use]
+pub fn calendar_change_own_date(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("calendar.change-own-date"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The values of the message `calendar.change-title`, by name.
+#[derive(Clone, Copy)]
+pub struct CalendarChangeTitle<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+}
+
+/// The message `calendar.change-title`.
+#[must_use]
+pub fn calendar_change_title(values: CalendarChangeTitle<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("calendar.change-title"),
+        vec![
+            ("field", Value::Text(values.field.to_string())),
+            ("key", Value::Text(values.key.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `calendar.goal-due`, by name.
+#[derive(Clone, Copy)]
+pub struct CalendarGoalDue<'a> {
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+    /// The value of `{title}`.
+    pub title: &'a dyn std::fmt::Display,
+}
+
+/// The message `calendar.goal-due`.
+#[must_use]
+pub fn calendar_goal_due(values: CalendarGoalDue<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("calendar.goal-due"),
+        vec![
+            ("key", Value::Text(values.key.to_string())),
+            ("title", Value::Text(values.title.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `calendar.locked`, by name.
+#[derive(Clone, Copy)]
+pub struct CalendarLocked<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+}
+
+/// The message `calendar.locked`.
+#[must_use]
+pub fn calendar_locked(values: CalendarLocked<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("calendar.locked"),
+        vec![
+            ("field", Value::Text(values.field.to_string())),
+            ("key", Value::Text(values.key.to_string())),
+        ],
+    )
+}
+
+/// The message `calendar.locked-note`.
+#[must_use]
+pub fn calendar_locked_note(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("calendar.locked-note"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `calendar.more`.
+#[must_use]
+pub fn calendar_more(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("calendar.more"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The values of the message `calendar.more-label`, by name.
+#[derive(Clone, Copy)]
+pub struct CalendarMoreLabel<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+}
+
+/// The message `calendar.more-label`.
+#[must_use]
+pub fn calendar_more_label(values: CalendarMoreLabel<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("calendar.more-label"),
+        vec![
+            ("count", Value::Number(values.count)),
+            ("day", Value::Text(values.day.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `calendar.moved`, by name.
+#[derive(Clone, Copy)]
+pub struct CalendarMoved<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+}
+
+/// The message `calendar.moved`.
+#[must_use]
+pub fn calendar_moved(values: CalendarMoved<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("calendar.moved"),
+        vec![
+            ("day", Value::Text(values.day.to_string())),
+            ("field", Value::Text(values.field.to_string())),
+            ("key", Value::Text(values.key.to_string())),
+        ],
+    )
+}
+
+/// The message `calendar.release-mark`.
+#[must_use]
+pub fn calendar_release_mark(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("calendar.release-mark"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `calendar.release-on`.
+#[must_use]
+pub fn calendar_release_on(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("calendar.release-on"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The values of the message `calendar.week-day`, by name.
+#[derive(Clone, Copy)]
+pub struct CalendarWeekDay<'a> {
+    /// The value of `{day}`.
+    pub day: &'a dyn std::fmt::Display,
+    /// The value of `{weekday}`.
+    pub weekday: &'a dyn std::fmt::Display,
+}
+
+/// The message `calendar.week-day`.
+#[must_use]
+pub fn calendar_week_day(values: CalendarWeekDay<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("calendar.week-day"),
+        vec![
+            ("day", Value::Text(values.day.to_string())),
+            ("weekday", Value::Text(values.weekday.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `calendar.week-range`, by name.
+#[derive(Clone, Copy)]
+pub struct CalendarWeekRange<'a> {
+    /// The value of `{first}`.
+    pub first: &'a dyn std::fmt::Display,
+    /// The value of `{last}`.
+    pub last: &'a dyn std::fmt::Display,
+}
+
+/// The message `calendar.week-range`.
+#[must_use]
+pub fn calendar_week_range(values: CalendarWeekRange<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("calendar.week-range"),
+        vec![
+            ("first", Value::Text(values.first.to_string())),
+            ("last", Value::Text(values.last.to_string())),
         ],
     )
 }
@@ -21520,6 +21868,174 @@ pub fn relation_map_zoom_level(percent: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("relation-map.zoom-level"),
         vec![("percent", Value::Text(percent.to_string()))],
+    )
+}
+
+/// The message `releases.change-name`.
+#[must_use]
+pub fn releases_change_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("releases.change-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `releases.choose-name`.
+#[must_use]
+pub fn releases_choose_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("releases.choose-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `releases.choose-one-for`.
+#[must_use]
+pub fn releases_choose_one_for(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("releases.choose-one-for"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `releases.create-title`.
+#[must_use]
+pub fn releases_create_title(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("releases.create-title"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The message `releases.deleted`.
+#[must_use]
+pub fn releases_deleted(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("releases.deleted"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The values of the message `releases.from-project`, by name.
+#[derive(Clone, Copy)]
+pub struct ReleasesFromProject<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
+}
+
+/// The message `releases.from-project`.
+#[must_use]
+pub fn releases_from_project(values: ReleasesFromProject<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("releases.from-project"),
+        vec![
+            ("name", Value::Text(values.name.to_string())),
+            ("project", Value::Text(values.project.to_string())),
+        ],
+    )
+}
+
+/// The message `releases.issues-link`.
+#[must_use]
+pub fn releases_issues_link(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("releases.issues-link"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `releases.not-offered-here`.
+#[must_use]
+pub fn releases_not_offered_here(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("releases.not-offered-here"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The values of the message `releases.state-heading`, by name.
+#[derive(Clone, Copy)]
+pub struct ReleasesStateHeading<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{state}`.
+    pub state: &'a dyn std::fmt::Display,
+}
+
+/// The message `releases.state-heading`.
+#[must_use]
+pub fn releases_state_heading(values: ReleasesStateHeading<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("releases.state-heading"),
+        vec![
+            ("count", Value::Number(values.count)),
+            ("state", Value::Text(values.state.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `releases.state-line`, by name.
+#[derive(Clone, Copy)]
+pub struct ReleasesStateLine<'a> {
+    /// The value of `{found}`.
+    pub found: i64,
+    /// The value of `{planned}`.
+    pub planned: i64,
+    /// The value of `{state}`.
+    pub state: &'a dyn std::fmt::Display,
+}
+
+/// The message `releases.state-line`.
+#[must_use]
+pub fn releases_state_line(values: ReleasesStateLine<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("releases.state-line"),
+        vec![
+            ("found", Value::Number(values.found)),
+            ("planned", Value::Number(values.planned)),
+            ("state", Value::Text(values.state.to_string())),
+        ],
+    )
+}
+
+/// The message `releases.take-out-name`.
+#[must_use]
+pub fn releases_take_out_name(name: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("releases.take-out-name"),
+        vec![("name", Value::Text(name.to_string()))],
+    )
+}
+
+/// The message `releases.title`.
+#[must_use]
+pub fn releases_title(project: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("releases.title"),
+        vec![("project", Value::Text(project.to_string()))],
+    )
+}
+
+/// The values of the message `releases.window-title`, by name.
+#[derive(Clone, Copy)]
+pub struct ReleasesWindowTitle<'a> {
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+    /// The value of `{project}`.
+    pub project: &'a dyn std::fmt::Display,
+}
+
+/// The message `releases.window-title`.
+#[must_use]
+pub fn releases_window_title(values: ReleasesWindowTitle<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("releases.window-title"),
+        vec![
+            ("name", Value::Text(values.name.to_string())),
+            ("project", Value::Text(values.project.to_string())),
+        ],
     )
 }
 

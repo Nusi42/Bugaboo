@@ -25,6 +25,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [Time](time/README.md): the timer, adding time by hand, and the work day
 - [The timeline](planning/timeline.md): a search shown as bars over its days, with dependencies, goals and *Not scheduled yet*, changed by dragging or by the keyboard
 - [The board](planning/board.md): a search shown as cards in columns, moved by dragging, by keys or by *Move to …*, with card limits, rows and *Customize*
+- [The calendar](planning/calendar.md): a search shown on the days it is due as a month or a week, issues moved by dragging, by a box or by the keyboard, and goals and releases as marks
 - [People on the timeline](planning/people-on-the-timeline.md): the person on each bar, *Group by person*, days without work, *Plan by effort*, the card of a bar, plan warnings and the timeline on a phone
 - [Agents](agents/README.md): handing issues over, agent work on an issue, the review, and standing rules
 - [AI in Bugaboo](ai/README.md): [the AI guide](ai/literacy.md), [the assistant](ai/assistant.md), [AI apps](ai/ai-apps.md) and [the numbers](ai/numbers.md)

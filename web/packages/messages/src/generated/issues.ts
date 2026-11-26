@@ -159,6 +159,9 @@ export const messages = {
   "issues.time-factor-nothing": "Type how long it takes, or a time factor.",
   "issues.time-factor-estimate": "Estimate {estimate}",
   "issues.time-factor-save": "Save the time factor",
+  "releases.not-offered-here": "{name} (not offered here)",
+  "releases.choose-one": "Choose a release",
+  "releases.choose-one-for": "Choose a release for {field}",
 } as const;
 
 register(messages);

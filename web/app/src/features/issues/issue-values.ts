@@ -1,4 +1,4 @@
-import { priorityWords, statusGroupWords, type Schema } from "@bugaboo/api-client";
+import type { Schema } from "@bugaboo/api-client";
 import { t, type MessageKey } from "@bugaboo/messages";
 
 import { dateField } from "../../shared/date-fields.ts";
@@ -6,9 +6,9 @@ import { formatCalendarDay } from "../../shared/format.ts";
 import { listText } from "../../shared/list-text.ts";
 import { minutesText, timeLeftOf } from "./time-words.ts";
 import { namedPerson, type NamedPerson } from "../../shared/person.ts";
-import { known, wordOf } from "../../shared/present.ts";
+import type { ReleaseRef } from "../releases/index.ts";
+import { known } from "../../shared/present.ts";
 import type { IssueDetail } from "./slots.ts";
-import { isRecord } from "../../shared/is-record.ts";
 
 /** The short values of an issue a person changes in place. The description is long text: it has a lock. */
 export interface IssueValues {
@@ -28,15 +28,24 @@ export interface IssueValues {
   readonly dueDate?: string | null;
   /** *Time left* as typed, in whole minutes; `null` takes it away, so it is worked out again. */
   readonly timeLeft?: number | null;
+  /** The releases it was found in from now on: all of them. */
+  readonly foundInRelease?: readonly ReleaseRef[];
+  /** The release its fix is planned for; `null` takes it away. */
+  readonly plannedForRelease?: ReleaseRef | null;
 }
 
 /**
  * What the request of a change names: a status by its key and people by their IDs only, so a caller
  * that holds no more (the way back of the assistant) never has to make up a name or a group.
  */
-export interface IssueRequestValues extends Omit<IssueValues, "status" | "assignedTo"> {
+export interface IssueRequestValues extends Omit<
+  IssueValues,
+  "status" | "assignedTo" | "foundInRelease" | "plannedForRelease"
+> {
   readonly status?: Pick<Schema<"StatusRef">, "key">;
   readonly assignedTo?: readonly Pick<NamedPerson, "id">[];
+  readonly foundInRelease?: readonly Pick<ReleaseRef, "id">[];
+  readonly plannedForRelease?: Pick<ReleaseRef, "id"> | null;
 }
 
 /**
@@ -65,6 +74,12 @@ export function rowFieldOf(values: IssueValues): RowField | undefined {
   }
   if (values.timeLeft !== undefined) {
     return "time-left";
+  }
+  if (values.foundInRelease !== undefined) {
+    return "found-in-release";
+  }
+  if (values.plannedForRelease !== undefined) {
+    return "planned-for-release";
   }
   // One own field changed: its row says it. Several at once have no one row.
   const own = Object.keys(values.own ?? {});
@@ -114,6 +129,12 @@ export function after(before: IssueDetail | undefined, edit: IssueEdit): IssueDe
           time_left: values.timeLeft,
           time_left_worked_out: values.timeLeft === null ? null : false,
         }),
+    ...(values.foundInRelease === undefined
+      ? {}
+      : { found_in_release: [...values.foundInRelease] }),
+    ...(values.plannedForRelease === undefined
+      ? {}
+      : { planned_for_release: values.plannedForRelease }),
     version: edit.version + 1,
   };
   return { ...before, issue };
@@ -178,6 +199,12 @@ export function valuesBefore(detail: IssueDetail, values: IssueValues): IssueVal
     ...(values.startDate === undefined ? {} : { startDate: known(issue.start_date) ?? null }),
     ...(values.dueDate === undefined ? {} : { dueDate: known(issue.due_date) ?? null }),
     ...(values.timeLeft === undefined ? {} : { timeLeft: typedLeft(issue) }),
+    ...(values.foundInRelease === undefined
+      ? {}
+      : { foundInRelease: issue.found_in_release ?? [] }),
+    ...(values.plannedForRelease === undefined
+      ? {}
+      : { plannedForRelease: issue.planned_for_release ?? null }),
   };
 }
 
@@ -206,6 +233,20 @@ function daySaid(field: MessageKey, day: string | null | undefined): string | un
     : said(field, formatCalendarDay(day));
 }
 
+/** A change of the releases an issue names in a sentence ("Found in release changed to 2.4, 2.5."); none when it did not change. */
+function releasesSaid(
+  field: MessageKey,
+  releases: readonly (ReleaseRef | null)[] | undefined,
+): string | undefined {
+  if (releases === undefined) {
+    return undefined;
+  }
+  const names = releases.flatMap((release) => release?.name ?? []);
+  return names.length === 0
+    ? t("issues.cleared", { field: t(field) })
+    : said(field, listText(names));
+}
+
 /** What a change says in a sentence, for *Undo*: "Priority changed to High." */
 export function undoSentence(values: IssueValues): string {
   const parts: (string | undefined)[] = [
@@ -228,40 +269,11 @@ export function undoSentence(values: IssueValues): string {
     lengthSaid("issue-field.time-left", values.timeLeft),
     daySaid("issue-field.start-date", values.startDate),
     daySaid("issue-field.due-date", values.dueDate),
+    releasesSaid("issue-field.found-in-release", values.foundInRelease),
+    releasesSaid(
+      "issue-field.planned-for-release",
+      values.plannedForRelease === undefined ? undefined : [values.plannedForRelease],
+    ),
   ];
   return parts.filter((part): part is string => part !== undefined).join(" ");
-}
-
-/** A status in a change a block asks for: a key, a name and a group, as the server shows one. */
-function statusOf(value: unknown): Schema<"StatusRef"> | undefined {
-  if (
-    typeof value !== "object" ||
-    value === null ||
-    !("key" in value) ||
-    !("name" in value) ||
-    !("status_group" in value)
-  ) {
-    return undefined;
-  }
-  const group = statusGroupWords.find((word) => word === value.status_group);
-  return typeof value.key === "string" && typeof value.name === "string" && group !== undefined
-    ? { key: value.key, name: value.name, status_group: group }
-    : undefined;
-}
-
-/**
- * The short values in a change that a block of another package asks for (`IssueBlockProps.onChange`):
- * the ones the page knows are taken, the others are left to the package that made the block.
- */
-export function valuesOf(change: Readonly<Record<string, unknown>>): IssueValues {
-  const title = change["title"];
-  const status = statusOf(change["status"]);
-  const priority = wordOf(priorityWords, change["priority"]);
-  const own = change["fields"];
-  return {
-    ...(isRecord(own) ? { own: Object.fromEntries(Object.entries(own)) } : {}),
-    ...(typeof title === "string" ? { title } : {}),
-    ...(status === undefined ? {} : { status }),
-    ...(priority === undefined ? {} : { priority }),
-  };
 }

@@ -5,6 +5,8 @@ import { dateField } from "../../shared/date-fields.ts";
 import type { NamedPerson } from "../../shared/person.ts";
 import { forApi } from "../../shared/reference.ts";
 import { withMistake as withBoxMistake, type Mistakes } from "../../shared/mistakes.ts";
+import type { ReleaseRef } from "../releases/index.ts";
+import { releaseField } from "./release-fields.ts";
 
 /** What a person has filled in on the form of a new issue. */
 export interface NewIssueValues {
@@ -21,6 +23,10 @@ export interface NewIssueValues {
   readonly dueDate: string;
   /** *Estimated time* in whole minutes; none until one is typed. */
   readonly estimatedTime: number | null;
+  /** The releases it was found in. */
+  readonly foundInRelease: readonly ReleaseRef[];
+  /** The release its fix is planned for; none until one is chosen. */
+  readonly plannedForRelease: ReleaseRef | null;
   /**
    * The fields whose box holds text that is no value (a length or a day half typed), by their words:
    * the form is not sent until they are mended.
@@ -40,6 +46,8 @@ export const emptyForm: NewIssueValues = {
   startDate: "",
   dueDate: "",
   estimatedTime: null,
+  foundInRelease: [],
+  plannedForRelease: null,
   mistakes: [],
   fields: {},
 };
@@ -53,6 +61,8 @@ export function hasWriting(values: NewIssueValues): boolean {
     values.startDate !== "" ||
     values.dueDate !== "" ||
     values.estimatedTime !== null ||
+    values.foundInRelease.length > 0 ||
+    values.plannedForRelease !== null ||
     Object.keys(values.fields).length > 0
   );
 }
@@ -87,6 +97,28 @@ function dayOf(found: unknown): string {
   return typeof found === "string" ? found : "";
 }
 
+/** A release of a draft: its ID and its name, which is all the form needs of it. */
+function releaseOf(found: unknown): ReleaseRef | undefined {
+  if (typeof found !== "object" || found === null) {
+    return undefined;
+  }
+  const id: unknown = Reflect.get(found, "id");
+  const name: unknown = Reflect.get(found, "name");
+  return typeof id === "string" && typeof name === "string"
+    ? { id, name, state: "planned", offered: true }
+    : undefined;
+}
+
+/** The releases of a draft: a list of them, and nothing for what is not one. */
+function releasesOf(found: unknown): readonly ReleaseRef[] {
+  return Array.isArray(found)
+    ? found.flatMap((each: unknown): ReleaseRef[] => {
+        const release = releaseOf(each);
+        return release === undefined ? [] : [release];
+      })
+    : [];
+}
+
 /** The values of own fields of a draft: an object, or nothing. */
 function fieldsOf(found: unknown): Readonly<Record<string, unknown>> {
   return typeof found === "object" && found !== null && !Array.isArray(found)
@@ -118,6 +150,8 @@ export function decodeDraft(text: string): NewIssueValues | undefined {
           startDate: dayOf(read("startDate")),
           dueDate: dayOf(read("dueDate")),
           estimatedTime: estimateOf(read("estimatedTime")),
+          foundInRelease: releasesOf(read("foundInRelease")),
+          plannedForRelease: releaseOf(read("plannedForRelease")) ?? null,
           mistakes: [],
           fields: fieldsOf(read("fields")),
         }
@@ -183,6 +217,10 @@ export function forForm(values: NewIssueValues, shows: (field: string) => boolea
     startDate: shows(dateField.start) ? values.startDate : emptyForm.startDate,
     dueDate: shows(dateField.due) ? values.dueDate : emptyForm.dueDate,
     estimatedTime: shows("estimated-time") ? values.estimatedTime : emptyForm.estimatedTime,
+    foundInRelease: shows(releaseField.found) ? values.foundInRelease : emptyForm.foundInRelease,
+    plannedForRelease: shows(releaseField.planned)
+      ? values.plannedForRelease
+      : emptyForm.plannedForRelease,
     mistakes: values.mistakes.filter((field) => shows(field)),
     fields: fieldsWhere(values.fields, (key) => shows(key)),
   };
@@ -208,6 +246,12 @@ export function bodyOf(values: NewIssueValues) {
     ...(values.startDate === "" ? {} : { start_date: values.startDate }),
     ...(values.dueDate === "" ? {} : { due_date: values.dueDate }),
     ...(values.estimatedTime === null ? {} : { estimated_time: values.estimatedTime }),
+    ...(values.foundInRelease.length === 0
+      ? {}
+      : { found_in_release: values.foundInRelease.map((release) => release.id) }),
+    ...(values.plannedForRelease === null
+      ? {}
+      : { planned_for_release: values.plannedForRelease.id }),
     ...(Object.keys(fields).length === 0 ? {} : { fields }),
   };
 }

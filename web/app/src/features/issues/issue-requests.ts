@@ -1,10 +1,35 @@
 import { api } from "../../shared/api.ts";
 import { inOrder } from "../../shared/in-order.ts";
 import { queryClient } from "../../shared/query-client.ts";
+import { releaseKeys } from "../../shared/release-keys.ts";
 import { queryKeys, refreshHistory, reread } from "../../shared/query-keys.ts";
 import { versionOf } from "../../shared/version.ts";
 import { isDetail, type IssueEdit, type IssueRequestValues } from "./issue-values.ts";
 import { isTimeFactorKey, keepTimeFactor } from "./time-factor.ts";
+
+/** The body of the change of an issue: the version it is made on, and each value that changes. */
+function requestBody(version: number, values: IssueRequestValues) {
+  return {
+    version,
+    ...(values.title === undefined ? {} : { title: values.title }),
+    ...(values.status === undefined ? {} : { status: values.status.key }),
+    ...(values.priority === undefined ? {} : { priority: values.priority }),
+    ...(values.assignedTo === undefined
+      ? {}
+      : { assigned_to: values.assignedTo.map((person) => person.id) }),
+    ...(values.own === undefined ? {} : { fields: values.own }),
+    ...(values.estimatedTime === undefined ? {} : { estimated_time: values.estimatedTime }),
+    ...(values.startDate === undefined ? {} : { start_date: values.startDate }),
+    ...(values.dueDate === undefined ? {} : { due_date: values.dueDate }),
+    ...(values.timeLeft === undefined ? {} : { time_left: values.timeLeft }),
+    ...(values.foundInRelease === undefined
+      ? {}
+      : { found_in_release: values.foundInRelease.map((release) => release.id) }),
+    ...(values.plannedForRelease === undefined
+      ? {}
+      : { planned_for_release: values.plannedForRelease?.id ?? null }),
+  };
+}
 
 /**
  * Asks the server for the change, after the changes that were asked for before it. Answers with the
@@ -20,20 +45,7 @@ export async function sendChange(
   },
 ): Promise<number | undefined> {
   const { values, version } = edit;
-  const body = {
-    version,
-    ...(values.title === undefined ? {} : { title: values.title }),
-    ...(values.status === undefined ? {} : { status: values.status.key }),
-    ...(values.priority === undefined ? {} : { priority: values.priority }),
-    ...(values.assignedTo === undefined
-      ? {}
-      : { assigned_to: values.assignedTo.map((person) => person.id) }),
-    ...(values.own === undefined ? {} : { fields: values.own }),
-    ...(values.estimatedTime === undefined ? {} : { estimated_time: values.estimatedTime }),
-    ...(values.startDate === undefined ? {} : { start_date: values.startDate }),
-    ...(values.dueDate === undefined ? {} : { due_date: values.dueDate }),
-    ...(values.timeLeft === undefined ? {} : { time_left: values.timeLeft }),
-  };
+  const body = requestBody(version, values);
   // One after the other: each change is made on the version the one before it has just made.
   const answer = await inOrder(`issue:${id}`, () =>
     api.client.PATCH("/api/v1/issues/{issue}", {
@@ -50,6 +62,10 @@ export async function sendChange(
     keepTimeFactor(readable, factor);
   }
   void queryClient.invalidateQueries({ queryKey: queryKeys.issues.lists() });
+  // A release field of the issue changed: the counts of the page *Releases* are read again.
+  if (edit.values.foundInRelease !== undefined || edit.values.plannedForRelease !== undefined) {
+    void queryClient.invalidateQueries({ queryKey: releaseKeys.all });
+  }
   // A length of this issue counts in the totals of the issues above it. The time factor the answer
   // told is not asked for again.
   void queryClient.invalidateQueries({

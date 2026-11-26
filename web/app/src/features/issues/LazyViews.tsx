@@ -16,6 +16,11 @@ const BoardResults = lazy(async () => ({
   default: (await import("../board/index.ts")).BoardResults,
 }));
 
+// The calendar is its own chunk too, loaded when a search is first shown as one.
+const CalendarResults = lazy(async () => ({
+  default: (await import("../calendar/index.ts")).CalendarResults,
+}));
+
 // The relation map is its own chunk, loaded when a search is first shown as one (coding-standards §6).
 const SearchMap = lazy(async () => ({
   default: (await import("../relation-map/index.ts")).SearchMap,
@@ -45,13 +50,27 @@ export interface ChunkedViewProps {
   readonly language: SearchLanguage;
 }
 
-/** *Show as › Timeline* (UX §4.7), *Board* (UX §4.6) or *Map* (UX §4.15), whichever the view is. */
+/** *Show as › Timeline* (UX §4.7), *Board* (UX §4.6), *Map* (UX §4.15) or *Calendar* (UX §4.16), whichever the view is. */
 export function ChunkedView({ results, view, fields, language }: ChunkedViewProps) {
   const { text, within, onView } = results;
   if (view.kind === "map") {
     return (
       <WhileLoading>
         <SearchMap text={text} within={within} view={view} onView={onView} fields={fields} />
+      </WhileLoading>
+    );
+  }
+  if (view.kind === "calendar") {
+    return (
+      <WhileLoading>
+        <CalendarResults
+          text={text}
+          within={within}
+          view={view}
+          onView={onView}
+          fields={fields}
+          language={language}
+        />
       </WhileLoading>
     );
   }

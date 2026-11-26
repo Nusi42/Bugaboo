@@ -28,6 +28,8 @@
 //!   as `src/files.generated.ts`;
 //! - the highest card limit of a board (`crates/bb-core/src/saved_search.rs`) is written as
 //!   `src/board.generated.ts`;
+//! - the most days one answer of the calendar covers (`crates/bb-app/src/calendar/types.rs`) is
+//!   written as `src/calendar.generated.ts`;
 //! - the most issues one change to many issues names (`crates/bb-core/src/many_changes.rs`) is
 //!   written as `src/many-changes.generated.ts`;
 //! - the most issues one relation map holds (`crates/bb-app/src/relations/map.rs`) is written as
@@ -74,6 +76,7 @@ use crate::repo::Repo;
 use crate::source::{Kind, Source, read_sources};
 use crate::tools;
 
+mod calendar_days;
 mod request_time;
 mod search_mail;
 mod time_zones;
@@ -107,6 +110,8 @@ pub(crate) const BOARD_PATH: &str = "web/packages/api-client/src/board.generated
 pub(crate) const MANY_CHANGES_PATH: &str = "web/packages/api-client/src/many-changes.generated.ts";
 /// The most issues one relation map holds, for the browser app.
 pub(crate) const RELATION_MAP_PATH: &str = "web/packages/api-client/src/relation-map.generated.ts";
+/// The most days one answer of the calendar covers, for the browser app.
+pub(crate) const CALENDAR_PATH: &str = "web/packages/api-client/src/calendar.generated.ts";
 /// The limits of a question to the assistant, for the browser app.
 pub(crate) const ASSISTANT_PATH: &str = "web/packages/api-client/src/assistant.generated.ts";
 /// The numbers of agents the browser app shows or checks.
@@ -153,6 +158,7 @@ pub(crate) fn output_paths() -> Vec<&'static str> {
         BOARD_PATH,
         MANY_CHANGES_PATH,
         RELATION_MAP_PATH,
+        CALENDAR_PATH,
         ASSISTANT_PATH,
         AGENTS_PATH,
         TEXTS_PATH,
@@ -194,8 +200,12 @@ fn board_file(repo: &Repo, sources: &[Source]) -> anyhow::Result<Generated> {
 }
 
 /// The limits the screens keep to: those of a question to the assistant and the highest card limit.
-fn limits_files(repo: &Repo, sources: &[Source]) -> anyhow::Result<[Generated; 2]> {
-    Ok([assistant_file(repo, sources)?, board_file(repo, sources)?])
+fn limits_files(repo: &Repo, sources: &[Source]) -> anyhow::Result<[Generated; 3]> {
+    Ok([
+        assistant_file(repo, sources)?,
+        board_file(repo, sources)?,
+        calendar_days::generated(repo, sources)?,
+    ])
 }
 
 /// The words and numbers the browser takes from the linked crates: what a search names fields by,
@@ -302,10 +312,7 @@ pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
                 &web_constants::notifications(&sources, &spec)?,
             )?,
         ),
-        Generated::new(
-            TIME_ZONES_PATH,
-            format_with_oxfmt(repo, TIME_ZONES_PATH, &time_zones::time_zones())?,
-        ),
+        time_zones::generated(repo)?,
         Generated::new(COOKIES_PAGE, cookies_page(&cookies.cookies, &purposes)?),
     ];
     files.extend(words_of_linked_crates(repo)?);

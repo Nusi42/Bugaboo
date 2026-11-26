@@ -47,6 +47,15 @@ export const projectPages = {
     needs: null,
     title: (project) => (project === "" ? t("issues.title") : t("issues.page-title", { project })),
   },
+  releases: {
+    path: paths.projectReleases,
+    name: "releases.nav",
+    icon: iconName.release,
+    parent: paths.project,
+    tab: null,
+    needs: null,
+    title: (project) => (project === "" ? t("releases.nav") : t("releases.title", { project })),
+  },
   settings: {
     path: paths.projectSettings,
     name: "projects.settings-link",

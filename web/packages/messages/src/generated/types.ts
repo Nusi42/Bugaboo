@@ -9,6 +9,7 @@ import type { messages as agents } from "./agents.ts";
 import type { messages as assistant } from "./assistant.ts";
 import type { messages as assistantEntry } from "./assistant-entry.ts";
 import type { messages as board } from "./board.ts";
+import type { messages as calendar } from "./calendar.ts";
 import type { messages as connect } from "./connect.ts";
 import type { messages as fields } from "./fields.ts";
 import type { messages as files } from "./files.ts";
@@ -29,6 +30,7 @@ import type { messages as projects } from "./projects.ts";
 import type { messages as relationKinds } from "./relation-kinds.ts";
 import type { messages as relationMap } from "./relation-map.ts";
 import type { messages as relations } from "./relations.ts";
+import type { messages as releases } from "./releases.ts";
 import type { messages as roles } from "./roles.ts";
 import type { messages as runs } from "./runs.ts";
 import type { messages as search } from "./search.ts";
@@ -54,6 +56,7 @@ export type MessageKey =
   | keyof typeof assistant
   | keyof typeof assistantEntry
   | keyof typeof board
+  | keyof typeof calendar
   | keyof typeof connect
   | keyof typeof fields
   | keyof typeof files
@@ -74,6 +77,7 @@ export type MessageKey =
   | keyof typeof relationKinds
   | keyof typeof relationMap
   | keyof typeof relations
+  | keyof typeof releases
   | keyof typeof roles
   | keyof typeof runs
   | keyof typeof search
@@ -270,6 +274,19 @@ export interface MessageArguments {
   "board.sort-by": { field: string | number };
   "board.sorted-by-now": { field: string | number };
   "board.tab": { count: number; name: string | number };
+  "calendar.carried": { day: string | number; key: string | number };
+  "calendar.change-own-date": { name: string | number };
+  "calendar.change-title": { field: string | number; key: string | number };
+  "calendar.goal-due": { key: string | number; title: string | number };
+  "calendar.locked": { field: string | number; key: string | number };
+  "calendar.locked-note": { field: string | number };
+  "calendar.more": { count: number };
+  "calendar.more-label": { count: number; day: string | number };
+  "calendar.moved": { day: string | number; field: string | number; key: string | number };
+  "calendar.release-mark": { name: string | number };
+  "calendar.release-on": { name: string | number };
+  "calendar.week-day": { day: string | number; weekday: string | number };
+  "calendar.week-range": { first: string | number; last: string | number };
   "check-access.for-issue-type": { type: string | number };
   "check-access.level.no-role": { person: string | number };
   "check-access.level.role-organization": { level: string | number; role: string | number };
@@ -786,6 +803,19 @@ export interface MessageArguments {
   "relation-map.too-many": { most: string | number };
   "relation-map.too-many-found": { most: string | number };
   "relation-map.zoom-level": { percent: string | number };
+  "releases.change-name": { name: string | number };
+  "releases.choose-name": { name: string | number };
+  "releases.choose-one-for": { field: string | number };
+  "releases.create-title": { project: string | number };
+  "releases.deleted": { name: string | number };
+  "releases.from-project": { name: string | number; project: string | number };
+  "releases.issues-link": { count: number };
+  "releases.not-offered-here": { name: string | number };
+  "releases.state-heading": { count: number; state: string | number };
+  "releases.state-line": { found: number; planned: number; state: string | number };
+  "releases.take-out-name": { name: string | number };
+  "releases.title": { project: string | number };
+  "releases.window-title": { name: string | number; project: string | number };
   "removal.comments": { name: string | number };
   "removal.confirm": { name: string | number };
   "removal.no-fixed-end": { kind: string | number };

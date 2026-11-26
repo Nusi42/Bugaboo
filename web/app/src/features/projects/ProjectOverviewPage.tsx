@@ -3,7 +3,7 @@ import { Card, Link, partOf, part } from "@bugaboo/ui";
 
 import { projectIssuesAddress } from "../../shared/paths.ts";
 
-import { projectPages } from "../../shared/project-pages.ts";
+import { projectPageAddress, projectPages } from "../../shared/project-pages.ts";
 import { OwnFieldsOfProject } from "../fields/index.ts";
 import { PinButton, pinKind } from "../pins/index.ts";
 import { ProjectFacts } from "./ProjectFacts.tsx";
@@ -19,6 +19,9 @@ function Overview({ project }: { readonly project: OneProject }) {
         <ProjectFacts project={project} />
         <Link href={projectIssuesAddress(project.project.short_name)}>
           {t("issues.of-project")}
+        </Link>
+        <Link href={projectPageAddress(projectPages.releases, project.project.short_name)}>
+          {t(projectPages.releases.name)}
         </Link>
         <PinButton kind={pinKind.project} target={project.project.id} />
       </Card>

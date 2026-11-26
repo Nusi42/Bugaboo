@@ -94,3 +94,17 @@ export function conflictAsker(): ConflictAsker {
 export function useAskedConflict(): ConflictPrompt | null {
   return useSyncExternalStore(asked.subscribe, asked.snapshot);
 }
+
+/**
+ * Asks over the page which of two changes of one thing stays, for a screen that saves a change at once (a
+ * bar of the timeline, an issue of the calendar): *Keep their change* or *Use mine*. The words of the
+ * prompt come with the answer of the server, so the prompt may show a moment later; it shows only while
+ * the screen is there (`asker`).
+ */
+export function askAboutClash(
+  conflict: Conflict,
+  answers: Pick<ConflictPrompt, "keepTheirs" | "useMine">,
+  asker: ConflictAsker,
+): void {
+  void conflictPromptOf(conflict, answers).then(asker.ask);
+}

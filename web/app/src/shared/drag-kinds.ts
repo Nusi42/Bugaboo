@@ -9,4 +9,5 @@ export const dragKinds = {
   dependency: { kind: "timeline-dependency", typed: "timeline.add-dependency" },
   unscheduled: { kind: "timeline-unscheduled", typed: "timeline.set-dates" },
   card: { kind: "board-card", typed: "board.move-to" },
+  calendarIssue: { kind: "calendar-issue", typed: "calendar.change-due-date" },
 } as const;

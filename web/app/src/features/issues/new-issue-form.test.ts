@@ -23,6 +23,8 @@ const filled: NewIssueValues = {
   startDate: "2026-11-03",
   dueDate: "2026-11-14",
   estimatedTime: 90,
+  foundInRelease: [],
+  plannedForRelease: null,
   mistakes: [],
   fields: { f1: "Acme" },
 };

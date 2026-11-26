@@ -306,3 +306,8 @@ reason = "Ready-made is the glossary's own term (Ready-made box): a box Bugaboo 
 term = "space"
 at = ["messages/en.json#board.keys"]
 reason = "The Space key of the keyboard, which picks up a card of the board. Not a sub-project or the documents of a project, which the glossary means."
+
+[[allow]]
+term = "state"
+at = ["messages/en.json#releases.state-line"]
+reason = "The state of a release (Planned, Released, Retired) is the glossary's own word for it (ADR-0049, decision 2); it is not the status of an issue, which the glossary means."

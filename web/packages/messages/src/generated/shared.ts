@@ -698,6 +698,9 @@ export const messages = {
   "error.release.reason-needed": "Say why the release goes back to Planned.",
   "error.release.too-many":
     "An issue can name at most {most, number} releases in Found in release.",
+  "release-state.planned": "Planned",
+  "release-state.released": "Released",
+  "release-state.retired": "Retired",
   "error.label.pick-one-conflict":
     "Some issues have more than one label of this label group already, so it cannot be a label group to pick one from. Take the extra labels off first.",
   "common.show-all": "Show all {count, number}",
@@ -1058,6 +1061,9 @@ export const messages = {
   "board.move-to": "Move to …",
   "timeline.set-dates": "Set dates…",
   "timeline.add-dependency": "Add dependency…",
+  "calendar.change-due-date": "Change due date …",
+  "releases.nav": "Releases",
+  "releases.title": "Releases of {project}",
 } as const;
 
 register(messages);

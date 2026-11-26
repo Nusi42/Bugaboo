@@ -792,6 +792,7 @@ bold reason="Bold is kept for the titles, the headings of sections, the words of
     selector "card.heading" role="title"
     selector "bottom-sheet.title" role="title"
     selector "assigned-picker picker.legend" role="title"
+    selector "calendar-day-list.title" role="title"
     selector "issue-details.heading" role="section"
     selector "issue-section.title" role="section"
     selector "form-section.title" role="section"
@@ -2778,15 +2779,15 @@ part "quick-search.item[focused]" {
     use "ring-inside"
 }
 
-part "list-row[state=group-not-started]" "issue-row[state=group-not-started]" "quick-search.item[state=group-not-started]" "timeline-bar[state=group-not-started]" "timeline-phone.item[state=group-not-started]" "map-card[state=group-not-started]" "board-card[state=group-not-started]" {
+part "list-row[state=group-not-started]" "issue-row[state=group-not-started]" "quick-search.item[state=group-not-started]" "timeline-bar[state=group-not-started]" "timeline-phone.item[state=group-not-started]" "map-card[state=group-not-started]" "calendar-item[state=group-not-started]" "board-card[state=group-not-started]" {
     background "$tint-ns"
 }
 
-part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "quick-search.item[state=group-in-progress]" "timeline-bar[state=group-in-progress]" "timeline-phone.item[state=group-in-progress]" "map-card[state=group-in-progress]" "board-card[state=group-in-progress]" {
+part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "quick-search.item[state=group-in-progress]" "timeline-bar[state=group-in-progress]" "timeline-phone.item[state=group-in-progress]" "map-card[state=group-in-progress]" "calendar-item[state=group-in-progress]" "board-card[state=group-in-progress]" {
     background "$tint-ip"
 }
 
-part "list-row[state=group-done]" "issue-row[state=group-done]" "quick-search.item[state=group-done]" "timeline-bar[state=group-done]" "timeline-phone.item[state=group-done]" "map-card[state=group-done]" "board-card[state=group-done]" {
+part "list-row[state=group-done]" "issue-row[state=group-done]" "quick-search.item[state=group-done]" "timeline-bar[state=group-done]" "timeline-phone.item[state=group-done]" "map-card[state=group-done]" "calendar-item[state=group-done]" "board-card[state=group-done]" {
     background "$tint-done"
 }
 
@@ -3508,7 +3509,7 @@ part "timeline" {
 }
 
 // Show as, Group by, Dates from, the zoom and the steps through time: quiet controls on one line, like the options of the list.
-part "timeline-tools" {
+part "timeline-tools" "calendar-tools" {
     display flex
     flex-wrap wrap
     align-items flex-end
@@ -18335,6 +18336,44 @@ part "app-layout pane[variant=folds] list-panel" "app-layout pane[variant=folds]
     }
 }
 
+// The calendar and the box that holds its days (UX §4.16).
+part "calendar" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+part "calendar-scroll" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+// The calendar on a computer fills the rest of the main column, as the timeline does: the days scroll in their box and
+// the page around them stays.
+part "app-layout:not(app-layout[variant=phone]) app-layout.main:has(calendar-scroll)" {
+    overflow-y hidden
+    media "print" {
+        overflow visible
+    }
+    media "screen and (max-height: $size-low-window)" {
+        overflow-y auto
+    }
+}
+
+part "app-layout:not(app-layout[variant=phone]) app-layout.inner:has(calendar-scroll)" "app-layout:not(app-layout[variant=phone]) card:has(calendar-scroll)" "app-layout:not(app-layout[variant=phone]) card > stack:has(calendar-scroll)" "app-layout:not(app-layout[variant=phone]) list-editor.list:has(calendar-scroll)" "app-layout:not(app-layout[variant=phone]) calendar" {
+    use "fills-pane-scrolls"
+}
+
+part "app-layout:not(app-layout[variant=phone]) list-editor:has(calendar-scroll)" {
+    flex "1 1 0"
+    flex-wrap nowrap
+    align-items stretch
+    min-height 0
+}
+
 // A topic of the settings on a computer is a pane (UX §6.5): the heading and the introduction of its page are the head,
 // and the rest of the topic is its box, which folds the head as it scrolls. The topic fits the main column, which does
 // not scroll, and the menu of the topics beside it is a box of its own.
@@ -19518,6 +19557,328 @@ part "setting-head > stack > row" "setting-head > stack > muted" "setting-head >
 part "setting-head > save-status" {
     grid-column 2
     grid-row 1
+}
+
+// ───────────── The calendar (UX §4.16) ─────────────
+//
+// The tools over the days, then the days: a month or a week as a grid of seven columns, each day as high as the others of
+// its calendar, so a drop moves nothing but the issue dropped (UX §6.4). On a phone the days are a list.
+
+
+// The month or the days of the week between the two steps: as wide as the longest, so the steps never move.
+part "calendar-title" {
+    display flex
+    align-items center
+    justify-content center
+    min-width "$size-menu"
+    min-height "$size-control"
+    margin 0
+    color "$fg"
+    font-size "$fs-md"
+    font-weight "$weight-regular"
+    text-align center
+}
+
+part "calendar-grid" {
+    display grid
+    grid-template-columns "repeat(7, minmax(0, 1fr))"
+    min-width 0
+    border-top "$border-width solid $border"
+    border-inline-start "$border-width solid $border"
+    border-radius "$r-ctl"
+}
+
+part "calendar-weekday" {
+    padding "$space-2"
+    border-inline-end "$border-width solid $border"
+    border-bottom "$border-width solid $border"
+    background "$bg-surface"
+    color "$fg-muted"
+    font-size "$fs-sm"
+    text-align center
+}
+
+// A day: its number, then the marks and issues on it, then *+5 more*. Its height is the height of its lines, whatever stands on it.
+part "calendar-day" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    box-sizing border-box
+    min-width 0
+    padding "$space-1"
+    border-inline-end "$border-width solid $border"
+    border-bottom "$border-width solid $border"
+    background "$bg-raised"
+}
+
+part "calendar-grid[variant=month] calendar-day" {
+    min-height "calc($size-control-small + $size-control * 4 + $space-1 * 5)"
+}
+
+part "calendar-grid[variant=week] calendar-day" {
+    min-height "calc($size-control-small + $size-control * 9 + $space-1 * 10)"
+}
+
+part "calendar-day[state=outside]" {
+    background "$bg-sunken"
+    color "$fg-muted"
+}
+
+// The day an issue is dragged over, or carried to with the keys: it is filled and ringed inside its edge.
+part "calendar-day[state=over]" {
+    background "$bg-selected"
+    use "ring-inside"
+}
+
+part "calendar-day.number" {
+    align-self flex-start
+    min-width "$size-target-least"
+    padding "0 $space-1"
+    border-radius "$r-ctl"
+    color "$fg-muted"
+    font-size "$fs-sm"
+    text-align center
+}
+
+// Today: its number in the accent color (a color is never alone: the day is named Today for screen readers, and under forced colors it is edged).
+part "calendar-day[state=today] calendar-day.number" {
+    background "$accent"
+    color "$on-accent"
+    forced {
+        border "$border-width solid CanvasText"
+    }
+}
+
+part "calendar-day.items" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    min-width 0
+    margin 0
+    padding 0
+    list-style none
+}
+
+// An issue on its day: the same tint and edge as the row of the list. The button that fills it takes the pointer and the keys; its menu stands beside it.
+part "calendar-item" {
+    position relative
+    display flex
+    align-items center
+    gap "$space-1"
+    box-sizing border-box
+    min-width 0
+    min-height "$size-control"
+    border "$border-width solid $border-control"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+    color "$fg"
+    font-size "$fs-sm"
+}
+
+part "calendar-item.press" {
+    display flex
+    flex 1
+    align-items center
+    gap "$space-1"
+    box-sizing border-box
+    min-width 0
+    min-height "inherit"
+    padding "0 $space-1"
+    border none
+    border-radius "inherit"
+    background none
+    color inherit
+    font-family inherit
+    font-size inherit
+    text-align start
+    cursor grab
+}
+
+part "calendar-item.press:focus-visible" {
+    use "ring-keyboard"
+}
+
+part "calendar-item[state=locked] calendar-item.press" {
+    cursor pointer
+}
+
+part "calendar-item[state=dragging]" {
+    opacity "$opacity-busy"
+}
+
+part "calendar-item[state=dragging] calendar-item.press" {
+    cursor grabbing
+}
+
+// The issue that is picked up with a key: ringed all the way round, so it is seen where it stands while the day it is carried to is filled.
+part "calendar-item[state=picked]" {
+    use "ring-row"
+}
+
+// Where a carried issue would stand: an empty place of its edge, in the words of its ID.
+part "calendar-item[state=ghost]" {
+    border-style dashed
+    background none
+    color "$fg-muted"
+    padding "0 $space-1"
+}
+
+part "calendar-item.title" {
+    min-width 0
+    overflow hidden
+    text-overflow ellipsis
+    white-space nowrap
+}
+
+// A goal on its due date and a release on its release date: a diamond and words, not dragged on the calendar.
+part "release-mark" {
+    display flex
+    align-items center
+    gap "$space-1"
+    box-sizing border-box
+    min-width 0
+    min-height "$size-control-small"
+    padding "0 $space-1"
+    color "$fg"
+    font-size "$fs-sm"
+}
+
+part "release-mark.diamond" {
+    flex none
+    width "$space-2"
+    height "$space-2"
+    use "diamond"
+}
+
+// A release has the diamond of the accent, a goal the diamond of the text.
+part "release-mark[variant=release] release-mark.diamond" {
+    background "$accent"
+}
+
+part "release-mark[variant=goal] release-mark.diamond" {
+    background "$fg"
+}
+
+// The box under the head of the pane that holds the days (UX §6.5): the grid scrolls in it, as the chart of the timeline
+// does, and starts under the whole head; what the keyboard or a drag brings into view stops under the folded head.
+
+part "app-layout:not(app-layout[variant=phone]) calendar-scroll" {
+    flex "1 1 auto"
+    min-height "$size-list-scroll-least"
+    overflow auto
+    isolation isolate
+    overscroll-behavior contain
+    media "print" {
+        use "free-on-paper"
+    }
+}
+
+part "app-layout pane[variant=folds] calendar-scroll" {
+    use "pane-first-box"
+}
+
+// The menu of an issue stands over the end of its title, as its words are what the day has room for: it shows when the
+// issue is pointed at or has the focus, and where a finger points it is always there. It takes no room, so nothing moves.
+part "calendar-item.menu" {
+    position absolute
+    inset-block 0
+    inset-inline-end 0
+    display flex
+    align-items center
+    border-radius "inherit"
+    background inherit
+    opacity 0
+    media "(pointer: coarse)" {
+        opacity 1
+    }
+}
+
+part "calendar-item:hover calendar-item.menu" "calendar-item:focus-within calendar-item.menu" "calendar-item[state=picked] calendar-item.menu" {
+    opacity 1
+}
+
+// The link of a mark gives way to the width of the day: its title ends in an ellipsis.
+part "release-mark link" {
+    display flex
+    min-width 0
+}
+
+// The words of a mark: the Issue ID of a goal and its title, or the name of a release, on one line.
+part "release-mark.label" {
+    display flex
+    align-items center
+    gap "$space-1"
+    min-width 0
+}
+
+// *+5 more* has the line of an issue in the height of its day, so a day that needs it is no higher than one that does not.
+part "calendar-day.more" {
+    display flex
+    align-items center
+    height "$size-control"
+}
+
+// The name of a state on the page of the releases of a project, with its number: the folded state is a button inside it.
+part "release-heading" {
+    margin 0
+    color "$fg"
+    font-family "$font-display"
+    font-size "$fs-md"
+    font-weight "$weight-regular"
+}
+
+// The list of a day that *+5 more* opens: its date as the title, its marks and issues, and *Done* at the start.
+part "calendar-day-list" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    padding "$space-4"
+}
+
+// The buttons at the foot of the list: *Done*, at the start.
+part "calendar-day-list.actions" {
+    display flex
+}
+
+part "calendar-day-list.title" {
+    use "dialog-title"
+    font-family "$font-display"
+    font-weight "$weight-bold"
+    margin 0
+}
+
+
+// The calendar on a phone: a list of the days to come, each day a heading and its issues, every line as high as a finger needs.
+part "calendar-phone" {
+    display flex
+    flex-direction column
+    border-top "$border-width solid $border-subtle"
+}
+
+part "calendar-phone.day" {
+    display flex
+    flex-direction column
+    border-bottom "$border-width solid $border-subtle"
+}
+
+part "calendar-phone.heading" {
+    display flex
+    align-items center
+    min-height "$size-control"
+    margin 0
+    padding-inline "$space-3"
+    background "$bg-surface"
+    color "$fg-muted"
+    font-size "$fs-sm"
+    font-weight "$weight-regular"
+}
+
+part "calendar-phone.day calendar-day.items" {
+    padding "$space-2 $space-3"
+}
+
+part "calendar-phone.day release-mark" {
+    min-height "$size-control"
 }
 
 // The words before a title (*blocks*, the chain of the relation map) are one sentence with it: the same size, only

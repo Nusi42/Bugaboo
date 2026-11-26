@@ -6,14 +6,13 @@ import { formatCalendarDay, keepingHyphens } from "../../../shared/format.ts";
 import { issueAddress } from "../../../shared/paths.ts";
 import { useTimeline, type TimelineRelease } from "../timeline-context.ts";
 import type { TimelineOptions } from "../../../shared/list-view.ts";
-import { daysText } from "../dates.ts";
+import { daysText, releaseLonger } from "../dates.ts";
 import type { PlanWarning, TimelineRow } from "../timeline-data.ts";
 import {
   keepAndAccept,
   mayGive,
   moveAsPreviewed,
   previewMoveAfter,
-  releaseLonger,
   type MovePreviewIssue,
 } from "./ways-out.ts";
 

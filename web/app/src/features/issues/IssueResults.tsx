@@ -14,7 +14,7 @@ export type { IssueResultsProps } from "./results-props.ts";
  * alike: the columns a person chose, sorted by a click on a name, grouped by any field they may
  * read, and drawn only where the rows are on screen (PERF-04). *Show as › Timeline* draws them as
  * the timeline instead (UX §4.7), *Show as › Board* as columns of cards (UX §4.6) and *Show as › Map* as the
- * relation map of the results (UX §4.15).
+ * relation map of the results (UX §4.15) and *Show as › Calendar* as the calendar (UX §4.16).
  */
 export function IssueResults(props: IssueResultsProps) {
   const languageRead = useSearchLanguageRead();
@@ -30,7 +30,12 @@ export function IssueResults(props: IssueResultsProps) {
     return <DelayedSkeleton lines={3} />;
   }
   const { view, defaults } = props;
-  if (view.kind === "timeline" || view.kind === "board" || view.kind === "map") {
+  if (
+    view.kind === "timeline" ||
+    view.kind === "board" ||
+    view.kind === "map" ||
+    view.kind === "calendar"
+  ) {
     return <ChunkedView results={props} view={view} fields={fields.data} language={language} />;
   }
   const known = new Map(fields.data.fields.fields.map((field) => [field.word, field]));

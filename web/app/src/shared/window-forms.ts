@@ -9,6 +9,8 @@ export const windowForms = {
   awayTime: "away-time",
   timeFactor: "time-factor",
   setDates: "set-dates",
+  changeDate: "change-date",
+  release: "release",
   addDependency: "add-dependency",
   someonesData: "someones-data",
   removePerson: "remove-person",

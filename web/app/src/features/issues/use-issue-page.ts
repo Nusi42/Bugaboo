@@ -3,7 +3,7 @@ import { useLayout } from "@bugaboo/ui";
 
 import { useFormLayout } from "../layouts/index.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
-import { valuesOf } from "./issue-values.ts";
+import { valuesOf } from "./block-values.ts";
 import { rowStatus } from "./row-status.ts";
 import { maskOf, type IssueBlockProps, type IssueDetail } from "./slots.ts";
 import { useIssueChanges, type IssueChanges } from "./use-issue-changes.ts";

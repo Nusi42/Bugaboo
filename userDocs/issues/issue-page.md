@@ -20,6 +20,8 @@ Click the title to change it. The big button under the title shows the status wi
 
 *Start date* and *Due date* are two rows of the Details: type a day in the form of your region and leave the box, or clear the box to take the date away. A start date after the due date is refused, and nothing is saved. They are in the history like any other change, with the old and the new day, and *Undo* takes a date back.
 
+*Found in release* and *Planned for release* are two more rows of the Details: **Choose a release** or **Change** opens the list of the releases offered in the project, and every press saves at once with *Undo* (see [Releases](releases.md)).
+
 A field you can see and may not change shows a lock and says so. A field you may not see is left out. Where Bugaboo may not tell you who somebody is, you see their role ("a Team member") or "Someone".
 
 If somebody changed the same value a moment before you, nothing of theirs is overwritten: the page says, for example, "Ben changed Priority to Critical 2 minutes ago." and gives you two buttons, "Keep Ben's" and "Use mine".

@@ -79,6 +79,7 @@ export {
 } from "./fields.generated.ts";
 export { megabyte, partBytes } from "./files.generated.ts";
 export { cardLimitMax } from "./board.generated.ts";
+export { calendarDaysMax } from "./calendar.generated.ts";
 export { manyChangesIssuesMax } from "./many-changes.generated.ts";
 export { mapIssuesMost } from "./relation-map.generated.ts";
 export { assistantLimits } from "./assistant.generated.ts";

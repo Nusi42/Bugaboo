@@ -55,6 +55,10 @@ export interface SearchState {
   readonly hide?: string;
   /** `0` when a map turns *part of* off. */
   readonly parts?: string;
+  /** What a calendar shows, a month or a week. */
+  readonly span?: string;
+  /** The date field a calendar stands its issues on (*Dates from*), by its search word. */
+  readonly from?: string;
   /** The issue open in the side panel of a project's list, by its issue ID. */
   readonly open?: string | undefined;
 }
@@ -73,6 +77,8 @@ export interface SearchParts {
   readonly dates?: string;
   readonly hide?: string;
   readonly parts?: string;
+  readonly span?: string;
+  readonly from?: string;
 }
 
 /** Where a search state is written: the path and the parts after the question mark. */
@@ -137,6 +143,8 @@ export function readSearch(location: {
   const dates = datesOf(textOf(raw, "dates"));
   const hide = textOf(raw, mapParam.hide);
   const parts = textOf(raw, mapParam.partOf);
+  const span = textOf(raw, "span");
+  const from = textOf(raw, "from");
   return {
     text: written === undefined || written.trim() === "" ? "" : written,
     ...(written === "" ? { everything: true } : {}),
@@ -153,10 +161,12 @@ export function readSearch(location: {
     ...(dates === undefined ? {} : { dates }),
     ...(hide === undefined || hide === "" ? {} : { hide }),
     ...(parts === undefined || parts === "" ? {} : { parts }),
+    ...(span === undefined || span === "" ? {} : { span }),
+    ...(from === undefined || from === "" ? {} : { from }),
   };
 }
 
-/** The parts of the address that say the options of a timeline and of a map. */
+/** The parts of the address that say the options of a timeline, a map and a calendar. */
 function viewOptionParts(state: SearchState): SearchParts {
   return {
     ...(state.zoom === undefined ? {} : { zoom: state.zoom }),
@@ -165,6 +175,8 @@ function viewOptionParts(state: SearchState): SearchParts {
     ...(state.dates === undefined ? {} : { dates: state.dates.join(",") }),
     ...(state.hide === undefined ? {} : { [mapParam.hide]: state.hide }),
     ...(state.parts === undefined ? {} : { [mapParam.partOf]: state.parts }),
+    ...(state.span === undefined ? {} : { span: state.span }),
+    ...(state.from === undefined ? {} : { from: state.from }),
   };
 }
 

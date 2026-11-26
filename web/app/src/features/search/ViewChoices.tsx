@@ -51,6 +51,7 @@ const shownAsChoices = [
   { value: "board", label: "board.show-as-board" },
   { value: "timeline", label: "timeline.show-as-timeline" },
   { value: "map", label: "timeline.show-as-map" },
+  { value: "calendar", label: "calendar.show-as-calendar" },
 ] as const satisfies readonly { readonly value: ShownAs; readonly label: string }[];
 
 /**
@@ -82,8 +83,8 @@ export function ViewChoices({
           onView({ ...view, kind, groupBy: starts ? timelineStartGroup : view.groupBy });
         }}
       />
-      {/* The map stands in columns by steps away and the rows of a board are chosen in its *Customize*: neither has groups. */}
-      {view.kind === "map" || view.kind === "board" ? null : (
+      {/* The map stands in columns by steps away, the rows of a board are chosen in its *Customize*, and a calendar stands its issues on days: none of them has groups. */}
+      {view.kind === "map" || view.kind === "board" || view.kind === "calendar" ? null : (
         <SelectField
           label={t("issues.group-by")}
           look={look}

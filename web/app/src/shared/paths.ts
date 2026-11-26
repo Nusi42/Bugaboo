@@ -78,6 +78,7 @@ export const paths = {
   projectPeople: "/p/$project/settings/people",
   projectCheckAccess: "/p/$project/settings/check-access",
   projectIssues: "/p/$project/issues",
+  projectReleases: "/p/$project/releases",
   issue: appPaths.issue,
   issueMap: `${appPaths.issue}/map`,
   run: "/runs/$run",

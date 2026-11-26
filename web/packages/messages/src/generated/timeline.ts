@@ -17,7 +17,6 @@ export const messages = {
   "timeline.release-date": "Release date: {day}",
   "timeline.preview-release-longer": "Release {name} gets the release date {day}.",
   "timeline.change-release-date": "Change the release date",
-  "timeline.release-moved": "Release {name} has a new release date.",
   "timeline.today": "Today",
   "timeline.earlier": "Earlier",
   "timeline.later": "Later",

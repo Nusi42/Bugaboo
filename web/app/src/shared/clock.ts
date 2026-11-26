@@ -204,3 +204,22 @@ export function isWeekend(day: string): boolean {
 export function dayOfMonth(day: string): number {
   return dayNumbersOf(day)[2];
 }
+
+/** The month and the year of a day on the calendar (`October 2026`), in the language of the app. */
+export function monthTitle(day: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${day}T00:00:00Z`));
+}
+
+/** A day on the calendar as a sentence puts it: the short weekday, the number and the short month (`Fri 16 Oct`). */
+export function dayInSentence(day: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  }).format(new Date(`${day}T00:00:00Z`));
+}

@@ -14,6 +14,11 @@ const ProjectSettingsScreen = lazyRouteComponent(
   "ProjectSettingsPage",
 );
 
+const ReleasesScreen = lazyRouteComponent(
+  () => import("../features/releases/index.ts"),
+  "ReleasesPage",
+);
+
 /** The overview of a project, `/p/WEB`. The project decides who sees it: nobody else finds it. */
 export const projectRoute = createRoute({
   getParentRoute: () => appRoute,
@@ -33,5 +38,16 @@ export const projectSettingsRoute = createRoute({
   component: function ProjectSettings() {
     const project = useAddressPart(routeParam.project);
     return project === undefined ? null : <ProjectSettingsScreen address={project} />;
+  },
+});
+
+/** The releases of a project, `/p/WEB/releases`: the ones made in it and the ones that reach it from above. */
+export const projectReleasesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: paths.projectReleases,
+  loader: loadsScreen(ReleasesScreen),
+  component: function ProjectReleases() {
+    const project = useAddressPart(routeParam.project);
+    return project === undefined ? null : <ReleasesScreen address={project} />;
   },
 });

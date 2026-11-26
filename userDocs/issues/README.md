@@ -9,6 +9,7 @@ An **issue** is anything that is being tracked: a bug, a task, an idea. Every is
 - [Sub-issues and relations](relations.md): parts of an issue, *blocks* and *duplicate of*, and the kinds of relation
 - [The relation map](relation-map.md): everything connected to an issue or to the results of a search, step by step, as a picture or a list
 - [Changing many issues at once](change-many.md): tick issues, read what would change, apply, and undo
+- [Releases](releases.md): the page *Releases* of a project, who manages them, and *Found in release* and *Planned for release* on an issue
 - [Searching for issues](search.md): Simple and Advanced search, looking for words, lengths of time, saved searches and sharing, the list and Quick search
 - [Limits of a search](search-limits.md): how many filters, words and steps a search may have
 - [Comments, mentions, history and following](comments.md): writing to each other, naming people, reading what changed, and keeping track

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   builtInBoard,
+  builtInCalendar,
   builtInTimeline,
   builtInView,
   noGrouping,
@@ -24,19 +25,21 @@ const now = (word: string): string =>
   readable.find((each) => testSearchLanguage.wordKey(each) === testSearchLanguage.wordKey(word)) ??
   word;
 
-describe("a list saved with the words of the old language (D3)", () => {
-  const old = {
-    columns: ["id", "storyPoints", "assignedTo"],
-    widths: { storyPoints: 120 },
-    groupBy: "statusGroup",
-    kind: "list",
-    timeline: builtInTimeline,
-    map: everyKind,
-    board: builtInBoard,
-  } as const;
+/** A list saved before the words of the fields changed. */
+const oldList = {
+  columns: ["id", "storyPoints", "assignedTo"],
+  widths: { storyPoints: 120 },
+  groupBy: "statusGroup",
+  kind: "list",
+  timeline: builtInTimeline,
+  map: everyKind,
+  board: builtInBoard,
+  calendar: builtInCalendar,
+} as const;
 
+describe("a list saved with the words of the old language (D3)", () => {
   it("keeps the column, the width and the grouping of every field, an own one included", () => {
-    expect(viewInWords(old, now)).toEqual({
+    expect(viewInWords(oldList, now)).toEqual({
       columns: ["id", "story points", "assigned to"],
       widths: { "story points": 120 },
       groupBy: "status group",
@@ -44,11 +47,12 @@ describe("a list saved with the words of the old language (D3)", () => {
       timeline: builtInTimeline,
       map: everyKind,
       board: builtInBoard,
+      calendar: builtInCalendar,
     });
   });
 
   it("is not changed until a person changes it, and set back by hand it is not changed again", () => {
-    const defaults = viewInWords(old, now);
+    const defaults = viewInWords(oldList, now);
     const state = readSearch({
       pathname: "/search",
       search: { cols: "id,storyPoints,assignedTo" },
@@ -160,6 +164,7 @@ describe("the view as a saved search keeps it", () => {
     timeline: builtInTimeline,
     map: everyKind,
     board: builtInBoard,
+    calendar: builtInCalendar,
   } as const;
 
   it("is written with the widths on the columns and a null for no grouping", () => {
@@ -171,6 +176,7 @@ describe("the view as a saved search keeps it", () => {
       ],
       group_by: null,
       timeline: builtInTimeline,
+      calendar: builtInCalendar,
     });
   });
 
@@ -183,8 +189,8 @@ describe("the view as a saved search keeps it", () => {
   });
 
   it("opens a saved search kept with a spacing before the spacing was the person's alone, and ignores it", () => {
-    const old = { ...presentationOf(view), spacing: "compact" };
-    expect(viewFromPresentation(old, project)).toEqual(view);
+    const before = { ...presentationOf(view), spacing: "compact" };
+    expect(viewFromPresentation(before, project)).toEqual(view);
   });
 });
 

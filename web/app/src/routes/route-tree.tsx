@@ -78,7 +78,7 @@ import {
 } from "./app-pages.tsx";
 import { profileRoute, shortcutsRoute } from "./shortcuts-pages.tsx";
 import { eMailChangeRoute, invitationRoute, signUpRoute } from "./guest-pages.tsx";
-import { projectRoute, projectSettingsRoute } from "./project-pages.tsx";
+import { projectReleasesRoute, projectRoute, projectSettingsRoute } from "./project-pages.tsx";
 import {
   appRoute,
   guestRoute,
@@ -112,6 +112,7 @@ export const routeTree = rootRoute.addChildren([
     savedSearchRoute,
     projectRoute,
     projectIssuesRoute,
+    projectReleasesRoute,
     issueRoute,
     issueMapRoute,
     runRoute,

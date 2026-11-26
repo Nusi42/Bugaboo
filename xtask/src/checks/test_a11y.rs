@@ -25,9 +25,10 @@ const PATHS_FILE: &str = "web/app/src/shared/paths.ts";
 pub(crate) const SUITE_FOLDER: &str = "web/app/e2e";
 const SUITE_PREFIX: &str = "a11y";
 /// The features whose drags each have a key.
-const DRAG_FOLDERS: [&str; 2] = [
+const DRAG_FOLDERS: [&str; 3] = [
     "web/app/src/features/timeline",
     "web/app/src/features/board",
+    "web/app/src/features/calendar",
 ];
 /// The one place that names what the screens drag, each with its typed way.
 const DRAG_KINDS_FILE: &str = "web/app/src/shared/drag-kinds.ts";

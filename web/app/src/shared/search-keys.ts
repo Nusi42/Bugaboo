@@ -53,6 +53,11 @@ export const searchKeys = {
    * so a change of an issue reads it again.
    */
   board: (...about: readonly string[]) => ["issues", "list", "board", ...about],
+  /**
+   * The issues of a search shown as a calendar, for a window of days. It starts with the keys of the
+   * lists, so a change of an issue reads it again.
+   */
+  calendar: (...about: readonly (string | null)[]) => ["issues", "list", "calendar", ...about],
   /** How many issues a search finds. */
   foundCount: (text: string, within?: string) => ["issues", "list", "count", within ?? null, text],
   /** How many issues a search finds in each group of a field. */

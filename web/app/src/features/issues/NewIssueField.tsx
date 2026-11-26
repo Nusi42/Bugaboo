@@ -1,13 +1,10 @@
-import { t } from "@bugaboo/messages";
-import { MarkdownEditor, SelectField } from "@bugaboo/ui";
-
-import { useImageHosts } from "../../shared/image-hosts.ts";
-import { markdownLabels } from "../../shared/markdown-labels.ts";
 import { isDateField } from "../../shared/date-fields.ts";
-import { LengthBox, OwnFieldInput } from "../fields/index.ts";
-import { priorityChoices } from "./issue-choices.ts";
+import { OwnFieldInput } from "../fields/index.ts";
 import { NewIssueAssignedField } from "./NewIssueAssignedField.tsx";
 import { NewIssueDayField } from "./NewIssueDayField.tsx";
+import { DescriptionField, EstimateField, PriorityField } from "./NewIssueMoreFields.tsx";
+import { NewIssueReleaseField } from "./NewIssueReleaseField.tsx";
+import { releaseField } from "./release-fields.ts";
 import { withMistake, type NewIssueValues } from "./new-issue-form.ts";
 
 export interface NewIssueFieldProps {
@@ -21,44 +18,6 @@ export interface NewIssueFieldProps {
   readonly onChange: (values: NewIssueValues) => void;
 }
 
-/** *Estimated time* on the form: a length the person types; a text that is none holds the form back. */
-function EstimateField({
-  values,
-  problem,
-  onChange,
-}: Omit<NewIssueFieldProps, "field" | "project">) {
-  return (
-    <LengthBox
-      name={t("issue-field.estimated-time")}
-      minutes={values.estimatedTime ?? undefined}
-      inRow={false}
-      problem={problem}
-      onCommit={(estimatedTime) => {
-        onChange({ ...withMistake(values, "estimated-time", false), estimatedTime });
-      }}
-      onMistake={() => {
-        onChange(withMistake(values, "estimated-time", true));
-      }}
-    />
-  );
-}
-
-/** *Description* on the form: the editor of text, with the hosts its images may come from. */
-function DescriptionField({ values, onChange }: Pick<NewIssueFieldProps, "values" | "onChange">) {
-  const hosts = useImageHosts();
-  return (
-    <MarkdownEditor
-      label={t("issue-field.description")}
-      labels={markdownLabels()}
-      value={values.description}
-      onChange={(description) => {
-        onChange({ ...values, description });
-      }}
-      imageHosts={hosts}
-    />
-  );
-}
-
 /** One field of the form: a built-in field by its word, an own field by its ID. */
 export function NewIssueField(props: NewIssueFieldProps) {
   const { field, values, project, problem, onChange } = props;
@@ -69,18 +28,14 @@ export function NewIssueField(props: NewIssueFieldProps) {
     case "description":
       return <DescriptionField values={values} onChange={onChange} />;
     case "priority":
-      return (
-        <SelectField
-          label={t("issue-field.priority")}
-          choices={priorityChoices}
-          value={values.priority}
-          onChange={(priority) => {
-            onChange({ ...values, priority });
-          }}
-        />
-      );
+      return <PriorityField values={values} onChange={onChange} />;
     case "assigned-to":
       return <NewIssueAssignedField values={values} project={project} onChange={onChange} />;
+    case releaseField.found:
+    case releaseField.planned:
+      return (
+        <NewIssueReleaseField word={field} values={values} project={project} onChange={onChange} />
+      );
     case "estimated-time":
       return <EstimateField values={values} problem={problem} onChange={onChange} />;
     default:

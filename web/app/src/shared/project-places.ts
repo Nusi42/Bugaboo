@@ -3,13 +3,15 @@ import type { Place } from "./place.ts";
 
 /** The pages of a project: they name themselves (`usePageTrail`), so they are here only to be known. */
 export const projectPlaces: readonly Place[] = [
-  ...[projectPages.overview, projectPages.issues].map(({ path, name, icon, parent }) => ({
-    path,
-    name,
-    icon,
-    parent,
-    listed: false,
-  })),
+  ...[projectPages.overview, projectPages.issues, projectPages.releases].map(
+    ({ path, name, icon, parent }) => ({
+      path,
+      name,
+      icon,
+      parent,
+      listed: false,
+    }),
+  ),
   // The settings of a project are in the area of settings, like those of the organization.
   ...settingsTabs.map(({ path, name, icon, parent }) => ({
     path,

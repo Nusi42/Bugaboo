@@ -5,6 +5,7 @@ export {
   type ConflictAsker,
   conflictPromptOf,
   conflictWordsOf,
+  askAboutClash,
   useAskedConflict,
   type ConflictPrompt,
 } from "./conflict-prompt.ts";

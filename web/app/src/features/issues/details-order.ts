@@ -13,6 +13,8 @@ export const detailFields = {
   reportedBy: "reported-by",
   startDate: dateField.start,
   dueDate: dateField.due,
+  foundInRelease: "found-in-release",
+  plannedForRelease: "planned-for-release",
   estimatedTime: "estimated-time",
   timeLeft: "time-left",
   timeSpent: "time-spent",

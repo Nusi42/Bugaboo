@@ -1,10 +1,11 @@
+import { dataOf } from "@bugaboo/api-client";
 import { t } from "@bugaboo/messages";
 
 import { keepingHyphens } from "../src/shared/format.ts";
-import { ada, bob } from "./support/accounts.ts";
+import { ada, bob, signInThroughApi } from "./support/accounts.ts";
 import { expect, refusal, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { dayFromToday, openTimeline, planned } from "./support/timeline.ts";
+import { changeIssue, dayFromToday, openTimeline, planned } from "./support/timeline.ts";
 import { datesAs, firstAssigned } from "./support/timeline-api.ts";
 import {
   openWarnings,
@@ -149,4 +150,44 @@ test("plan_13_give_it_to_someone_else_suggests_nobody", async ({ page, server })
     .click();
   // Ada is now the person on the bar; the others assigned after the first stay.
   await expect.poll(() => firstAssigned(server, people.shared)).toBe(ada.name);
+});
+
+test("plan_13_make_it_longer_of_a_release_has_undo_that_puts_its_release_date_back", async ({
+  page,
+  server,
+}) => {
+  const admin = await signInThroughApi(server, ada);
+  const made = dataOf(
+    await admin.client.POST("/api/v1/projects/{project}/releases", {
+      params: { path: { project: "WEB" } },
+      body: { name: "R1", release_date: dayFromToday(1) },
+    }),
+  );
+  await changeIssue(admin, planned.first, { planned_for_release: String(made.id) });
+  await admin.dispose();
+  await signIn(page, ada);
+  await openTimeline(page, "&drivers=1");
+  const list = await openWarnings(page);
+  const delay = warningAbout(
+    list,
+    t("plan-warning.delay-release", { issue: planned.first, days: 2, release: "R1" }),
+  );
+  await delay.getByRole("button", way("make-it-longer")).click();
+  await delay
+    .locator('[data-part="timeline-warning.preview"]')
+    .getByRole("button", { name: t("timeline.change-release-date"), exact: true })
+    .click();
+  const released = async () => {
+    const asAda = await signInThroughApi(server, ada);
+    const listed = dataOf(
+      await asAda.client.GET("/api/v1/projects/{project}/releases", {
+        params: { path: { project: "WEB" } },
+      }),
+    );
+    await asAda.dispose();
+    return listed.items.filter((item) => item.name === "R1").map((item) => item.release_date);
+  };
+  await expect.poll(released).not.toEqual([dayFromToday(1)]);
+  await page.getByRole("button", { name: t("common.undo"), exact: true }).click();
+  await expect.poll(released).toEqual([dayFromToday(1)]);
 });

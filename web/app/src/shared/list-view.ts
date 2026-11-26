@@ -10,6 +10,14 @@
 
 import type { Schema } from "@bugaboo/api-client";
 
+import {
+  builtInCalendar,
+  calendarOf,
+  calendarParts,
+  type CalendarOptions,
+} from "./calendar-options.ts";
+import { boardOf, builtInBoard, type BoardOptions } from "./board-options.ts";
+import { timelineParts } from "./timeline-parts.ts";
 import { listWord, projectColumns, searchColumns } from "./list-columns.ts";
 import { everyKind, kindsShownOf, kindsShownParts, type KindsShown } from "./relation-map-view.ts";
 import type { SearchState } from "./search-address.ts";
@@ -29,23 +37,28 @@ export type ShownAs = Schema<"ViewKind">;
 /** The options of a timeline: the date fields, *Plan by effort* and the zoom. */
 export type TimelineOptions = Schema<"TimelineOptionsBody">;
 
-/** The options of a board: the field of its columns, the field of its rows and the card limits. */
-export type BoardOptions = Schema<"BoardOptionsBody">;
+export { builtInBoard, type BoardOptions } from "./board-options.ts";
+export {
+  builtInCalendar,
+  spanOf,
+  spanWords,
+  type CalendarOptions,
+  type SpanWord,
+} from "./calendar-options.ts";
 
 /** The zoom of a timeline (*Days · Weeks · Months · Quarters*). */
 export type ZoomWord = Schema<"Zoom">;
 
 /**
  * Every kind of view, and whether the screen shows it yet: the compiler stops here when the server
- * gets a new one. The calendar is read on the server; its screen comes later, and until then an
- * address that names it opens the list.
+ * gets a new one. Each of them is read on the server and has its own screen.
  */
 const viewKinds: Readonly<Record<ShownAs, boolean>> = {
   list: true,
   timeline: true,
   map: true,
   board: true,
-  calendar: false,
+  calendar: true,
 };
 
 /** Every zoom, the same way, in the order they are offered. */
@@ -93,7 +106,7 @@ export interface ListView {
   readonly widths: Readonly<Record<string, number>>;
   /** The search word of the field the rows are grouped by; none for no grouping. */
   readonly groupBy: string | null;
-  /** *Show as*: the list, or the timeline. */
+  /** *Show as*: the list, the timeline or the calendar. */
   readonly kind: ShownAs;
   /** The options of the timeline, kept while the list is shown. */
   readonly timeline: TimelineOptions;
@@ -101,6 +114,8 @@ export interface ListView {
   readonly map: KindsShown;
   /** The options of the board, kept while another view is shown: only the maker of a saved search changes them. */
   readonly board: BoardOptions;
+  /** The options of the calendar, kept while the list is shown. */
+  readonly calendar: CalendarOptions;
 }
 
 /** What a timeline is grouped by when a list is first shown as one: the goal (UX §4.7, M8-Q12). */
@@ -114,9 +129,6 @@ export const builtInTimeline: TimelineOptions = {
   zoom: "week",
   deadline_drivers: false,
 };
-
-/** The board a saved search has when it says nothing of one: a column for each status, no rows, no card limits. */
-export const builtInBoard: BoardOptions = { columns: null, rows: null, card_limits: [] };
 
 /** What the built-in list depends on. */
 export interface BuiltInInput {
@@ -134,6 +146,7 @@ export function builtInView({ everywhere }: BuiltInInput): ListView {
     timeline: builtInTimeline,
     map: everyKind,
     board: builtInBoard,
+    calendar: builtInCalendar,
   };
 }
 
@@ -165,6 +178,7 @@ export function viewOf(state: SearchState, defaults: ListView): ListView {
         ? defaults.map
         : kindsShownOf(state.hide, state.parts),
     board: defaults.board,
+    calendar: calendarOf(state, defaults.calendar),
   };
 }
 
@@ -178,8 +192,10 @@ export function viewInWords(view: ListView, now: (word: string) => string): List
     widths[now(word)] = view.widths[word] ?? 0;
   }
   const { start_field: start, end_field: end } = view.timeline;
+  const { dates_field: from } = view.calendar;
   return {
     ...view,
+    calendar: { ...view.calendar, dates_field: from === null ? null : now(from) },
     columns: view.columns.map(now),
     widths,
     groupBy: view.groupBy === null ? null : now(view.groupBy),
@@ -225,33 +241,8 @@ export function withView(state: SearchState, view: ListView, defaults: ListView)
     ...(view.groupBy === defaults.groupBy ? {} : { groupBy: view.groupBy ?? noGrouping }),
     ...timelineParts(view.timeline, defaults.timeline),
     ...kindsShownParts(view.map),
+    ...calendarParts(view.calendar, defaults.calendar),
   };
-}
-
-/** The parts of the address that say how a timeline differs from its defaults. */
-function timelineParts(
-  timeline: TimelineOptions,
-  usual: TimelineOptions,
-): Pick<SearchState, "zoom" | "effort" | "drivers" | "dates"> {
-  const { start_field: start, end_field: end } = timeline;
-  const sameDates = start === usual.start_field && end === usual.end_field;
-  const effort = timeline.plan_by_effort ?? false;
-  const drivers = timeline.deadline_drivers ?? false;
-  // Back to *Start date* and *Due date* from a saved view of own date fields is written too.
-  const dates = [start ?? listWord.startDate, end ?? listWord.dueDate] as const;
-  return {
-    ...(timeline.zoom === usual.zoom ? {} : { zoom: timeline.zoom }),
-    ...(effort === (usual.plan_by_effort ?? false) ? {} : { effort }),
-    ...(drivers === (usual.deadline_drivers ?? false) ? {} : { drivers }),
-    ...(sameDates ? {} : { dates }),
-  };
-}
-
-/** The board options as a saved search keeps them: left out while they are the starting ones. */
-function boardOf(board: BoardOptions): Pick<Schema<"PresentationRef">, "board"> {
-  const usual =
-    board.columns === null && board.rows === null && (board.card_limits ?? []).length === 0;
-  return usual ? {} : { board };
 }
 
 /** How a saved search keeps a view (QRY-06): the widths belong to their columns. */
@@ -262,6 +253,7 @@ export function presentationOf(view: ListView): Schema<"PresentationRef"> {
     group_by: view.groupBy,
     timeline: view.timeline,
     ...boardOf(view.board),
+    calendar: view.calendar,
   };
 }
 
@@ -291,5 +283,6 @@ export function viewFromPresentation(
     timeline: presentation.timeline ?? defaults.timeline,
     map: defaults.map,
     board: presentation.board ?? defaults.board,
+    calendar: presentation.calendar ?? defaults.calendar,
   };
 }

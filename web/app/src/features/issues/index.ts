@@ -46,6 +46,13 @@ export {
   type IssueView,
 } from "./slots.ts";
 export { sendChange } from "./issue-requests.ts";
+export {
+  afterSaves,
+  changeAfterSaves,
+  newestVersion,
+  saveOnNewest,
+  takeVersion,
+} from "./dates-in-order.ts";
 export { useFoundGroups } from "./found-issues.ts";
 export { groupName, groupOfKey, type GroupOfKey } from "./group-keys.ts";
 export {

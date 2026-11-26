@@ -1,13 +1,18 @@
 import { t } from "@bugaboo/messages";
 
-import { refusedOf, type Refused } from "../../shared/refused.ts";
+import type { Refused } from "../../shared/refused.ts";
 import { formatCalendarDay } from "../../shared/format.ts";
-import { inOrder } from "../../shared/in-order.ts";
 import { undoStore } from "../../shared/optimistic-undo.ts";
 import { known } from "../../shared/present.ts";
-import { sendChange } from "../issues/index.ts";
+import {
+  afterSaves as afterIssueSaves,
+  changeAfterSaves as changeIssueAfterSaves,
+  saveOnNewest,
+  takeVersion as takeIssueVersion,
+} from "../issues/index.ts";
 import { changeOf, type DateFields, type KeptDates } from "./date-fields.ts";
 import type { BarDays } from "./lines.ts";
+import { moveReleaseDate } from "../releases/index.ts";
 import { idOf, refreshTimeline, type TimelineRow } from "./timeline-data.ts";
 
 export { moved, shownWhileMoving, type Move } from "./moves.ts";
@@ -59,46 +64,18 @@ function movedText(key: string, days: number, dates: KeptDates): string {
   });
 }
 
-/** The newest version of each issue that a save of this screen made. */
-const savedVersions = new Map<string, number>();
-
-/**
- * The version somebody else's change made: *Use mine* of a clash saves the person's dates on it
- * (UX §4.7, as on the issue page).
- */
+/** The version a change of somebody else made: *Use mine* of a clash saves the dates of the person on it. */
 export function takeVersion(row: TimelineRow, version: number): void {
-  savedVersions.set(idOf(row), Math.max(versionNow(row), version));
-}
-
-/** The version a change is made on: what the page read, or what the last save made, whichever is newer. */
-function versionNow(row: TimelineRow): number {
-  const id = idOf(row);
-  return Math.max(row.issue.version ?? 0, savedVersions.get(id) ?? 0);
+  takeIssueVersion(idOf(row), row.issue.version, version);
 }
 
 /**
  * Saves new dates for the issue of a row, after every save of it asked for before, on the version
- * the one before made. A refusal comes back as the server's reason, in words, or as the change that
- * somebody made first, with the version it made.
+ * the one before made (`saveOnNewest`). A run of keys is saved as the page is hidden; the browser still
+ * sends it (`use-key-runs.ts`).
  */
 function save(row: TimelineRow, fields: DateFields, dates: KeptDates): Promise<Refused | null> {
-  const id = idOf(row);
-  return inOrder(`timeline:${id}`, async () => {
-    try {
-      const version = await sendChange(id, {
-        version: versionNow(row),
-        values: changeOf(fields, dates),
-        // A run of keys is saved as the page is hidden; the browser still sends it (`use-key-runs.ts`).
-        keepalive: true,
-      });
-      if (version !== undefined) {
-        savedVersions.set(id, version);
-      }
-      return null;
-    } catch (error) {
-      return refusedOf(error);
-    }
-  });
+  return saveOnNewest(idOf(row), row.issue.version, changeOf(fields, dates), true);
 }
 
 /**
@@ -107,21 +84,18 @@ function save(row: TimelineRow, fields: DateFields, dates: KeptDates): Promise<R
  * dates the drag saved, never on the version the page read.
  */
 export function afterSaves<T>(row: TimelineRow, work: (version: number) => Promise<T>): Promise<T> {
-  return inOrder(`timeline:${idOf(row)}`, () => work(versionNow(row)));
+  return afterIssueSaves(idOf(row), row.issue.version, work);
 }
 
 /**
- * Runs a change of an issue after every save of it that this screen asked for, like `afterSaves`,
- * and keeps the version it made, so the next change of the screen is made on that one.
+ * Runs a change of an issue after every save of it that this screen asked for, and keeps the version it
+ * made, so the next change of the screen is made on that one.
  */
-export async function changeAfterSaves(
+export function changeAfterSaves(
   row: TimelineRow,
   change: (version: number) => Promise<number | undefined>,
 ): Promise<void> {
-  const made = await afterSaves(row, change);
-  if (made !== undefined) {
-    savedVersions.set(idOf(row), made);
-  }
+  return changeIssueAfterSaves(idOf(row), row.issue.version, change);
 }
 
 /** What a change of dates says when it is done: by how many days it moved, or nothing more. */
@@ -153,4 +127,15 @@ export async function changeDates(
 /** Says why a bar cannot be moved. */
 export function sayLocked(row: TimelineRow): void {
   undoStore.offer({ message: t("timeline.locked", { key: known(row.issue.readable_id) ?? "" }) });
+}
+
+/**
+ * *Make it longer* of a release's *Delay*, confirmed: the release gets the *Release date* the warning
+ * names, with *Undo*, and the timeline is read again either way (`moveReleaseDate`).
+ */
+export function releaseLonger(
+  release: Parameters<typeof moveReleaseDate>[0],
+  day: string,
+): Promise<void> {
+  return moveReleaseDate(release, day, refreshTimeline);
 }

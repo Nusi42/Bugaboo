@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import {
   askAboutConflict,
   conflictAsker,
-  conflictPromptOf,
+  askAboutClash,
   type ConflictAsker,
 } from "../../shared/editing/index.ts";
 import type { Refused } from "../../shared/refused.ts";
@@ -31,21 +31,25 @@ function askAbout(
     return refused;
   }
   const { row, dates } = change;
-  void conflictPromptOf(refused.conflict, {
-    keepTheirs: () => {
-      askAboutConflict(null);
-      queue().show(idOf(row));
+  askAboutClash(
+    refused.conflict,
+    {
+      keepTheirs: () => {
+        askAboutConflict(null);
+        queue().show(idOf(row));
+      },
+      useMine: () => {
+        askAboutConflict(null);
+        takeVersion(row, refused.conflict.version ?? 0);
+        const now = queue().keptBar(row);
+        const step = now === undefined ? undefined : setTo(now, dates);
+        if (step !== undefined) {
+          queue().save(row, step, { move: "set" });
+        }
+      },
     },
-    useMine: () => {
-      askAboutConflict(null);
-      takeVersion(row, refused.conflict.version ?? 0);
-      const now = queue().keptBar(row);
-      const step = now === undefined ? undefined : setTo(now, dates);
-      if (step !== undefined) {
-        queue().save(row, step, { move: "set" });
-      }
-    },
-  }).then(screen.asker.ask);
+    screen.asker,
+  );
   return { asked: true };
 }
 

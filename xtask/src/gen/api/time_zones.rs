@@ -3,7 +3,8 @@
 //! (`bb_core::time::zone::offered_names`, which xtask links with the feature `zone-data`). The
 //! server accepts every one of them, and the other names it knows too.
 
-use super::TS_HEADER;
+use super::{Generated, TIME_ZONES_PATH, TS_HEADER, format_with_oxfmt};
+use crate::repo::Repo;
 
 /// The browser client's list of zones.
 pub(super) fn time_zones() -> String {
@@ -17,6 +18,14 @@ pub(super) fn time_zones() -> String {
 export const timeZones: readonly string[] = [{names}];
 "
     )
+}
+
+/// The generated file of the time zones, formatted as the others are.
+pub(super) fn generated(repo: &Repo) -> anyhow::Result<Generated> {
+    Ok(Generated::new(
+        TIME_ZONES_PATH,
+        format_with_oxfmt(repo, TIME_ZONES_PATH, &time_zones())?,
+    ))
 }
 
 #[cfg(test)]

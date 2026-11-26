@@ -110,3 +110,33 @@ export function DragHandle({ kind, id, label, look, children }: DragHandleProps)
     </span>
   );
 }
+
+export interface DragItemProps {
+  /** What is dragged: a word of the screen, from the list of drag kinds. */
+  readonly kind: string;
+  /** Which one: the key of the thing. */
+  readonly id: string;
+  /** Whether it can be dragged at all: not when the person may not change it. */
+  readonly canDrag: boolean;
+  /** The part of the thing, told whether it is being dragged now. */
+  readonly look: (dragging: boolean) => PartAttributes;
+  /** Why it cannot be dragged, shown on pointing at it. */
+  readonly title?: string | undefined;
+  readonly children: ReactNode;
+}
+
+/**
+ * A thing that a pointer drags as a whole (an issue of the calendar): the screen offers the same with
+ * keys and a button next to it (*Change due date …*), so there is no handle and no button of the drag
+ * itself. React Aria is told so (`hasDragButton`): a click with no pointer (*Enter*, a screen reader)
+ * then starts no drag and does not make the page inert. It is the thing that moves under the pointer,
+ * and nothing else on the screen moves (UX §6.4).
+ */
+export function DragItem({ kind, id, canDrag, look, title, children }: DragItemProps) {
+  const drag = useDragOf(kind, id, { enabled: canDrag, hasDragButton: true });
+  return (
+    <div {...look(drag.isDragging)} {...drag.dragProps} data-drag-id={id} title={title}>
+      {children}
+    </div>
+  );
+}
