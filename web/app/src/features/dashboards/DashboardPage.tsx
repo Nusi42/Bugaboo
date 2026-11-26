@@ -36,13 +36,14 @@ export function DashboardPage({ id, notFound }: DashboardPageProps) {
   return (
     <QueryGate error={read.error} data={read.data} notFound={notFound}>
       {(dashboard: Dashboard) => (
-        <div {...partOf(part.dashboard)}>
-          <DashboardHead dashboard={dashboard} />
-          {/* The boxes grow with what they hold: they are shown together once their first reads are in. */}
-          <ReadingHold>
+        // The head (its pin) and the boxes, which grow with what they hold, are shown together once their first reads
+        // are in, so nothing pushes another after the page is seen (UX §6.4).
+        <ReadingHold>
+          <div {...partOf(part.dashboard)}>
+            <DashboardHead dashboard={dashboard} />
             <DashboardBoxes key={dashboard.id} dashboard={dashboard} />
-          </ReadingHold>
-        </div>
+          </div>
+        </ReadingHold>
       )}
     </QueryGate>
   );

@@ -1,4 +1,4 @@
-import { Alert, alertTone, DelayedSkeleton } from "@bugaboo/ui";
+import { Alert, alertTone, DelayedSkeleton, HoldWhileLoading } from "@bugaboo/ui";
 import { lazyRouteComponent } from "@tanstack/react-router";
 import { Suspense } from "react";
 
@@ -12,7 +12,8 @@ import { WeekChart } from "./WeekChart.tsx";
 /**
  * The boxes that draw with a screen of their own are loaded when such a box is shown: the phone list of the timeline and
  * the sentences of the history. *Home* starts with neither, and they bring much with them that a slow phone would load
- * before *Home* shows.
+ * before *Home* shows. While such a box is loaded the hold of the page waits for it too, so it does not grow after the
+ * page is seen (UX §6.4).
  */
 const SmallTimeline = lazyRouteComponent(() => import("../timeline/index.ts"), "SmallTimeline");
 const Changes = lazyRouteComponent(() => import("./ChangesBox.tsx"), "Changes");
@@ -34,7 +35,7 @@ function Answered({ box, answer }: { readonly box: Box; readonly answer: BoxAnsw
   }
   if (answer.answer === "timeline") {
     return (
-      <Suspense fallback={<DelayedSkeleton lines={3} />}>
+      <Suspense fallback={<HoldWhileLoading />}>
         <SmallTimeline page={answer.timeline} />
       </Suspense>
     );
@@ -44,7 +45,7 @@ function Answered({ box, answer }: { readonly box: Box; readonly answer: BoxAnsw
     return <TimeSlot place={timePlace.home} />;
   }
   return (
-    <Suspense fallback={<DelayedSkeleton lines={3} />}>
+    <Suspense fallback={<HoldWhileLoading />}>
       <Changes changes={answer.changes} />
     </Suspense>
   );
