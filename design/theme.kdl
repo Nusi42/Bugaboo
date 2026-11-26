@@ -4702,6 +4702,16 @@ part "legend.swatch[variant=due]" {
     border-radius 0
 }
 
+// The switch *Deadline drivers* is the Legend's item of the outline: it reads like the other items, in their size and
+// color, and is as high as its track, which still is a target large enough for a pointer, so the Legend keeps the
+// height of a line of text (the head of the timeline fits a low window, UX §6.5).
+part "legend.item switch" {
+    min-height auto
+    gap "$space-2"
+    color inherit
+    font-size inherit
+}
+
 // The outline of a deadline driver, drawn as on the chart.
 part "legend.swatch[variant=driver]" {
     background none

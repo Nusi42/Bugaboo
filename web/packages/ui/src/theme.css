@@ -4618,6 +4618,13 @@ textarea,
   }
 }
 
+[data-part="legend.item"] [data-part="switch"] {
+  min-height: auto;
+  gap: var(--space-2);
+  color: inherit;
+  font-size: inherit;
+}
+
 [data-part="legend.swatch"][data-variant~="driver"] {
   background: none;
   outline: calc(var(--border-width) * 2) solid var(--accent);

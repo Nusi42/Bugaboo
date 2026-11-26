@@ -4270,7 +4270,6 @@
   "timeline.add-it": "Add dependency",
   "timeline.empty": "No issue of this search has a date yet. Give one dates from Not scheduled yet.",
   "timeline.legend-goal": "Goal over its sub-issues",
-  "timeline.legend-driver": "Deadline driver",
   "timeline.legend-due": "Due date of a goal",
   "timeline.goal": "Goal {key}, {days}",
   "timeline.goal-due": "Due date of {key}: {day}",

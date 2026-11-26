@@ -12100,9 +12100,6 @@ pub const TIMELINE_KEYS: MessageKey = MessageKey::new("timeline.keys");
 /// The message `timeline.later`.
 pub const TIMELINE_LATER: MessageKey = MessageKey::new("timeline.later");
 
-/// The message `timeline.legend-driver`.
-pub const TIMELINE_LEGEND_DRIVER: MessageKey = MessageKey::new("timeline.legend-driver");
-
 /// The message `timeline.legend-due`.
 pub const TIMELINE_LEGEND_DUE: MessageKey = MessageKey::new("timeline.legend-due");
 

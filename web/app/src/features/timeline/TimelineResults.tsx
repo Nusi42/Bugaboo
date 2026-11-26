@@ -117,7 +117,9 @@ export function TimelineResults(props: TimelineResultsProps) {
                 },
               }}
             />
-            {phone ? null : <TimelineLegend rows={model.read.rows} />}
+            {phone ? null : (
+              <TimelineLegend rows={model.read.rows} view={props.view} onView={props.onView} />
+            )}
           </InPaneHead>
           <TimelineBody
             props={props}

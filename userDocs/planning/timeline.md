@@ -9,7 +9,7 @@ Open a search, a saved search or the list of a project. Above the list, set **Sh
 - **Group by** puts the rows into groups you can fold: by goal (the start), project, person, status, priority, release (*Planned for release*), or an own field with choices. Press the head of a group to fold it or open it again. Issues without a value are in a group of their own, the last one: **No goal**, **No release**, **No person**, or **No** and the name of the field. The head of a goal shows its Issue ID and its title; the head of a release shows its name and the diamond of its *Release date*.
 - **Dates from** chooses the two date fields the bars use, the one they start at and the one they end at: *Start date* to *Due date*, or two own date fields of your organization.
 - **Plan by effort** lets the timeline work out the other end of a bar from its estimate when an issue has only one date. The days that are worked out are shown, never saved.
-- **Deadline drivers** outlines the issues that set an end date (see below).
+- **Deadline drivers** outlines the issues that set an end date (see below). On a computer the switch is the last item of the Legend, beside the outline it explains; on a phone it stands with the other tools.
 - **Zoom** sets how many days one column holds: **Days**, **Weeks**, **Months** or **Quarters**.
 - **Earlier** and **Later** step through time; **Today** goes back to today.
 

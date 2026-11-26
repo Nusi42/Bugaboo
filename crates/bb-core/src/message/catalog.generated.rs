@@ -10025,7 +10025,6 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "Arrow keys move a selected bar by a day, with Shift by a week. Alt with an arrow key moves its due date, Alt and Shift with an arrow key its start date.",
     ),
     ("timeline.later", "Later"),
-    ("timeline.legend-driver", "Deadline driver"),
     ("timeline.legend-due", "Due date of a goal"),
     ("timeline.legend-goal", "Goal over its sub-issues"),
     ("timeline.legend-holiday", "Holiday"),
