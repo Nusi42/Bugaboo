@@ -429,6 +429,7 @@ export const messages = {
   "relation-map.part-of": "is part of",
   "relation-map.has-sub-issue": "has sub-issue",
   "relation-map.show": "Show relation map",
+  "relation-map.place": "Relation map",
   "nav.relation-kinds": "Kinds of relation",
   "relation-kinds.date-effect-kinds": "Kinds that have it now: {kinds}.",
   "related-issues.loop-is": "The loop: {issues}.",

@@ -8663,6 +8663,9 @@ pub const RELATION_MAP_PART_OF: MessageKey = MessageKey::new("relation-map.part-
 /// The message `relation-map.picture`.
 pub const RELATION_MAP_PICTURE: MessageKey = MessageKey::new("relation-map.picture");
 
+/// The message `relation-map.place`.
+pub const RELATION_MAP_PLACE: MessageKey = MessageKey::new("relation-map.place");
+
 /// The message `relation-map.show`.
 pub const RELATION_MAP_SHOW: MessageKey = MessageKey::new("relation-map.show");
 

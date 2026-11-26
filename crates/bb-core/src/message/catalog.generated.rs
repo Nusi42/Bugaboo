@@ -6763,6 +6763,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
         "relation-map.picture-label",
         "Relation map of {key}, {count, plural, one {# issue} other {# issues}}, see the list",
     ),
+    ("relation-map.place", "Relation map"),
     (
         "relation-map.search-picture-label",
         "Relation map of the search, {count, plural, one {# issue} other {# issues}}, see the list",

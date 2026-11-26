@@ -1779,6 +1779,7 @@
   "relation-map.part-of": "is part of",
   "relation-map.has-sub-issue": "has sub-issue",
   "relation-map.show": "Show relation map",
+  "relation-map.place": "Relation map",
   "relation-map.title": "Relation map of {key}",
   "relation-map.steps-away": "Steps away",
   "relation-map.everything": "Everything",

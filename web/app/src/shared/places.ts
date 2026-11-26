@@ -25,6 +25,16 @@ export const places: readonly Place[] = [
     listed: false,
   },
   {
+    // The relation map of an issue, `/issues/WEB-142/map`: reached from the issue (*Show relation map*),
+    // and seen by whoever sees the issue. It stands under the start page like the issue, because a step
+    // above it would need the key of the issue; its own *Back to WEB-142* leads to the issue.
+    path: paths.issueMap,
+    name: "relation-map.place",
+    icon: iconName.issues,
+    parent: paths.home,
+    listed: false,
+  },
+  {
     // A run of an AI app, an agent or a change to many issues: reached by its address, `/runs/<id>`.
     path: paths.run,
     name: "runs.place",
