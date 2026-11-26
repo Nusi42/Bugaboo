@@ -1,7 +1,5 @@
 import { t } from "@bugaboo/messages";
-import type { MenuAction } from "@bugaboo/ui";
-
-import { ItemActions } from "../../shared/ItemActions.tsx";
+import { ItemActions, type MenuAction } from "@bugaboo/ui";
 
 /** What the menu of a box can do; a phone moves a box up and down, a computer by *Move …* and *Resize …*. */
 export interface BoxActions {

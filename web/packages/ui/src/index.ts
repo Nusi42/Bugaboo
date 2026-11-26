@@ -295,6 +295,6 @@ export {
   type ActionOverlayProps,
   type MenuAction,
 } from "./ActionMenu.tsx";
-export { MoreButton } from "./MoreButton.tsx";
+export { ItemActions, MoreButton, type ItemActionsProps } from "./MoreButton.tsx";
 export { InPlaceText, type InPlaceTextProps } from "./InPlaceText.tsx";
 export { Tabs, type TabItem, type TabsProps } from "./Tabs.tsx";

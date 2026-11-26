@@ -1,5 +1,5 @@
+import { ItemActions } from "@bugaboo/ui";
 import type { CalendarEntry } from "./calendar-data.ts";
-import { ItemActions } from "../../shared/ItemActions.tsx";
 import { useCalendar } from "./calendar-context.ts";
 
 /** The word that names the one action of the menu of an issue. */
