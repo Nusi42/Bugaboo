@@ -4,13 +4,13 @@ import { ada, signInThroughApi } from "./support/accounts.ts";
 import {
   cardOf,
   cards,
-  moveButton,
+  openMoveTo,
   openBoard,
   prepareBoard,
-  resetBoard,
   statusNames,
   statusOfIssue,
 } from "./support/board.ts";
+import { resetBoard } from "./support/board-reset.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 
@@ -42,10 +42,7 @@ test("plan_06_the_phone_shows_one_column_with_tabs_and_moves_by_move_to", async 
   await expect(cardOf(page, cards.open)).toBeHidden();
   // Nothing is dragged; *Move to …* is the way.
   await expect(cardOf(page, cards.working)).not.toHaveAttribute("draggable", "true");
-  await moveButton(page, cards.working).click();
-  const window = page.getByRole("dialog", {
-    name: t("board.move-to-title", { key: cards.working }),
-  });
+  const window = await openMoveTo(page, cards.working);
   await window.getByRole("button", { name: statusNames.done, exact: true }).click();
   await expect(cardOf(page, cards.working)).toBeHidden();
   const admin = await signInThroughApi(server, ada);

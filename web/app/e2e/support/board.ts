@@ -4,16 +4,8 @@ import { expect, type Locator, type Page } from "@playwright/test";
 
 import { savedSearchAddress } from "../../src/shared/paths.ts";
 import { ada, signInThroughApi, type ApiSession, type Instance } from "./accounts.ts";
-import {
-  createIssue,
-  firstIssueType,
-  issueOf,
-  prepareWeb,
-  setStatusAndPriority,
-  versionOf,
-} from "./issues.ts";
+import { firstIssueType, issueOf, prepareWeb, setStatusAndPriority, versionOf } from "./issues.ts";
 import { partIn } from "./parts.ts";
-import { inOrder } from "./sequence.ts";
 
 // The scene of the tests of the board (PLAN-06, UX §4.6): the project WEB of the tests of issues, its
 // issues spread over the columns of the workflow *Simple*, and the saved search *Plan board*, a board
@@ -42,7 +34,10 @@ export const cards = {
 /** The card limit of *In progress* that the scene sets: the column holds three cards, so it is over. */
 export const progressLimit = 2;
 
-/** The names of the statuses of the workflow *Bug*, the one the issues of WEB follow: *Open* does not lead to *Done* straight. */
+/**
+ * The names of the statuses of the columns: those of *Bug* (Open, In progress, Testing, Done, Won't fix), whose
+ * Bugs do not go from *Open* to *Done* straight. The Tasks of the scene follow *Simple*, which has no *Testing*.
+ */
 export const statusNames = {
   open: "Open",
   progress: "In progress",
@@ -54,7 +49,7 @@ export const statusNames = {
 let boardId = "";
 
 /** Puts an issue into a status, on the version it has. */
-async function moveTo(
+export async function moveTo(
   admin: ApiSession,
   key: string,
   status: string,
@@ -74,8 +69,21 @@ async function made(admin: ApiSession, title: string): Promise<void> {
   );
 }
 
+/** What the tests of a file add to the scene, so that `resetBoard` takes it away again. */
+export const added = {
+  issues: [] as string[],
+  searches: [] as string[],
+  shared: [] as string[],
+  projects: 0,
+};
+
 /** Gets the server ready: WEB, three cards in *In progress*, one *Done*, three *Open*, and *Plan board*. */
 export async function prepareBoard(server: Instance): Promise<void> {
+  // A new server: what the tests of the file before added to another one is not here.
+  added.issues.length = 0;
+  added.searches.length = 0;
+  added.shared.length = 0;
+  added.projects = 0;
   await prepareWeb(server);
   const admin = await signInThroughApi(server, ada);
   await made(admin, "Fourth card");
@@ -158,9 +166,26 @@ export function headOf(page: Page, name: string): Locator {
   return partIn(page, "board-head.cell").filter({ hasText: name });
 }
 
-/** *Move to …* of a card. */
-export function moveButton(page: Page, key: string): Locator {
-  return cardOf(page, key).getByRole("button", { name: t("board.move-to"), exact: true });
+/** The part of a card a hand takes: its first line, which is no link. */
+export function gripOf(page: Page, key: string): Locator {
+  return partIn(cardOf(page, key), "board-card.line");
+}
+
+/** The menu button of a card, *Actions for WEB-4*. */
+export function actionsOf(page: Page, key: string): Locator {
+  return cardOf(page, key).getByRole("button", {
+    name: t("common.actions-for", { name: key }),
+    exact: true,
+  });
+}
+
+/** Opens the menu of a card and chooses *Move to …*: the window of the columns it can go to. */
+export async function openMoveTo(page: Page, key: string): Promise<Locator> {
+  await actionsOf(page, key).click();
+  await page.getByRole("button", { name: t("board.move-to"), exact: true }).click();
+  const window = page.getByRole("dialog", { name: t("board.move-to-title", { key }) });
+  await expect(window).toBeVisible();
+  return window;
 }
 
 /** The status of an issue now, from the server. */
@@ -202,82 +227,4 @@ export async function shareWithWeb(session: ApiSession, search: string): Promise
       body: { kind: "project", id: await webProjectId(session) },
     }),
   );
-}
-
-/** Makes issues in WEB, which start in *Open*: a column longer than its first page. */
-export async function manyOpenCards(session: ApiSession, count: number): Promise<void> {
-  await inOrder(
-    Array.from({ length: count }, (_, at) => async () => {
-      await createIssue(session, "WEB", `Extra card ${String(at)}`);
-    }),
-  );
-}
-
-/** Where each issue of the scene starts, so a test can put them back. */
-const starts: readonly (readonly [string, string])[] = [
-  [cards.open, "open"],
-  [cards.working, "in-progress"],
-  [cards.other, "open"],
-  [cards.bug, "open"],
-  [cards.critical, "in-progress"],
-  [cards.done, "done"],
-  [cards.third, "in-progress"],
-];
-
-/** The key of the status an issue is in now. */
-async function statusKeyOf(session: ApiSession, key: string): Promise<string | undefined> {
-  const read = dataOf(
-    await session.client.GET("/api/v1/issues/{issue}", { params: { path: { issue: key } } }),
-  );
-  return read.issue.status?.key;
-}
-
-/** Puts an issue in a status again: straight where the workflow allows it, else by *Open*. */
-async function putBack(admin: ApiSession, key: string, status: string): Promise<void> {
-  if ((await statusKeyOf(admin, key)) === status) {
-    return;
-  }
-  try {
-    await moveTo(admin, key, status);
-  } catch {
-    // The workflow does not lead there straight (*Done* from *In progress* of a Bug): by *Open*.
-    await moveTo(admin, key, "open");
-    await moveTo(admin, key, status);
-  }
-}
-
-/** The cards where the scene put them, and *Plan board* as it was made: what the tests before changed is undone. */
-export async function resetBoard(server: Instance): Promise<void> {
-  const admin = await signInThroughApi(server, ada);
-  await inOrder(
-    starts.map(
-      ([key, status]) =>
-        () =>
-          putBack(admin, key, status),
-    ),
-  );
-  const saved = dataOf(
-    await admin.client.GET("/api/v1/saved-searches/{search}", {
-      params: { path: { search: boardId } },
-    }),
-  );
-  dataOf(
-    await admin.client.PATCH("/api/v1/saved-searches/{search}", {
-      params: { path: { search: boardId } },
-      body: {
-        version: saved.version,
-        presentation: {
-          view: "board",
-          columns: [],
-          group_by: null,
-          board: {
-            columns: null,
-            rows: null,
-            card_limits: [{ column: statusNames.progress, limit: progressLimit }],
-          },
-        },
-      },
-    }),
-  );
-  await admin.dispose();
 }

@@ -1,7 +1,8 @@
 import { t } from "@bugaboo/messages";
 
 import { ada } from "./support/accounts.ts";
-import { cardOf, cards, moveButton, openBoard, prepareBoard, resetBoard } from "./support/board.ts";
+import { cardOf, cards, actionsOf, openBoard, prepareBoard } from "./support/board.ts";
+import { resetBoard } from "./support/board-reset.ts";
 import { expectGoodInEveryLook } from "./support/checks.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
@@ -21,7 +22,9 @@ test("a11y the board, a card in hand and its windows, with the keyboard only", a
   await openBoard(page);
   await expectGoodInEveryLook(page);
   const key = cards.open;
-  await moveButton(page, key).focus();
+  await actionsOf(page, key).focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: t("board.move-to"), exact: true }).focus();
   await page.keyboard.press("Enter");
   const window = page.getByRole("dialog", { name: t("board.move-to-title", { key }) });
   await expect(window).toBeVisible();

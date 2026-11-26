@@ -1,8 +1,6 @@
-import { t } from "@bugaboo/messages";
-
 import { ada } from "./support/accounts.ts";
-import { cards, moveButton, openBoard, prepareBoard } from "./support/board.ts";
-import { expect, test } from "./support/fixtures.ts";
+import { cards, openMoveTo, openBoard, prepareBoard } from "./support/board.ts";
+import { test } from "./support/fixtures.ts";
 import { inFourThemes, inFourThemesAsWindow } from "./support/four-themes.ts";
 import { signIn } from "./support/flows.ts";
 import { screenshotFolder } from "./support/screenshots.ts";
@@ -19,10 +17,7 @@ test("the board and Move to …", async ({ page }) => {
   await signIn(page, ada);
   await openBoard(page);
   await inFourThemes(page, "board", MILESTONE);
-  await moveButton(page, cards.open).click();
-  await expect(
-    page.getByRole("dialog", { name: t("board.move-to-title", { key: cards.open }) }),
-  ).toBeVisible();
+  await openMoveTo(page, cards.open);
   await inFourThemesAsWindow(page, "move-to", MILESTONE);
   await page.keyboard.press("Escape");
 });

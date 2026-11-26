@@ -6,14 +6,17 @@ import {
   cards,
   columnOf,
   headOf,
-  manyOpenCards,
   plannedBoardId,
   prepareBoard,
-  resetBoard,
-  saveBoard,
   statusNames,
   webProjectId,
 } from "./support/board.ts";
+import {
+  manyOpenCards,
+  nextProjectName,
+  resetBoard,
+  saveExtraBoard,
+} from "./support/board-reset.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
 import { createIssue, setStatusAndPriority, versionOf } from "./support/issues.ts";
@@ -38,8 +41,9 @@ test("prj_06_a_board_across_sub_projects_merges_status_columns_by_name", async (
   server,
 }) => {
   const admin = await signInThroughApi(server, ada);
-  await createProject(admin, "SUB", "Subsite", await webProjectId(admin));
-  await giveOwnWorkflow(admin, "SUB", {
+  const sub = nextProjectName();
+  await createProject(admin, sub, "Subsite", await webProjectId(admin));
+  await giveOwnWorkflow(admin, sub, {
     name: "Subsite",
     statuses: [
       { key: "new", name: "Open", status_group: "not-started" },
@@ -51,14 +55,14 @@ test("prj_06_a_board_across_sub_projects_merges_status_columns_by_name", async (
       { from: "going", to: "review", button: "Check", rules: {} },
     ],
   });
-  const made = await createIssue(admin, "SUB", "A card of the sub-project");
+  const made = await createIssue(admin, sub, "A card of the sub-project");
   await setStatusAndPriority(admin, made, await versionOf(admin, made), {
     status: "going",
     priority: "normal",
   });
-  const id = await saveBoard(
+  const id = await saveExtraBoard(
     admin,
-    "Across",
+    `Across ${sub}`,
     { columns: null, rows: null, card_limits: [] },
     "project within WEB",
   );

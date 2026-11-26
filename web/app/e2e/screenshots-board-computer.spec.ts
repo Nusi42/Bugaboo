@@ -6,7 +6,7 @@ import {
   cardOf,
   cards,
   columnOf,
-  moveButton,
+  openMoveTo,
   openBoard,
   prepareBoard,
   statusNames,
@@ -32,10 +32,7 @@ test("the board, a card in hand, Move to … and Customize", async ({ page }) =>
   await signIn(page, ada);
   await openBoard(page);
   await inFourThemes(page, "board", MILESTONE);
-  await moveButton(page, cards.open).click();
-  await expect(
-    page.getByRole("dialog", { name: t("board.move-to-title", { key: cards.open }) }),
-  ).toBeVisible();
+  await openMoveTo(page, cards.open);
   await inFourThemesAsWindow(page, "move-to", MILESTONE);
   await page.keyboard.press("Escape");
   await takeUp(page, partIn(cardOf(page, cards.bug), "board-card.line"));

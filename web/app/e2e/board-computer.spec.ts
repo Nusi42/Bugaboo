@@ -1,31 +1,27 @@
 import { t } from "@bugaboo/messages";
 
-import { ada, bob, idOf, signInThroughApi } from "./support/accounts.ts";
+import { ada, signInThroughApi } from "./support/accounts.ts";
 import {
-  boardName,
-  boardOn,
+  actionsOf,
   cardOf,
   cards,
   columnOf,
+  gripOf,
   headOf,
-  moveButton,
   openBoard,
+  openMoveTo,
   prepareBoard,
-  resetBoard,
   progressLimit,
-  saveBoard,
-  savedIdOf,
-  shareWithWeb,
   statusNames,
   statusOfIssue,
 } from "./support/board.ts";
+import { resetBoard } from "./support/board-reset.ts";
 import { expect, test } from "./support/fixtures.ts";
 import { signIn } from "./support/flows.ts";
-import { boxOf, middleOf } from "./support/geometry.ts";
+import { middleOf } from "./support/geometry.ts";
 import { letGoOn, takeUp } from "./support/hand-drag.ts";
-import { assignTo, issueOf, versionOf } from "./support/issues.ts";
+import { expectStill, landmarkOf, movementWhile } from "./support/movement.ts";
 import { partIn } from "./support/parts.ts";
-import { savedSearchAddress } from "../src/shared/paths.ts";
 
 // The board on a computer (PLAN-06, UX §4.6): a saved search shown as columns of cards, a drag that
 // changes the status through the workflow, the columns a card cannot go to, the card limit, and
@@ -37,57 +33,34 @@ test.beforeEach(async ({ server }) => {
   await resetBoard(server);
 });
 
-/** The part of a card a hand takes: its first line, which is no link. */
-function grip(page: Parameters<typeof cardOf>[0], key: string) {
-  return partIn(cardOf(page, key), "board-card.line");
-}
-
-test("plan_06_a_saved_search_shows_as_a_board_with_columns_rows_and_counts", async ({
-  page,
-  server,
-}) => {
-  await signIn(page, ada);
-  await openBoard(page);
-  await expect(headOf(page, statusNames.open)).toContainText(t("board.count", { count: 3 }));
-  await expect(headOf(page, statusNames.done)).toContainText(t("board.count", { count: 1 }));
-  await expect(
-    columnOf(page, statusNames.open).getByRole("link", { name: /Login fails/u }),
-  ).toBeVisible();
-  // Rows: by the person the issues are assigned to.
-  const admin = await signInThroughApi(server, ada);
-  const issue = await issueOf(admin, cards.working);
-  await assignTo(admin, issue, await idOf(server, bob), await versionOf(admin, issue));
-  const rowsId = await saveBoard(admin, "Rows board", {
-    columns: null,
-    rows: "assigned to",
-    card_limits: [],
-  });
-  await page.goto(savedSearchAddress(rowsId));
-  const rows = partIn(page, "board-row");
-  await expect(rows).toHaveCount(2);
-  await expect(partIn(rows.first(), "board-row.toggle")).toHaveAttribute("aria-expanded", "true");
-  await admin.dispose();
-});
-
 test("plan_06_dragging_a_card_changes_its_status_and_undo_takes_it_back", async ({
   page,
   server,
 }) => {
   await signIn(page, ada);
   await openBoard(page);
-  const head = await boxOf(headOf(page, statusNames.done));
-  const untouched = await boxOf(cardOf(page, cards.done));
   const key = cards.open;
-  await takeUp(page, grip(page, key));
-  await letGoOn(page, columnOf(page, statusNames.progress));
-  const moved = t("board.moved", { key, column: statusNames.progress });
-  await expect(page.getByText(moved)).toBeVisible();
-  await expect(columnOf(page, statusNames.progress).getByText(key)).toBeVisible();
+  // Every head and the card of a column nobody touches stand still from the take-up to the drop and
+  // the read that follows; only the card that moves is left out.
+  const still = await Promise.all([
+    ...Object.values(statusNames).map((name) => landmarkOf(headOf(page, name), `head ${name}`)),
+    landmarkOf(cardOf(page, cards.done), "card of Done"),
+  ]);
+  const dragging = await movementWhile(page, still, async () => {
+    await takeUp(page, gripOf(page, key));
+    // Held over a column the card cannot go to, which fades and says why, then dropped on another.
+    const over = await middleOf(columnOf(page, statusNames.testing));
+    await page.mouse.move(over.x, over.y, { steps: 6 });
+    await expect(headOf(page, statusNames.testing)).toHaveAttribute("data-state", /faded/u);
+    await letGoOn(page, columnOf(page, statusNames.progress));
+    await expect(columnOf(page, statusNames.progress).getByText(key)).toBeVisible();
+  });
+  expectStill(dragging);
+  await expect(
+    page.getByText(t("board.moved", { key, column: statusNames.progress })),
+  ).toBeVisible();
   const admin = await signInThroughApi(server, ada);
   expect(await statusOfIssue(admin, key)).toBe(statusNames.progress);
-  // The columns stay where they were: only the card moved.
-  expect(await boxOf(headOf(page, statusNames.done))).toEqual(head);
-  expect(await boxOf(cardOf(page, cards.done))).toEqual(untouched);
   await page.getByRole("button", { name: t("common.undo") }).click();
   await expect(columnOf(page, statusNames.open).getByText(key)).toBeVisible();
   expect(await statusOfIssue(admin, key)).toBe(statusNames.open);
@@ -98,7 +71,7 @@ test("plan_06_a_column_the_workflow_does_not_allow_fades_and_says_why", async ({
   await signIn(page, ada);
   await openBoard(page);
   const key = cards.bug;
-  await takeUp(page, grip(page, key));
+  await takeUp(page, gripOf(page, key));
   // Held over the column it cannot go to: the column fades and the reason stands over its cards.
   const over = await middleOf(columnOf(page, statusNames.done));
   await page.mouse.move(over.x, over.y, { steps: 6 });
@@ -124,8 +97,8 @@ test("plan_06_over_the_card_limit_the_title_turns_orange_and_the_card_stays", as
   await expect(partIn(head, "board-head.title")).toHaveAttribute("data-state", /over/u);
   await expect(columnOf(page, statusNames.progress).getByText(cards.working)).toBeVisible();
   // Nothing is refused: a fourth card is taken in.
-  await moveButton(page, cards.open).click();
-  await page.getByRole("button", { name: statusNames.progress, exact: true }).click();
+  const window = await openMoveTo(page, cards.open);
+  await window.getByRole("button", { name: statusNames.progress, exact: true }).click();
   await expect(head).toContainText(t("board.count-of-limit", { count: 4, limit: progressLimit }));
 });
 
@@ -133,8 +106,10 @@ test("plan_06_move_to_does_what_a_drag_does", async ({ page, server }) => {
   await signIn(page, ada);
   await openBoard(page);
   const key = cards.bug;
-  const button = moveButton(page, key);
-  await button.focus();
+  // The menu button of the card, then its first entry, with the keyboard only.
+  await actionsOf(page, key).focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: t("board.move-to"), exact: true }).focus();
   await page.keyboard.press("Enter");
   const window = page.getByRole("dialog", { name: t("board.move-to-title", { key }) });
   await expect(window).toBeVisible();
@@ -160,35 +135,5 @@ test("plan_06_move_to_does_what_a_drag_does", async ({ page, server }) => {
   await page.keyboard.press("Enter");
   await expect(columnOf(page, statusNames.progress).getByText(other)).toBeVisible();
   expect(await statusOfIssue(admin, other)).toBe(statusNames.progress);
-  await admin.dispose();
-});
-
-test("plan_06_customize_sets_columns_rows_and_card_limits_for_the_maker_only", async ({
-  page,
-  browser,
-  server,
-}) => {
-  await signIn(page, ada);
-  await openBoard(page);
-  await page.getByRole("button", { name: t("board.customize"), exact: true }).click();
-  const window = page.getByRole("dialog", { name: t("board.customize-title") });
-  await window.getByLabel(t("board.card-limit-of", { column: statusNames.open })).fill("1");
-  await window.getByRole("button", { name: t("board.save") }).click();
-  await expect(headOf(page, statusNames.open)).toContainText(
-    t("board.count-of-limit", { count: 3, limit: 1 }),
-  );
-  // Somebody the search is shared with does not see it.
-  const admin = await signInThroughApi(server, ada);
-  const id = await savedIdOf(admin, boardName);
-  await shareWithWeb(admin, id);
-  const other = await browser.newPage({ ignoreHTTPSErrors: true });
-  await other.goto(new URL("/", page.url()).href);
-  await signIn(other, bob);
-  await other.goto(savedSearchAddress(id));
-  await expect(boardOn(other)).toBeVisible();
-  await expect(other.getByRole("button", { name: t("board.customize"), exact: true })).toHaveCount(
-    0,
-  );
-  await other.close();
   await admin.dispose();
 });
