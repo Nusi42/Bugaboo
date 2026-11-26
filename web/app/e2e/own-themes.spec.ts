@@ -6,9 +6,10 @@ import {
   chooseOwnDarkTheme,
   frameVariable,
   refusedByThePolicy,
+  stylesWritten,
   watchThePolicy,
 } from "./support/own-themes.ts";
-import { pageAttributes } from "../../packages/ui/src/tokens.ts";
+import { pageAttributes, runTimeVariables } from "../../packages/ui/src/tokens.ts";
 
 /** The color of the own theme: an accent that reads well on Dusk. */
 const ACCENT = "#b4a8ff";
@@ -34,7 +35,11 @@ test("thm_04 the page uses an own theme without an inline style", async ({ page,
   await expect(page.locator("html")).toHaveAttribute(pageAttributes.ownTheme, theme.id);
   await expect(page.locator(`link[rel='stylesheet'][href='${theme.sheet}']`)).toHaveCount(1);
   await expect.poll(() => frameVariable(page, "--accent")).toBe(ACCENT);
-  // Nothing on the page carries a style of its own, and the policy refused nothing.
-  await expect(page.locator("[style]")).toHaveCount(0);
+  // Nothing on the page carries a style of its own, and the policy refused nothing. The one exception of the rules is a
+  // number the code measures or places by (`run-time="true"` in the theme file, coding standards §4): the place of a box
+  // of *Home*. No color, size or other property is written on an element.
+  const allowed = new Set(runTimeVariables.map((name) => `--${name}`));
+  const written = await stylesWritten(page);
+  expect(written.filter((property) => !allowed.has(property))).toEqual([]);
   expect(await refusedByThePolicy(page)).toEqual([]);
 });

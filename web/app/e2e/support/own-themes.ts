@@ -58,6 +58,19 @@ export async function watchThePolicy(page: Page): Promise<void> {
   }, REFUSED);
 }
 
+/** The properties written on the elements of the page in their own `style`, each as often as it is written. */
+export function stylesWritten(page: Page): Promise<readonly string[]> {
+  return page.evaluate(() => {
+    const written: string[] = [];
+    for (const element of document.querySelectorAll("[style]")) {
+      if (element instanceof HTMLElement) {
+        written.push(...element.style);
+      }
+    }
+    return written;
+  });
+}
+
 /** What the content security policy of the page refused so far. */
 export function refusedByThePolicy(page: Page): Promise<unknown> {
   return page.evaluate((name: string) => Reflect.get(window, name) as unknown, REFUSED);
