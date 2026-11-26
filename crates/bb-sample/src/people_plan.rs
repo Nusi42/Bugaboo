@@ -9,7 +9,8 @@
 use bb_app::access::StartingRole;
 use bb_core::access_key::KeyChoice;
 use bb_core::settings::{
-    DEVICE, REGION_DATE_FORMAT, REGION_FIRST_DAY, REGION_NUMBER_FORMAT, SettingDefinition,
+    DEVICE, FIRST_DAY_MONDAY, NUMBER_FORMAT_POINT, REGION_DATE_FORMAT, REGION_FIRST_DAY,
+    REGION_NUMBER_FORMAT, SettingDefinition,
 };
 
 use crate::error::SampleError;
@@ -72,9 +73,13 @@ pub const ACCESS_KEYS: [(&str, KeyChoice); 3] = [
     ("Reporting", KeyChoice::SeeOnly),
 ];
 
+/// The time zone of the administrator who runs the demos: the zone the pictures of the views are
+/// taken in, so what she sees is what the pictures show.
+pub const DEMO_TIME_ZONE: &str = "Europe/Berlin";
+
 /// The time zones the people of the sample live in: spread over the world.
 pub const TIME_ZONES: [&str; 10] = [
-    "Europe/Berlin",
+    DEMO_TIME_ZONE,
     "Europe/London",
     "Europe/Lisbon",
     "America/New_York",
@@ -231,7 +236,22 @@ pub fn sample_people(seed: u64, names: &NameList) -> Result<Vec<SamplePerson>, S
         };
     }
     name_the_planners(&mut people);
+    if let Some(first) = people.first_mut() {
+        first.region = demo_region(first.region.date_format.clone());
+    }
     Ok(people)
+}
+
+/// The region of the administrator who runs the demos: the usual case of the pictures and the
+/// demos, a week from Monday, Berlin and a point before the decimals; the date format stays the one
+/// the seed drew. Set after everything was drawn, so nothing else of the sample changes.
+fn demo_region(date_format: String) -> Region {
+    Region {
+        time_zone: DEMO_TIME_ZONE.to_owned(),
+        date_format,
+        number_format: NUMBER_FORMAT_POINT.to_owned(),
+        first_day: FIRST_DAY_MONDAY.to_owned(),
+    }
 }
 
 /// Whether this address is one of the planners': nobody drawn from the names may have it, or two
@@ -424,6 +444,18 @@ mod tests {
                 assert!(setting.format().accepts(value), "{value}");
                 assert_ne!(value, DEVICE, "a choice, not the device");
             }
+        }
+    }
+
+    #[test]
+    fn the_administrator_of_the_demos_starts_the_week_on_monday_in_berlin() {
+        for seed in [1, 42, 7_000] {
+            let people = sample_people(seed, &names()).unwrap();
+            let ada = &people[0];
+            assert!(ada.is_fixed() && ada.role == StartingRole::Administrator);
+            assert_eq!(ada.region.time_zone, DEMO_TIME_ZONE);
+            assert_eq!(ada.region.first_day, FIRST_DAY_MONDAY);
+            assert_eq!(ada.region.number_format, NUMBER_FORMAT_POINT);
         }
     }
 

@@ -10,6 +10,8 @@ pub const DATE_FORMAT_DAY_MONTH_YEAR: &str = "day-month-year";
 /// The value of *Date format* for month, day, year.
 pub const DATE_FORMAT_MONTH_DAY_YEAR: &str = "month-day-year";
 
+/// The value of *Number format* for a point before the decimals and a comma between groups.
+pub const NUMBER_FORMAT_POINT: &str = "point";
 /// The value of *Number format* for a comma before the decimals.
 pub const NUMBER_FORMAT_COMMA: &str = "comma";
 /// The value of *Number format* for a space between groups and a comma before the decimals.
@@ -33,7 +35,10 @@ pub(super) const DATE_FORMAT_CHOICES: &[Choice] = &[
 
 pub(super) const NUMBER_FORMAT_CHOICES: &[Choice] = &[
     Choice::new("device", message::THEME_DEVICE),
-    Choice::new("point", message::SETTING_REGION_NUMBER_FORMAT_POINT),
+    Choice::new(
+        NUMBER_FORMAT_POINT,
+        message::SETTING_REGION_NUMBER_FORMAT_POINT,
+    ),
     Choice::new(
         NUMBER_FORMAT_COMMA,
         message::SETTING_REGION_NUMBER_FORMAT_COMMA,
@@ -44,6 +49,8 @@ pub(super) const NUMBER_FORMAT_CHOICES: &[Choice] = &[
     ),
 ];
 
+/// The value of *First day of the week* for a week from Monday to Sunday.
+pub const FIRST_DAY_MONDAY: &str = "monday";
 /// The value of *First day of the week* for a week from Sunday to Saturday.
 pub const FIRST_DAY_SUNDAY: &str = "sunday";
 /// The value of *First day of the week* for a week from Saturday to Friday.
@@ -51,7 +58,7 @@ pub const FIRST_DAY_SATURDAY: &str = "saturday";
 
 pub(super) const FIRST_DAY_CHOICES: &[Choice] = &[
     Choice::new("device", message::THEME_DEVICE),
-    Choice::new("monday", message::SETTING_REGION_FIRST_DAY_MONDAY),
+    Choice::new(FIRST_DAY_MONDAY, message::SETTING_REGION_FIRST_DAY_MONDAY),
     Choice::new(FIRST_DAY_SUNDAY, message::SETTING_REGION_FIRST_DAY_SUNDAY),
     Choice::new(
         FIRST_DAY_SATURDAY,
