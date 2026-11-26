@@ -316,6 +316,13 @@ async fn plan_05_a_stored_loop_of_dependencies_shows_the_warning_loop() -> TestR
                 json!(["open-the-relation", "keep-and-accept"])
             );
         }
+        // One starts before Other ends, which it waits for over the loop: a *Delay*, but the schedule never
+        // moves an issue on a loop, so *Move it after* is not offered; only *Keep and accept*.
+        let delayed = warnings_on(&found, &one_id)
+            .into_iter()
+            .find(|warning| warning["kind"] == "delay")
+            .ok_or_else(|| format!("no delay on {one}: {found}"))?;
+        assert_eq!(delayed["ways_out"], json!(["keep-and-accept"]), "{delayed}");
         // *Keep and accept* keeps it faded, as every warning.
         let version = issue(&mut ada, &one).await?["version"].clone();
         let accepted = ada

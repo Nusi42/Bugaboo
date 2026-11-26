@@ -568,7 +568,7 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
                 person,
                 away_days: away.map(|away| away.days),
                 away_weeks: away.map(|away| away.weeks).filter(|weeks| *weeks > 0),
-                ways_out: ways_out_for(plan, warning),
+                ways_out: ways_out_for(plan, *id, warning),
                 move_after: warning.move_after(),
                 due_needed: warning.due_needed(),
                 accepted: accepted_by,
@@ -617,10 +617,23 @@ impl<S: AuthStore + SearchStore> Ctx<'_, S> {
     }
 }
 
-/// The ways out of a warning for the reader: *Make it longer* of a release's *Delay* changes the
-/// *Release date*, so it is offered only to a reader who may manage releases in its project.
-fn ways_out_for(plan: &Plan, warning: &Warning) -> Vec<bb_core::plan::warning::WayOut> {
+/// The ways out of a warning of `issue` for the reader: *Make it longer* of a release's *Delay*
+/// changes the *Release date*, so it is offered only to a reader who may manage releases in its
+/// project; and the schedule never moves an issue on a loop of dependencies, so an issue that has
+/// the warning *Loop* is offered no *Move it after*.
+fn ways_out_for(
+    plan: &Plan,
+    issue: IssueId,
+    warning: &Warning,
+) -> Vec<bb_core::plan::warning::WayOut> {
     let mut ways = warning.ways_out();
+    let on_loop = plan
+        .warnings
+        .iter()
+        .any(|(on, found)| *on == issue && matches!(found, Warning::Loop { .. }));
+    if on_loop {
+        ways.retain(|way| *way != bb_core::plan::warning::WayOut::MoveItAfter);
+    }
     if let Warning::Delay(Delay::Release { release, .. }) = warning {
         let manages = plan.releases.get(release).is_some_and(|release| {
             plan.sight
