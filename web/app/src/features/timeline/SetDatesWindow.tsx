@@ -2,10 +2,10 @@ import { t } from "@bugaboo/messages";
 import { useState } from "react";
 
 import { DayBox } from "../../shared/DayBox.tsx";
+import { FormWindow } from "../../shared/FormWindow.tsx";
 import { useMistakes } from "../../shared/mistakes.ts";
 import { windowForms } from "../../shared/window-forms.ts";
 import type { KeptDates } from "./date-fields.ts";
-import { TimelineWindow } from "./TimelineWindow.tsx";
 
 export interface SetDatesWindowProps {
   /** The readable ID of the issue. */
@@ -28,7 +28,7 @@ export function SetDatesWindow({ readableId, names, kept, onSave, onClose }: Set
   // A day half typed holds *Save*: it is never sent as no date, which would take the date away.
   const mistakes = useMistakes();
   return (
-    <TimelineWindow
+    <FormWindow
       form={windowForms.setDates}
       title={t("timeline.set-dates-title", { key: readableId })}
       submit={t("timeline.save-dates")}
@@ -45,6 +45,6 @@ export function SetDatesWindow({ readableId, names, kept, onSave, onClose }: Set
         onMistake={mistakes.mark("start")}
       />
       <DayBox label={names.end} value={end} onChange={setEnd} onMistake={mistakes.mark("end")} />
-    </TimelineWindow>
+    </FormWindow>
   );
 }

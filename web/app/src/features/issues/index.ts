@@ -48,6 +48,13 @@ export {
 export { sendChange } from "./issue-requests.ts";
 export { useFoundGroups } from "./found-issues.ts";
 export { groupName, groupOfKey, type GroupOfKey } from "./group-keys.ts";
+export {
+  dateFieldOfWord,
+  dayKeptIn,
+  dayValues,
+  ownDateWords,
+  type DateField,
+} from "./date-field.ts";
 export { ownColumnText, useOwnColumns, type OwnColumn, type OwnColumns } from "./own-columns.ts";
 export type { IssueRequestValues, IssueValues } from "./issue-values.ts";
 export { TimeFactorChange } from "./TimeFactorChange.tsx";

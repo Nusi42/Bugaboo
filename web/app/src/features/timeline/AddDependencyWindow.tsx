@@ -2,10 +2,10 @@ import { t } from "@bugaboo/messages";
 import { ChoiceGroup, choiceGroupLook, part, partOf } from "@bugaboo/ui";
 import { useState } from "react";
 
+import { FormWindow } from "../../shared/FormWindow.tsx";
 import { windowForms } from "../../shared/window-forms.ts";
 import { IssuePicker } from "../search/index.ts";
 import type { Pair } from "./dependencies.ts";
-import { TimelineWindow } from "./TimelineWindow.tsx";
 
 /** Which of the two issues comes first: the one of the bar, or the one that is chosen. */
 type Way = "first" | "waits";
@@ -34,7 +34,7 @@ export function AddDependencyWindow({ readableId, onAdd, onClose }: AddDependenc
     }
   };
   return (
-    <TimelineWindow
+    <FormWindow
       form={windowForms.addDependency}
       title={t("timeline.add-dependency-title", { key: readableId })}
       submit={t("timeline.add-it")}
@@ -55,6 +55,6 @@ export function AddDependencyWindow({ readableId, onAdd, onClose }: AddDependenc
         <p {...partOf(part.text)}>{t("timeline.other-chosen", { key: other })}</p>
       )}
       <IssuePicker onPick={setOther} />
-    </TimelineWindow>
+    </FormWindow>
   );
 }
