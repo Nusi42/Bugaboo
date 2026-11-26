@@ -76,8 +76,8 @@ function ChartTable({
 
 /**
  * A chart and its table (CFG-03, M10-Q13): the picture is for the eye only; the table is what screen readers read, and
- * *Show as table* shows it instead of the picture. The switch keeps its place when it turns, so nothing moves under the
- * pointer.
+ * *Show as table* shows it instead of the picture. The switch stands first, before the picture or the table, so it
+ * keeps its place when it turns and nothing moves under the pointer.
  */
 function ChartFrame({
   rows,
@@ -91,6 +91,9 @@ function ChartFrame({
   const [table, setTable] = useState(false);
   return (
     <figure {...partOf(part.chart)} aria-label={labels.name}>
+      <div {...partOf(part.chartSwitch)}>
+        <Switch label={labels.asTable} isSelected={table} onChange={setTable} />
+      </div>
       {table ? null : (
         <div {...partOf(part.chartPicture)} aria-hidden>
           {picture}
@@ -98,9 +101,6 @@ function ChartFrame({
       )}
       <div {...partOf(table ? part.chartTable : part.visuallyHidden)}>
         <ChartTable rows={rows} labels={labels} />
-      </div>
-      <div {...partOf(part.chartSwitch)}>
-        <Switch label={labels.asTable} isSelected={table} onChange={setTable} />
       </div>
     </figure>
   );
