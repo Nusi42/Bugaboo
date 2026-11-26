@@ -18,6 +18,7 @@ import {
   resultsBox,
   startChange,
 } from "./support/dashboards.ts";
+import { boxReadsFrom, waitForBoxAnswers } from "./support/dashboard-reads.ts";
 import { test } from "./support/fixtures.ts";
 import { apiOf, signIn } from "./support/flows.ts";
 import { prepareWeb } from "./support/issues.ts";
@@ -40,6 +41,8 @@ async function openInChange(page: Page, server: Parameters<typeof apiOf>[1]): Pr
   const made = await createDashboard(apiOf(page, server), "Placing", layout);
   await page.goto(dashboardAddress(made.id));
   await expect(boxOnScreen(page, "First")).toBeVisible();
+  // The first reads of the boxes are in before anything is dragged: their grey shapes are a first read, not a drag.
+  await waitForBoxAnswers(page);
   await startChange(page);
   return made.id;
 }
@@ -91,12 +94,16 @@ test("cfg_03_nothing_moves_under_the_cursor_while_a_box_is_dragged", async ({ pa
     await landmarkOf(boxOnScreen(page, "Second"), "second"),
     await landmarkOf(boxOnScreen(page, "Third"), "third"),
   ];
-  // While *Third* is dragged over *Second*, every box stays where it is; only its shadow shows where it lands.
+  // While *Third* is dragged over *Second*, every box stays where it is; only its shadow shows where it lands. No box
+  // reads its answer again, neither while it is dragged nor once it is let go: a change of places changes no answer.
+  const reads = boxReadsFrom(page);
   const dragging = await movementWhile(page, landmarks, async () => {
     await dragBy(page, handleOf(page, "Third"), { columns: 6, rows: -2 }, false);
   });
   expectStill(dragging);
   await page.mouse.up();
+  await expect(page.getByText(t("dashboards.moved", { title: "Third" }))).toBeVisible();
+  expect(reads.stop()).toEqual([]);
 });
 
 test("cfg_03_a_box_dragged_to_the_bottom_edge_scrolls_and_lands_below_what_was_shown", async ({

@@ -191,14 +191,17 @@ export function useChangeDashboard(dashboard: Dashboard) {
           },
         }),
       ),
-    onSuccess: (changed: Dashboard) => {
+    onSuccess: (changed: Dashboard, change: DashboardChange) => {
       queryClient.setQueryData(
         dashboard.home ? queryKeys.dashboards.home() : queryKeys.dashboards.one(changed.id),
         changed,
       );
-      // A new name shows in the lists and the pins; what the boxes answer does not change with their places.
-      void queryClient.invalidateQueries({ queryKey: queryKeys.dashboards.lists() });
-      refreshPins();
+      // A new name shows in the lists and the pins; a change of the boxes reads nothing again, neither the lists nor
+      // what the boxes answer, which does not change with their places.
+      if (change.name !== undefined) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.dashboards.lists() });
+        refreshPins();
+      }
     },
   });
 }

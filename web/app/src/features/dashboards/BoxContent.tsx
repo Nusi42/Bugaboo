@@ -1,4 +1,4 @@
-import { Alert, alertTone, Skeleton } from "@bugaboo/ui";
+import { Alert, alertTone, DelayedSkeleton } from "@bugaboo/ui";
 
 import { messageOf } from "../../shared/errors.ts";
 import { TimeSlot, timePlace } from "../shell/index.ts";
@@ -46,6 +46,7 @@ export interface BoxContentProps {
 /**
  * What a box shows (ADR-0050, decision 4): each kind drawn by the screen that exists for its data, never a copy of it:
  * the slim issue list, the charts, the timer's block, the phone list of the timeline and the sentences of the history.
+ * While the first read is on its way, grey shapes stand in only once it takes longer than a moment (UX §6).
  */
 export function BoxContent({ box, read }: BoxContentProps) {
   if (read.data !== undefined) {
@@ -54,5 +55,5 @@ export function BoxContent({ box, read }: BoxContentProps) {
   if (read.isError) {
     return <Alert tone={alertTone.danger}>{messageOf(read.error)}</Alert>;
   }
-  return <Skeleton lines={3} />;
+  return <DelayedSkeleton lines={3} />;
 }
