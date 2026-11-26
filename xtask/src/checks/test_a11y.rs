@@ -426,11 +426,21 @@ visit(paths.longer); // paths.home and paths.signIn
     }
 
     #[test]
-    fn the_real_screens_have_a_key_for_every_drag() {
+    fn a11y_every_drag_of_the_board_calendar_and_dashboards_has_its_key() {
         let repo = crate::repo::Repo::discover().unwrap();
         let files = dragging_files(&repo).unwrap();
         let messages = read_text(&repo, MESSAGES_FILE).unwrap();
         assert!(drags_have_keys(&files, &messages).is_empty());
+        // The board, the calendar and a dashboard each name what they drag, so each drag is held to its key.
+        let kinds = read_text(&repo, DRAG_KINDS_FILE).unwrap();
+        for kind in [
+            "board-card",
+            "calendar-issue",
+            "dashboard-box",
+            "dashboard-corner",
+        ] {
+            assert!(kinds.contains(&format!("kind: \"{kind}\"")), "{kind}");
+        }
     }
 
     #[test]
