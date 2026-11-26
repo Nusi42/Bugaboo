@@ -28,7 +28,7 @@ use crate::tools::side_by_side;
 const LAYOUT_FILE: &str = "tools/dev/sample.json";
 /// The moment every run of `--check` and the sample of `--fixed` end at: 2027-01-15 08:00:00 UTC,
 /// an arbitrary fixed one, so the runs are comparable and the pictures of the views are the same.
-pub(crate) const FIXED_START: i64 = 1_800_000_000;
+pub(crate) const FIXED_START: i64 = bb_dev_words::accounts::CLOCK_START;
 /// The database of the throwaway cluster that holds the sample made with `--database postgres`.
 const SAMPLE_DATABASE: &str = "bbsample";
 /// What `--check` makes of the tables of a PostgreSQL run, so the scan for secrets covers them.
@@ -437,7 +437,7 @@ mod tests {
                 large: false,
                 check: false,
                 seed: Some(7),
-                start: 1_800_000_000,
+                start: FIXED_START,
                 database: DatabaseKind::Postgres,
                 issues: None,
                 out,
@@ -454,7 +454,7 @@ mod tests {
                 "--seed",
                 "7",
                 "--start",
-                "1800000000",
+                &FIXED_START.to_string(),
                 "--database",
                 "postgres",
                 "--out",
