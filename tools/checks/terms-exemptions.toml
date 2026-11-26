@@ -122,7 +122,12 @@ reason = "The screen lock of the device. Not a Layout."
 
 [[allow]]
 term = "screen"
-at = ["userDocs/accessibility-statement.md", "userDocs/planning/board.md"]
+at = [
+  "userDocs/accessibility-statement.md",
+  "userDocs/planning/board.md",
+  "userDocs/dashboards/README.md",
+  "userDocs/dashboards/building-a-dashboard.md",
+]
 phrases = ["screen reader"]
 reason = "A program that reads the page aloud to a person who cannot see it. Not a Layout."
 
@@ -312,3 +317,9 @@ reason = "The Space key of the keyboard, which picks up a card of the board. Not
 term = "state"
 at = ["messages/en.json#releases.state-line"]
 reason = "The state of a release (Planned, Released, Retired) is the glossary's own word for it (ADR-0049, decision 2); it is not the status of an issue, which the glossary means."
+
+[[allow]]
+term = "made"
+at = ["userDocs/dashboards/README.md", "userDocs/dashboards/building-a-dashboard.md"]
+phrases = ["ready-made"]
+reason = "Ready-made is the glossary's own term (Ready-made box): a box Bugaboo offers ready to use. It does not mean creating something, which the glossary calls Create."

@@ -23,6 +23,7 @@ End-user and administrator documentation. It is written alongside the work on Bu
 - [Access keys](access-keys/README.md): keys for your scripts and apps, and [using a key in a script](access-keys/use-a-key.md)
 - [Connected apps](access-keys/connected-apps.md): AI apps you allowed to work with your account, and taking them back
 - [Time](time/README.md): the timer, adding time by hand, and the work day
+- [Dashboards](dashboards/README.md): pages of boxes that show searches, numbers and charts, shared like saved searches, and *Home*; [building a dashboard](dashboards/building-a-dashboard.md)
 - [The timeline](planning/timeline.md): a search shown as bars over its days, with dependencies, goals and *Not scheduled yet*, changed by dragging or by the keyboard
 - [The board](planning/board.md): a search shown as cards in columns, moved by dragging, by keys or by *Move to …*, with card limits, rows and *Customize*
 - [The calendar](planning/calendar.md): a search shown on the days it is due as a month or a week, issues moved by dragging, by a box or by the keyboard, and goals and releases as marks
