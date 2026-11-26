@@ -126,7 +126,7 @@ test("time_03 a list grouped by a length lists the issues of each range", async 
   await page.goto(`${projectIssuesAddress("WEB")}?${query}`);
   // The range of 4 to 8 hours holds the goal (6 hours) and lists it, like any other group.
   const range = t("issues.length-range", { from: "4h", to: "8h" });
-  await expect(page.getByRole("row", { name: new RegExp(range, "u") })).toBeVisible();
+  await expect(page.getByRole("row", { name: new RegExp(`^${range}`, "u") })).toBeVisible();
   await expect(page.getByText(t("issues.group-unlisted"), { exact: true })).toHaveCount(0);
   await expect(page.getByRole("row", { name: new RegExp(goal.key, "u") }).first()).toBeVisible();
   // The issues without an estimate are a group with the name of what they lack. The range of the
@@ -134,7 +134,10 @@ test("time_03 a list grouped by a length lists the issues of each range", async 
   await page.getByRole("row", { name: new RegExp(`^${range},`, "u") }).click();
   await expect(
     page.getByRole("row", {
-      name: new RegExp(t("issues.length-not-set", { field: t("issue-field.estimated-time") }), "u"),
+      name: new RegExp(
+        `^${t("issues.length-not-set", { field: t("issue-field.estimated-time") })}`,
+        "u",
+      ),
     }),
   ).toBeVisible();
 });

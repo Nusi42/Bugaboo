@@ -21,15 +21,18 @@ export async function pictureIfWanted(page: Page, name: string): Promise<void> {
 
 /**
  * Gives the Not started row the keyboard focus the way a person does: the list is focused as the one
- * stop of the grid (it lands on the row used last, the ticked first row), and two arrow keys go down by
- * the head of the next group to the row. A phone has no keyboard, so there nothing is done.
+ * stop of the grid (it lands on the row used last, the ticked first row), and three arrow keys go down
+ * by the row of totals of its group (QRY-08) and the head of the next group to the row. A phone has no
+ * keyboard, so there nothing is done.
  */
 export async function focusRowByKeys(page: Page, row: Locator): Promise<void> {
   if (layoutOf(page) === "phone") {
     return;
   }
   await grid(page).focus();
-  await inOrder(["ArrowDown", "ArrowDown"].map((key) => () => page.keyboard.press(key)));
+  await inOrder(
+    ["ArrowDown", "ArrowDown", "ArrowDown"].map((key) => () => page.keyboard.press(key)),
+  );
   await expect(row).toBeFocused();
   await expect(row).toHaveAttribute("data-focus-visible", "true");
 }
