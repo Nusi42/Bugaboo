@@ -4,6 +4,7 @@
   "outPostgres": "target/sample-postgres",
   "devOut": "target/dev-sample",
   "checkOut": "target/sample-check",
+  "fixedOut": "target/sample-fixed",
   "dataFolder": "data",
   "signInFile": "sign-in.txt",
   "dumpFile": "dump.json",

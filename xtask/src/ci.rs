@@ -64,6 +64,9 @@ pub(crate) fn plan(root: &Path) -> anyhow::Result<Vec<Step>> {
             &["dataset", "sample"],
         )
         .in_background(),
+        // The small sample the pictures of the views are taken on, at a fixed moment (architecture
+        // §11, "Visual tests"); on Windows only, where they are compared.
+        crate::visual::fixed_sample(&xtask.to_string_lossy()).in_background(),
         // SQLite and PostgreSQL: the cluster is started, used and stopped around the tests.
         Step::new(
             "Rust tests",
@@ -139,6 +142,7 @@ mod tests {
                 "build the browser app",
                 "all checks",
                 "create the sample organization",
+                "create the sample at a fixed moment",
                 "Rust tests",
                 "Rust doc tests",
                 "sample organization",
@@ -166,8 +170,22 @@ mod tests {
         assert_eq!(
             skipped,
             [
-                false, true, false, false, false, false, false, false, true, false, true, true,
-                true, on_linux, on_linux
+                false,
+                true,
+                false,
+                false,
+                !cfg!(windows),
+                false,
+                false,
+                false,
+                false,
+                true,
+                false,
+                true,
+                true,
+                true,
+                on_linux,
+                on_linux
             ]
         );
     }
@@ -183,7 +201,10 @@ mod tests {
         assert!(find("create the sample organization") < find("Rust tests"));
         assert!(steps[find("browser end-to-end tests")].joins_background);
         assert!(find("create the sample organization") < find("browser end-to-end tests"));
-        // No other step runs in the background.
-        assert_eq!(steps.iter().filter(|step| step.background).count(), 1);
+        // The sample of the pictures likewise; no other step runs in the background.
+        let fixed = find("create the sample at a fixed moment");
+        assert!(steps[fixed].background);
+        assert!(fixed < find("browser end-to-end tests"));
+        assert_eq!(steps.iter().filter(|step| step.background).count(), 2);
     }
 }

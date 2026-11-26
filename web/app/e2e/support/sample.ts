@@ -17,15 +17,28 @@ export interface SamplePerson extends Person {
 
 const MS_PER_SECOND = 1000;
 
-export function sampleFolder(): string {
-  return resolve(repoRoot, layout.out);
+/**
+ * Which sample: the full one, which ends at the moment it was made (`cargo xtask dataset sample`), or
+ * the small one that ends at a fixed moment (`cargo xtask dataset sample --fixed`), which the pictures
+ * of the views are taken on (architecture §11, *Visual tests*).
+ */
+export type Sample = "full" | "fixed";
+
+/** The command that makes each sample. */
+const makes: Readonly<Record<Sample, string>> = {
+  full: "cargo xtask dataset sample",
+  fixed: "cargo xtask dataset sample --fixed",
+};
+
+export function sampleFolder(sample: Sample = "full"): string {
+  return resolve(repoRoot, sample === "fixed" ? layout.fixedOut : layout.out);
 }
 
 /** Fails with what to do when the sample was not made. */
-function requireSample(): void {
-  if (!existsSync(join(sampleFolder(), layout.signInFile))) {
+function requireSample(sample: Sample = "full"): void {
+  if (!existsSync(join(sampleFolder(sample), layout.signInFile))) {
     throw new Error(
-      `Make the sample organization first: cargo xtask dataset sample (it makes ${sampleFolder()}).`,
+      `Make the sample organization first: ${makes[sample]} (it makes ${sampleFolder(sample)}).`,
     );
   }
 }
@@ -36,9 +49,9 @@ function requireSample(): void {
  * code app, its secret, and for the few with an access key, the key, separated by tabs (an empty
  * column stays empty); lines that start with `#` are comments.
  */
-export function samplePeople(): readonly SamplePerson[] {
-  requireSample();
-  return peopleIn(sampleFolder());
+export function samplePeople(sample: Sample = "full"): readonly SamplePerson[] {
+  requireSample(sample);
+  return peopleIn(sampleFolder(sample));
 }
 
 /** The people of a sample (or a large dataset) made in `folder`, from its `sign-in.txt`. */
@@ -69,8 +82,12 @@ export function peopleIn(folder: string): readonly SamplePerson[] {
 }
 
 /** A person of the sample that matches, or an error that says what the sample lacks. */
-function somebody(what: string, matches: (person: SamplePerson) => boolean): SamplePerson {
-  const found = samplePeople().find((person) => matches(person));
+function somebody(
+  what: string,
+  matches: (person: SamplePerson) => boolean,
+  sample: Sample = "full",
+): SamplePerson {
+  const found = samplePeople(sample).find((person) => matches(person));
   if (found === undefined) {
     throw new Error(`The sample has nobody who is ${what}.`);
   }
@@ -100,9 +117,9 @@ export function sampleWithCodeApp(): { readonly person: SamplePerson; readonly s
 }
 
 /** Puts a fresh copy of the sample's data folder into `folder`, which a server then starts on. */
-export function copySampleInto(folder: string): void {
-  requireSample();
-  cpSync(join(sampleFolder(), layout.dataFolder), folder, { recursive: true });
+export function copySampleInto(folder: string, sample: Sample = "full"): void {
+  requireSample(sample);
+  cpSync(join(sampleFolder(sample), layout.dataFolder), folder, { recursive: true });
 }
 
 /**
@@ -110,9 +127,11 @@ export function copySampleInto(folder: string): void {
  * the marker file of the sample. The pictures of the showcase fix the clock of the browser to it, so
  * the words about how long ago something was are the same on every run (M2C-F104).
  */
-export function sampleStartMs(): number {
-  requireSample();
-  const marker: unknown = JSON.parse(readFileSync(join(sampleFolder(), layout.markerFile), "utf8"));
+export function sampleStartMs(sample: Sample = "full"): number {
+  requireSample(sample);
+  const marker: unknown = JSON.parse(
+    readFileSync(join(sampleFolder(sample), layout.markerFile), "utf8"),
+  );
   const start: unknown =
     typeof marker === "object" && marker !== null
       ? Reflect.get(marker, layout.markerStartKey)
@@ -124,8 +143,8 @@ export function sampleStartMs(): number {
 }
 
 /** The first administrator of the sample, who runs the demos (Ada Brandt). */
-export function sampleAdministrator(): SamplePerson {
-  return somebody("an Administrator", (person) => person.role === "administrator");
+export function sampleAdministrator(sample: Sample = "full"): SamplePerson {
+  return somebody("an Administrator", (person) => person.role === "administrator", sample);
 }
 
 /** The first cost center the sample makes, as `tools/dev/sample.json` writes it. */

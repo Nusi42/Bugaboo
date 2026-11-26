@@ -47,6 +47,7 @@ mod testutil;
 mod tools;
 mod try_install;
 mod upgrade;
+mod visual;
 mod wasm;
 mod web_code;
 mod wsl;
@@ -112,6 +113,11 @@ enum Command {
     Db {
         #[command(subcommand)]
         action: DbAction,
+    },
+    /// The reference pictures of the views (architecture §11, "Visual tests").
+    Visual {
+        #[command(subcommand)]
+        action: VisualAction,
     },
     /// Make or check the sample organization (architecture §11, "Sample organization").
     Dataset {
@@ -236,6 +242,10 @@ enum DatasetKind {
         /// fictional (TEST-SAMPLE-DATA). It always uses both databases and its own folders.
         #[arg(long)]
         check: bool,
+        /// Instead: make the small sample that ends at a fixed moment, in its own folder, which
+        /// the pictures of the views are taken on (architecture §11, "Visual tests").
+        #[arg(long, conflicts_with_all = ["check", "database", "issues", "out", "seed"])]
+        fixed: bool,
     },
     /// The large dataset of PERF-01: 500 people, 500 projects and a million issues, written in
     /// big transactions (architecture §11, "Large dataset"). On both databases unless one is named.
@@ -254,6 +264,21 @@ enum DatasetKind {
         #[arg(long)]
         check: bool,
     },
+}
+
+#[derive(Subcommand)]
+enum VisualAction {
+    /// Take the pictures that differ from their references, or have none, again (Windows only);
+    /// look at each before it is committed.
+    Update,
+}
+
+impl VisualAction {
+    fn run(self, repo: &repo::Repo) -> anyhow::Result<bool> {
+        match self {
+            Self::Update => visual::update(repo.root()),
+        }
+    }
 }
 
 #[derive(Subcommand)]
@@ -383,6 +408,7 @@ fn run() -> anyhow::Result<ExitCode> {
         )?)),
         Command::Dev { sample } => Ok(steps::exit_code(dev::run(&repo, sample)?)),
         Command::Dataset { kind } => Ok(steps::exit_code(dataset::run(&repo, &request_of(kind))?)),
+        Command::Visual { action } => Ok(steps::exit_code(action.run(&repo)?)),
         Command::Bench { database } => Ok(steps::exit_code(bench::run(
             &repo,
             &database.into_iter().collect::<Vec<_>>(),
@@ -492,12 +518,14 @@ fn request_of(kind: DatasetKind) -> dataset::Request {
             issues,
             out,
             check,
+            fixed,
         } => dataset::Request {
             seed,
             issues,
             database: database.unwrap_or(DatabaseKind::Sqlite),
             out,
             check,
+            fixed,
             large: false,
             databases: Vec::new(),
         },
@@ -512,6 +540,7 @@ fn request_of(kind: DatasetKind) -> dataset::Request {
             database: database.unwrap_or(DatabaseKind::Sqlite),
             out: None,
             check,
+            fixed: false,
             large: true,
             databases: database.into_iter().collect(),
         },
@@ -616,5 +645,21 @@ mod tests {
         // Without --check both are fine.
         assert!(parses(&["--database", "postgres", "--out", "somewhere"]));
         assert!(parses(&[]));
+    }
+
+    #[test]
+    fn the_fixed_sample_takes_nothing_of_its_own() {
+        assert!(parses(&["--fixed"]));
+        for other in [
+            ["--check"].as_slice(),
+            &["--seed", "7"],
+            &["--database", "postgres"],
+            &["--issues", "10"],
+            &["--out", "somewhere"],
+        ] {
+            let mut arguments = vec!["--fixed"];
+            arguments.extend_from_slice(other);
+            assert!(!parses(&arguments), "{arguments:?}");
+        }
     }
 }

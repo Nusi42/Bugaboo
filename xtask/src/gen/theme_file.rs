@@ -22,7 +22,7 @@ mod links;
 mod themes;
 use builder::Builder;
 pub(crate) use kinds::{LightOrDark, Own};
-pub(crate) use themes::{THEMES_FOLDER, ThemeSource, is_theme_source, theme_sources};
+pub(crate) use themes::{THEMES_FOLDER, ThemeSource, is_theme_source, theme_ids, theme_sources};
 
 /// Where the base theme lives, relative to the repository root.
 pub(crate) const THEME_PATH: &str = "design/theme.kdl";

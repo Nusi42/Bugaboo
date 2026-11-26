@@ -15,6 +15,8 @@ export const viewports = {
   phone: { width: 360, height: 740 },
   /** The phone of the pictures for the review. */
   phoneForPictures: { width: 400, height: 860 },
+  /** The phone of the reference pictures of the views (architecture §11, *Visual tests*). */
+  phoneOfVisualTests: { width: 390, height: 844 },
 } as const;
 
 /**

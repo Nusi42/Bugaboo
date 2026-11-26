@@ -849,6 +849,15 @@ files = [
 status = "active"
 
 [[check]]
+id = "TEST-VISUAL"
+title = "Every kind of view and a dashboard has its reference pictures in the four themes, on a computer and a phone, and they stay under their size"
+rule = "architecture §11 (Visual tests), UX design §1.1"
+tool = "xtask (the kinds of view of the API description, ViewKind, and the kinds beyond them of web/app/e2e/visual/settings.json, each pictured in every theme of design/themes/ on every device of the settings, as web/app/e2e/visual/pictures/<kind>-<theme>-<device>.png; no picture of a kind, theme or device that does not exist; all together at most the megabytes of the settings); the allowed share of differing pixels is 0, measured by three runs in a row that gave the same pixels (architecture §11); the comparison itself is the Playwright project visual (web/app/e2e/visual/*.spec.ts) in cargo xtask ci on Windows"
+when = ["commit", "ci"]
+files = ["web/app/e2e/visual/**", "design/themes/**", "web/packages/api-client/openapi.json"]
+status = "active"
+
+[[check]]
 id = "TEST-SEARCH-ROUNDTRIP"
 title = "Simple ⇄ Advanced search never loses information"
 rule = "QRY-02, ADR-0005"

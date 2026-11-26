@@ -7,7 +7,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { repoRoot } from "../../../tooling/ports.ts";
 import { askLive, waitUntilReady } from "./ready.ts";
 import { closePool } from "./session-transport.ts";
-import { copySampleInto } from "./sample.ts";
+import { copySampleInto, type Sample } from "./sample.ts";
 
 /** A Bugaboo server started for one group of tests, with a data folder of its own. */
 export interface Instance {
@@ -180,7 +180,7 @@ function serving(executable: string, port: number, folder: string, env: Settings
 
 /**
  * Starts the real program on `port` with an empty data folder, or with a fresh copy of the sample
- * organization (`sample`, made by `cargo xtask dataset sample`), and waits until it answers. The
+ * organization (`sample`: the full one or the one at a fixed moment, see `Sample`), and waits until it answers. The
  * program is the one `cargo build` made and the app is the one `npm run build` made: the tests
  * drive what people get (ADR-0023). `label` names the data folder, to tell leftovers apart. A
  * `dataDir` that is given is used as it is and left in place when the server stops: the load run
@@ -190,7 +190,7 @@ export async function startServer(
   port: number,
   label: string,
   settings: Settings = {},
-  sample = false,
+  sample: Sample | false = false,
   dataDir?: string,
 ): Promise<Instance> {
   const executable = program();
@@ -202,8 +202,8 @@ export async function startServer(
   }
   const given = dataDir !== undefined;
   const folder = dataDir ?? mkdtempSync(join(tmpdir(), `bugaboo-e2e-${label}-`));
-  if (sample) {
-    copySampleInto(folder);
+  if (sample !== false) {
+    copySampleInto(folder, sample);
   }
   const server = serving(executable, port, folder, { ...generousLimits, ...settings });
   const origin = `https://localhost:${String(port)}`;

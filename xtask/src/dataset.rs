@@ -1,10 +1,11 @@
 //! `cargo xtask dataset sample [--seed N] [--database sqlite|postgres] [--out <folder>] [--check]`:
 //! makes the sample organization (architecture §11), or checks that it is made the same every
-//! time (TEST-SAMPLE-DATA).
+//! time (TEST-SAMPLE-DATA). `--fixed` makes the small sample that ends at a fixed moment, which
+//! the pictures of the views are taken on (architecture §11, *Visual tests*).
 //!
 //! xtask runs the `bb-sample` program as a process, so xtask itself does not link the store or the use cases.
 //! The program never reads the clock: this file hands it the start moment (now; a fixed moment
-//! for `--check`, so the runs are comparable).
+//! for `--check` and `--fixed`, so the runs are comparable).
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -25,8 +26,9 @@ use crate::tools::side_by_side;
 /// Where the folders and file names of the sample are written down once; the program `bb-sample`
 /// and the end-to-end tests read the same file.
 const LAYOUT_FILE: &str = "tools/dev/sample.json";
-/// The moment every run of `--check` ends at: 2027-01-15 08:00:00 UTC, an arbitrary fixed one.
-pub(crate) const CHECK_START: i64 = 1_800_000_000;
+/// The moment every run of `--check` and the sample of `--fixed` end at: 2027-01-15 08:00:00 UTC,
+/// an arbitrary fixed one, so the runs are comparable and the pictures of the views are the same.
+pub(crate) const FIXED_START: i64 = 1_800_000_000;
 /// The database of the throwaway cluster that holds the sample made with `--database postgres`.
 const SAMPLE_DATABASE: &str = "bbsample";
 /// What `--check` makes of the tables of a PostgreSQL run, so the scan for secrets covers them.
@@ -63,6 +65,8 @@ pub(crate) struct Request {
     pub(crate) database: DatabaseKind,
     pub(crate) out: Option<PathBuf>,
     pub(crate) check: bool,
+    /// Make the small sample that ends at [`FIXED_START`] in its own folder instead.
+    pub(crate) fixed: bool,
     /// Make the large dataset of PERF-01 instead (`cargo xtask dataset large`).
     pub(crate) large: bool,
     /// The databases of a large dataset; none means both.
@@ -81,6 +85,10 @@ pub(crate) fn run(repo: &Repo, request: &Request) -> anyhow::Result<bool> {
         return check(repo, &program, request.seed);
     }
     let layout = load_layout(repo.root())?;
+    if request.fixed {
+        let out = in_folder(repo.root(), &layout.fixed_out);
+        return small_sample(&program, repo.root(), &layout, &out, FIXED_START);
+    }
     let out = match (&request.out, request.database) {
         (Some(out), _) => std::path::absolute(out)
             .with_context(|| format!("{} is not a usable folder", out.display()))?,
@@ -145,23 +153,36 @@ pub(crate) fn create_for_dev(root: &Path) -> anyhow::Result<Option<PathBuf>> {
     };
     let layout = load_layout(root)?;
     let out = in_folder(root, &layout.dev_out);
+    let made = small_sample(&program, root, &layout, &out, now()?)?;
+    Ok(made.then(|| out.join(&layout.data_folder)))
+}
+
+/// Makes the small sample of the layout on SQLite in `out`, ending at `start`, from the default
+/// seed; whether the program finished.
+fn small_sample(
+    program: &Path,
+    root: &Path,
+    layout: &Layout,
+    out: &Path,
+    start: i64,
+) -> anyhow::Result<bool> {
     let status = program_command(
-        &program,
+        program,
         root,
         &Arguments {
             large: false,
             check: false,
             seed: None,
-            start: now()?,
+            start,
             database: DatabaseKind::Sqlite,
             issues: Some(layout.issues.small_total),
-            out: &out,
+            out,
         },
-        (&layout, None),
+        (layout, None),
     )
     .status()
     .with_context(|| format!("could not start {}", program.display()))?;
-    Ok(status.success().then(|| out.join(&layout.data_folder)))
+    Ok(status.success())
 }
 
 /// Builds the program and returns where it is; `None` when the build failed (cargo said why).
@@ -305,7 +326,7 @@ impl CheckRuns<'_> {
                 large: false,
                 check: false,
                 seed: self.seed,
-                start: CHECK_START,
+                start: FIXED_START,
                 database,
                 issues: Some(self.layout.issues.small_total),
                 out: &out,
@@ -379,6 +400,7 @@ mod tests {
             &layout.out_postgres,
             &layout.dev_out,
             &layout.check_out,
+            &layout.fixed_out,
         ] {
             // Inside the work folder, written with / as separator.
             assert!(folder.starts_with("target/"), "{folder}");
@@ -389,10 +411,11 @@ mod tests {
             &layout.out_postgres,
             &layout.dev_out,
             &layout.check_out,
+            &layout.fixed_out,
         ]
         .into_iter()
         .collect();
-        assert_eq!(distinct.len(), 4, "every run has a folder of its own");
+        assert_eq!(distinct.len(), 5, "every run has a folder of its own");
         for name in [
             &layout.data_folder,
             &layout.sign_in_file,

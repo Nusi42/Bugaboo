@@ -6,6 +6,7 @@ import { readPorts } from "../../../tooling/ports.ts";
 import { browserLocale } from "../../../tooling/viewports.ts";
 import { nothing } from "./layout.ts";
 import { type Instance, type Settings, startServer } from "./server.ts";
+import { type Sample } from "./sample.ts";
 import { Tolerances } from "./tolerance.ts";
 
 // The texts a test expects write their numbers as the browser of the test does (M5 exit F-A5: the texts take the
@@ -121,7 +122,7 @@ interface Servers {
   readonly forFile: (
     file: string,
     settings: Settings,
-    sample: boolean,
+    sample: Sample | false,
     prepare: Prepare,
   ) => Promise<Instance>;
   readonly stop: () => Promise<void>;
@@ -159,10 +160,11 @@ interface Options {
   serverSettings: Settings;
   /**
    * Whether the server of a file starts on a fresh copy of the sample organization instead of an
-   * empty data folder (`test.use({ sample: true })`). The people and their passwords are in
-   * `samplePeople()`.
+   * empty data folder (`test.use({ sample: true })`), or on the small one that ends at a fixed
+   * moment (`test.use({ sample: "fixed" })`, the pictures of the views). The people and their
+   * passwords are in `samplePeople()`.
    */
-  sample: boolean;
+  sample: boolean | "fixed";
   /**
    * What a file needs in place before its first test (`test.use({ preparation: { run: … } })`).
    * A function inside an object, because Playwright takes a plain function for a fixture.
@@ -216,7 +218,8 @@ export const test = base.extend<
   freshData: ["", { option: true }],
   server: async ({ pool, serverSettings, sample, preparation, freshData }, provide, testInfo) => {
     const data = freshData === "" ? testInfo.file : `${testInfo.file}#${freshData}`;
-    await provide(await pool.forFile(data, serverSettings, sample, preparation.run));
+    const which = sample === true ? "full" : sample;
+    await provide(await pool.forFile(data, serverSettings, which, preparation.run));
   },
   tolerate: async ({ browser: _browser }, provide) => {
     await provide((context, lines, mode) => {

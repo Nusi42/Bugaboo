@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 import { defineConfig } from "@playwright/test";
 
+import visual from "../app/e2e/visual/settings.json" with { type: "json" };
 import { readPorts, repoRoot } from "./ports.ts";
 import { browserLocale, viewports } from "./viewports.ts";
 
@@ -18,6 +19,12 @@ const portsForWorkers = ports.e2eWorkersTo - ports.e2eWorkersFrom + 1;
  * that measures a time goes into such a file; one that measures nothing does not.
  */
 const speedFiles = "**/perf-*.spec.ts";
+
+/**
+ * The reference pictures of the views (architecture §11, *Visual tests*): a project of their own, so
+ * they are compared with their settings and their differences go into `.work/`.
+ */
+const visualFiles = "**/visual/*.spec.ts";
 
 /** How many WebKit tests run at the same time (see the project). */
 const WEBKIT_WORKERS = 2;
@@ -74,14 +81,14 @@ export default defineConfig({
     {
       name: "desktop",
       // A spec for a phone only (`*-phone.spec.ts`) is not run here.
-      testIgnore: [speedFiles, "**/*-phone.spec.ts"],
+      testIgnore: [speedFiles, visualFiles, "**/*-phone.spec.ts"],
       use: { ...chromium, viewport: viewports.computer },
     },
     {
       name: "phone",
       // Ten browsers at once are shown on a computer; the phone has the locks in WebKit below.
       // A spec for a computer only (`*-computer.spec.ts`) is not run here.
-      testIgnore: ["**/concurrent/**", speedFiles, "**/*-computer.spec.ts"],
+      testIgnore: ["**/concurrent/**", speedFiles, visualFiles, "**/*-computer.spec.ts"],
       use: { ...chromium, viewport: viewports.phone, hasTouch: true },
     },
     // A phone in a browser that is not Chromium (M2-F12): only what a phone is used for most, the
@@ -97,6 +104,25 @@ export default defineConfig({
       // a time halves what the computer has to hold at once.
       workers: WEBKIT_WORKERS,
       use: { browserName: "webkit", viewport: viewports.phone, hasTouch: true },
+    },
+    // The reference pictures of every view and a dashboard, in the four themes, on a computer and a
+    // phone, on the sample that ends at a fixed moment (`cargo xtask dataset sample --fixed`). A
+    // picture that differs by more than the allowed share fails, with the difference in
+    // `.work/visual/`; `cargo xtask visual update` takes the changed ones again. On Windows only.
+    {
+      name: "visual",
+      testMatch: visualFiles,
+      outputDir: resolve(repoRoot, ".work", "visual"),
+      snapshotPathTemplate: resolve(repoRoot, visual.pictures, "{arg}{ext}"),
+      expect: {
+        toHaveScreenshot: {
+          maxDiffPixelRatio: visual.allowedShare,
+          animations: "disabled",
+          caret: "hide",
+          scale: "css",
+        },
+      },
+      use: { ...chromium, timezoneId: visual.timeZone, reducedMotion: "reduce" },
     },
     // The speed of the pages of an issue, the lists and the search page on the sample (PERF-01, M3
     // WP-11, M5-F98): after the other projects, with every other worker idle. By hand:

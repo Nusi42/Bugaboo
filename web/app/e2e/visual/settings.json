@@ -1,0 +1,10 @@
+{
+  "$comment": "The settings of the visual tests (architecture §11, 'Visual tests'), written once: the Playwright configuration, the suite and the check TEST-VISUAL read them. 'pictures' is the folder of the reference pictures, relative to the work folder; 'kinds' are the pictures beyond the kinds of view of the API description (ViewKind); a picture is named '<kind>-<theme>-<device>.png'. 'allowedShare' is the share of the pixels of a picture that may differ before the comparison fails: 0, because three runs in a row on a quiet computer (2026-11-26, all 48 pictures) gave the same pixels; a pixel counts as different beyond Playwright's own color threshold of each pixel. 'hour' is the time of day of the clock of the browser on the last day of the sample, in 'timeZone'.",
+  "pictures": "web/app/e2e/visual/pictures",
+  "kinds": ["dashboard"],
+  "devices": ["computer", "phone"],
+  "mostMegabytes": 10,
+  "allowedShare": 0,
+  "timeZone": "Europe/Berlin",
+  "hour": 10
+}

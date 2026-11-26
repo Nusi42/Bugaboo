@@ -42,6 +42,14 @@ pub(crate) fn theme_sources(repo: &Repo) -> anyhow::Result<Vec<ThemeSource>> {
         .collect()
 }
 
+/// The IDs of the built-in themes: the names of the files of `design/themes/`, in name order.
+pub(crate) fn theme_ids(repo: &Repo) -> anyhow::Result<Vec<String>> {
+    theme_sources(repo)?
+        .iter()
+        .map(|source| theme_id(&source.path).map(str::to_owned))
+        .collect()
+}
+
 #[cfg(test)]
 impl ThemeFile {
     /// A base text with the theme files of the repository: for the tests that change the base.

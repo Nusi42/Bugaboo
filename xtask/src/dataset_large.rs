@@ -16,7 +16,7 @@ use bb_dev_words::database::DatabaseKind;
 use bb_dev_words::sample::Layout;
 
 use crate::dataset::{
-    Arguments, CHECK_START, Request, in_folder, load_layout, now, program_command,
+    Arguments, FIXED_START, Request, in_folder, load_layout, now, program_command,
 };
 use crate::db;
 use crate::output;
@@ -298,7 +298,7 @@ fn twice(
             .transpose()?;
         let run = Run {
             out: &out,
-            start: CHECK_START,
+            start: FIXED_START,
             issues,
             check: true,
         };

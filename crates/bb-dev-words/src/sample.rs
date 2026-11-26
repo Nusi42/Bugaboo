@@ -44,6 +44,9 @@ pub struct Layout {
     pub dev_out: String,
     /// Where `--check` makes its runs, one folder each.
     pub check_out: String,
+    /// Where `--fixed` makes the small sample that ends at a fixed moment, for the pictures of the
+    /// views (architecture §11, *Visual tests*).
+    pub fixed_out: String,
     /// The data folder inside the output folder.
     pub data_folder: String,
     /// The file with the passwords, inside the output folder: the only one that holds a secret.
@@ -572,6 +575,7 @@ impl Layout {
             &layout.out_postgres,
             &layout.dev_out,
             &layout.check_out,
+            &layout.fixed_out,
             &layout.data_folder,
             &layout.sign_in_file,
             &layout.dump_file,

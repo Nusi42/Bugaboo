@@ -103,6 +103,7 @@ pub(crate) mod test_sample_data;
 mod test_search_roundtrip;
 mod test_upgrade;
 mod test_uploads;
+pub(crate) mod test_visual;
 mod test_workflows;
 mod test_working_time;
 mod theme_only;
@@ -202,6 +203,13 @@ pub(crate) trait Check: Send + Sync {
 
 /// Every implemented check, in catalogue order.
 pub(crate) fn registry() -> Vec<Box<dyn Check>> {
+    let mut checks = up_to_the_themes();
+    checks.extend(the_tests_and_after());
+    checks
+}
+
+/// The checks of the catalogue up to those of the theme.
+fn up_to_the_themes() -> Vec<Box<dyn Check>> {
     vec![
         Box::new(meta_catalog::MetaCatalog),
         Box::new(build_location::BuildLocation),
@@ -271,6 +279,12 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(sty_contrast::StyContrast),
         Box::new(sty_tokens::StyTokens),
         Box::new(theme_only::ThemeOnly),
+    ]
+}
+
+/// The checks of the catalogue from the tests on.
+fn the_tests_and_after() -> Vec<Box<dyn Check>> {
+    vec![
         Box::new(test_a11y::TestA11y),
         Box::new(test_concurrent::TestConcurrent),
         Box::new(test_connections::TestConnections),
@@ -280,6 +294,7 @@ pub(crate) fn registry() -> Vec<Box<dyn Check>> {
         Box::new(test_sample_data::TestSampleData),
         Box::new(test_upgrade::TestUpgrade),
         Box::new(test_uploads::TestUploads),
+        Box::new(test_visual::TestVisual),
         Box::new(test_working_time::TestWorkingTime),
         Box::new(perf_n1::PerfN1),
         Box::new(test_workflows::TestWorkflows),

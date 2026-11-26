@@ -87,6 +87,10 @@ path = "docs/media/*.png"
 reason = "Pictures of the main screens for the front page, taken by `npm run readme-media` (web/app/e2e/readme-media.spec.ts) from the sample organization; a picture is no code, and the script that makes them is covered by LINT-TS."
 
 [[exempt]]
+path = "web/app/e2e/visual/pictures/*.png"
+reason = "The reference pictures of the views, taken by `cargo xtask visual update` (web/app/e2e/visual/views.spec.ts) from the sample at a fixed moment; a picture is no code, TEST-VISUAL holds which there are and their size, and the suite that takes them is covered by LINT-TS."
+
+[[exempt]]
 path = "docs/media/ai/*.jpg"
 reason = "Pictures of the AI screens (Paper theme) for the user page `userDocs/ai/ai-in-bugaboo.md`, taken from the sample organization; a picture is no code."
 
