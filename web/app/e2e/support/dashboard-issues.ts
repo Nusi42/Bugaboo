@@ -1,4 +1,5 @@
 import { dataOf, type Schema } from "@bugaboo/api-client";
+import { expect } from "@playwright/test";
 
 import { dashboardAddress } from "../../src/shared/places.ts";
 
@@ -83,4 +84,24 @@ export async function teamBoardAddress(server: Instance): Promise<string> {
   const id = await createTeamBoard(admin);
   await admin.dispose();
   return dashboardAddress(id);
+}
+
+/** How many issues a search finds for the session now. */
+async function foundBy(api: ApiSession, text: string): Promise<number> {
+  const found = dataOf(
+    await api.client.GET("/api/v1/search/issues", { params: { query: { q: text, limit: 50 } } }),
+  );
+  return found.items.length;
+}
+
+/**
+ * Waits until the search finds the issues a test has just made: the index of the words of titles takes in a new issue
+ * a moment after it is made, so a box read at once would find none of them.
+ */
+export async function untilSearchFinds(
+  api: ApiSession,
+  text: string,
+  count: number,
+): Promise<void> {
+  await expect.poll(() => foundBy(api, text)).toBe(count);
 }

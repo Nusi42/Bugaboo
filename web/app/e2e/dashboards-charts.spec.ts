@@ -8,6 +8,7 @@ import {
   createTask,
   dashboardAddress,
   readyMadeBox,
+  untilSearchFinds,
 } from "./support/dashboard-issues.ts";
 import { boxOnScreen, createDashboard, searchOf, showAsTable } from "./support/dashboards.ts";
 import { test } from "./support/fixtures.ts";
@@ -39,6 +40,7 @@ test("cfg_03_every_chart_has_a_table_and_a_person_chart_is_in_the_order_of_names
   await createTask(admin, "Chart two", { assigned_to: [bobId] });
   await createTask(admin, "Chart three", { assigned_to: [adaId] });
   await createTask(admin, "Chart four", { assigned_to: [aaronId] });
+  await untilSearchFinds(admin, "title contains Chart", 4);
   const title = "Who works on charts";
   const made = await createDashboard(admin, "Charts", [
     {
