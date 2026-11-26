@@ -6,7 +6,7 @@ The lead updates this file after every step (builder started, report in, review 
 
 - **Milestone:** M10, board, calendar, relation map and dashboards ([roadmap](04-milestones.md#m10--board-calendar-relation-map-and-dashboards), plan in `docs/milestones/M10/`). The maintainer answered M10-Q1 to Q22 on 2026-11-24, all as recommended; the release state is called *Retired* (the glossary has no *Archived*). M9 is done and tagged `m9-done`; 0.6.0 is the first release (GitHub release `v0.6.0`, since 2026-11-24 with six files and one signature, ADR-0047 amendment).
 - **Done:** M0 to M9 (`m0-done` to `m9-done`; M9 tagged on 2026-11-24). Version 0.6.0 (ADR-0040: 157 of 225 features, the minor number rises to 6). The M9 review page is published (link outside the repository).
-- **Wave:** M10 waves 0 and 1 (WP-01 to WP-05) are done (2026-11-25); wave 2 (WP-06 to WP-09) is next. M9 is complete (all of its packages merged).
+- **Wave:** M10 waves 0 to 2 (WP-01 to WP-09) are done (2026-11-26); wave 3 (WP-10 to WP-13, the screens) is next. M9 is complete (all of its packages merged).
 - **`main`:** fast-forwarded to the last green `WIN1`.
 
 ## Work packages (M10)
@@ -18,7 +18,11 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-03 | Totals on the server | merged (2026-11-25) | `win3` / `WIN3` | Wave 1; Opus |
 | WP-04 | Board and calendar on the server | merged (2026-11-25; one more commit after the review: one way to group a total, the board cursor) | `win4` / `WIN4` | Wave 1; Opus; the board by release waits for WP-07 (M10-F205) |
 | WP-05 | The relation map on the server | merged (2026-11-25) | `win5` / `WIN5` | Wave 1; Opus; the screen's points M10-F201 to F203 go to WP-12 |
-| WP-06 to WP-15 | Waves 2 to 4 | waiting | | See the plan |
+| WP-06 | Dashboards on the server | merged (2026-11-26; two fix rounds and a short last commit, then one fix for an access key on a share address) | `win3` / `WIN3` | Wave 2; Opus; migration 67; M10-F51 must be done before M10 ends |
+| WP-07 | Deadline drivers and releases on the timeline | merged (2026-11-26; one fix round and a short last commit, then one fix for the head of the timeline in a low window) | `win2` / `WIN2` | Wave 2; Opus; migration 70; the bundle kept under its budget without raising it |
+| WP-08 | *E-mail me this search* | merged (2026-11-26; three fix rounds: double e-mails, a lost e-mail, then a claim of each due time) | `win4` / `WIN4` | Wave 2; Opus; migration 68 |
+| WP-09 | Pinned navigation | merged (2026-11-26; two fix rounds, the dashboard kind after WP-06, then one fix of whose a pin is) | `win5` / `WIN5` | Wave 2; Sonnet; migration 69; dashboard pins show once WP-13 gives dashboards a screen (M10-F86) |
+| WP-10 to WP-15 | Waves 3 and 4 | waiting | | See the plan |
 
 ## Work packages (M9)
 
@@ -99,7 +103,7 @@ Recorded with their target package in the follow-up tables of the milestone fold
 
 ## Next action
 
-M10 wave 1 is merged. Next: start wave 2 (WP-06 to WP-09; WP-09 lands after WP-06), each builder on the last `WIN1`. The open points of M10 are in [`milestones/M10/follow-ups.md`](milestones/M10/follow-ups.md). Open points of M9 that wait for later packages: M9-F135, F136, F142, F143, F160, F161, F200 to F204, F209, F210.
+M10 wave 2 is merged. Next: start wave 3 (WP-10 to WP-13, the screens), each builder on the last `WIN1`. Release builds now rename the folders of the build computer and refuse a file that names one (SEC-BUILD-PATHS); the files of 0.6.0 were built again from their tag that way and replaced on the release (2026-11-26). The open points of M10 are in [`milestones/M10/follow-ups.md`](milestones/M10/follow-ups.md). Open points of M9 that wait for later packages: M9-F135, F136, F142, F143, F160, F161, F200 to F204, F209, F210.
 
 The repository is public on GitHub, with GitHub Actions switched off and private reporting of security problems switched on (`SECURITY.md`). Before the push, every folder moved onto the one rewrite of the history; the old history is kept outside the repository. The push of a whole history reads every version of every file, so one old made-up example that a later rule reads as a profile path is listed as an old version in `tools/checks/private-exemptions.toml`.
 
