@@ -440,11 +440,19 @@ fn rule_css(file: &ThemeFile, rule: &Rule) -> anyhow::Result<String> {
     if !plain.is_empty() {
         out.push_str(&block(&selector, &plain, ""));
     }
-    for (at, query, declarations) in media {
-        let query = resolve_query(file, &query)?;
-        let _ = writeln!(out, "\n{} {query} {{", at.css());
-        out.push_str(&block(&selector, &declarations, "  "));
-        out.push_str("}\n");
+    for (chain, declarations) in media {
+        out.push('\n');
+        let mut indent = String::new();
+        for (at, query) in &chain {
+            let query = resolve_query(file, query)?;
+            let _ = writeln!(out, "{indent}{} {query} {{", at.css());
+            indent.push_str("  ");
+        }
+        out.push_str(&block(&selector, &declarations, &indent));
+        for _ in &chain {
+            indent.truncate(indent.len() - 2);
+            let _ = writeln!(out, "{indent}}}");
+        }
     }
     Ok(out.trim_start_matches('\n').to_owned())
 }
@@ -471,7 +479,9 @@ fn block(selector: &str, declarations: &[&Declaration], indent: &str) -> String 
 /// How deep `use` may go before the mixins are taken to call each other in a circle.
 const MIXIN_DEPTH: usize = 8;
 
-type Blocks<'a> = Vec<(AtRule, String, Vec<&'a Declaration>)>;
+/// The lines under at-rules, each with the at-rules it is under, the outermost first: a block of
+/// forced colors in a mixin that is used under `supports` is under both.
+type Blocks<'a> = Vec<(Vec<(AtRule, String)>, Vec<&'a Declaration>)>;
 
 /// The lines of a rule with the mixins put in, and the lines under each media query apart.
 fn flatten<'a>(
@@ -499,10 +509,16 @@ fn flatten<'a>(
                 let mut inner = Vec::new();
                 let mut deeper = Vec::new();
                 flatten(file, items, &mut inner, &mut deeper, depth + 1)?;
-                if !deeper.is_empty() {
-                    bail!("a media block inside another is not supported");
+                let outer = (*at, query.clone());
+                if !inner.is_empty() {
+                    media.push((vec![outer.clone()], inner));
                 }
-                media.push((*at, query.clone(), inner));
+                for (chain, declarations) in deeper {
+                    media.push((
+                        std::iter::once(outer.clone()).chain(chain).collect(),
+                        declarations,
+                    ));
+                }
             }
         }
     }

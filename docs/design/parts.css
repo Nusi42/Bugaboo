@@ -1060,6 +1060,22 @@ textarea,
 }
 
 @supports (animation-timeline: scroll()) {
+  @media (forced-colors: active) {
+    [data-part="overlay.dialog"]::before,
+    [data-part="list-scroll"]::before,
+    [data-part="window.body"]::before,
+    [data-part="confirm.body"]::before,
+    [data-part="search-panel"]::before,
+    [data-part="bottom-sheet"] [data-part="search-bar"]::before,
+    [data-part="search-suggestions"]::before,
+    [data-part="side-panel.body"]::before,
+    [data-part="list-panel"]::before {
+      outline: var(--border-width) solid CanvasText;
+    }
+  }
+}
+
+@supports (animation-timeline: scroll()) {
   [data-part="overlay.dialog"]::after,
   [data-part="list-scroll"]::after,
   [data-part="window.body"]::after,
@@ -1084,6 +1100,22 @@ textarea,
     animation-name: cue-out;
     animation-range: calc(100% - var(--space-3)) 100%;
     bottom: 0;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (forced-colors: active) {
+    [data-part="overlay.dialog"]::after,
+    [data-part="list-scroll"]::after,
+    [data-part="window.body"]::after,
+    [data-part="confirm.body"]::after,
+    [data-part="search-panel"]::after,
+    [data-part="bottom-sheet"] [data-part="search-bar"]::after,
+    [data-part="search-suggestions"]::after,
+    [data-part="side-panel.body"]::after,
+    [data-part="list-panel"]::after {
+      outline: var(--border-width) solid CanvasText;
+    }
   }
 }
 
@@ -2326,6 +2358,14 @@ textarea,
 }
 
 @supports (animation-timeline: scroll()) {
+  @media (forced-colors: active) {
+    [data-part="board-scroll"]::before {
+      outline: var(--border-width) solid CanvasText;
+    }
+  }
+}
+
+@supports (animation-timeline: scroll()) {
   [data-part="board-scroll"]::after {
     content: "";
     position: sticky;
@@ -2343,6 +2383,14 @@ textarea,
     animation-name: cue-out;
     animation-range: calc(100% - var(--space-3)) 100%;
     inset-inline-end: 0;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (forced-colors: active) {
+    [data-part="board-scroll"]::after {
+      outline: var(--border-width) solid CanvasText;
+    }
   }
 }
 
@@ -5524,6 +5572,14 @@ textarea,
 }
 
 @supports (animation-timeline: scroll()) {
+  @media (forced-colors: active) {
+    [data-part="access.scroll"]::before {
+      outline: var(--border-width) solid CanvasText;
+    }
+  }
+}
+
+@supports (animation-timeline: scroll()) {
   [data-part="access.scroll"]::after {
     content: "";
     position: sticky;
@@ -5541,6 +5597,14 @@ textarea,
     animation-name: cue-out;
     animation-range: calc(100% - var(--space-3)) 100%;
     inset-inline-end: 0;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (forced-colors: active) {
+    [data-part="access.scroll"]::after {
+      outline: var(--border-width) solid CanvasText;
+    }
   }
 }
 
@@ -8597,6 +8661,15 @@ textarea,
   }
 }
 
+@supports (animation-timeline: scroll()) {
+  @media (forced-colors: active) {
+    [data-part="app-layout.column"]:has([data-part="issue-bar"])
+      [data-part="app-layout.main"]::after {
+      outline: var(--border-width) solid CanvasText;
+    }
+  }
+}
+
 [data-part="key-capture-field.label"] {
   font-size: var(--fs-sm);
   color: var(--fg-muted);
@@ -9733,6 +9806,14 @@ textarea,
 }
 
 @supports (animation-timeline: scroll()) {
+  @media (forced-colors: active) {
+    [data-part="board-phone"] [data-part="tabs"]::before {
+      outline: var(--border-width) solid CanvasText;
+    }
+  }
+}
+
+@supports (animation-timeline: scroll()) {
   [data-part="board-phone"] [data-part="tabs"]::after {
     content: "";
     position: sticky;
@@ -9753,33 +9834,11 @@ textarea,
   }
 }
 
-@media (forced-colors: active) {
-  [data-part="overlay.dialog"]::before,
-  [data-part="list-scroll"]::before,
-  [data-part="window.body"]::before,
-  [data-part="confirm.body"]::before,
-  [data-part="search-panel"]::before,
-  [data-part="bottom-sheet"] [data-part="search-bar"]::before,
-  [data-part="search-suggestions"]::before,
-  [data-part="side-panel.body"]::before,
-  [data-part="list-panel"]::before,
-  [data-part="overlay.dialog"]::after,
-  [data-part="list-scroll"]::after,
-  [data-part="window.body"]::after,
-  [data-part="confirm.body"]::after,
-  [data-part="search-panel"]::after,
-  [data-part="bottom-sheet"] [data-part="search-bar"]::after,
-  [data-part="search-suggestions"]::after,
-  [data-part="side-panel.body"]::after,
-  [data-part="list-panel"]::after,
-  [data-part="app-layout.column"]:has([data-part="issue-bar"]) [data-part="app-layout.main"]::after,
-  [data-part="board-scroll"]::before,
-  [data-part="board-scroll"]::after,
-  [data-part="board-phone"] [data-part="tabs"]::before,
-  [data-part="board-phone"] [data-part="tabs"]::after,
-  [data-part="access.scroll"]::before,
-  [data-part="access.scroll"]::after {
-    outline: var(--border-width) solid CanvasText;
+@supports (animation-timeline: scroll()) {
+  @media (forced-colors: active) {
+    [data-part="board-phone"] [data-part="tabs"]::after {
+      outline: var(--border-width) solid CanvasText;
+    }
   }
 }
 

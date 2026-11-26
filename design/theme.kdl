@@ -1088,7 +1088,11 @@ mixin "edge-shadow" {
     pointer-events none
     box-shadow "0 0 $space-3 $border-width $cue"
     animation-fill-mode both
-    animation-timing-function linear
+    animation-timing-function linear    // Forced colors drop every shadow: a line of the text color stands in its place, at the end where the shadow
+    // would be. It comes with the shadow, so every end that has one has its line (M10-F208).
+    forced {
+        outline "$border-width solid CanvasText"
+    }
 }
 
 // The box scrolls down: the line is as wide as the box and has no height.
@@ -17207,14 +17211,6 @@ part "board-phone tabs::after" {
         use "edge-inline"
         use "edge-from-end"
         inset-inline-end 0
-    }
-}
-
-// Forced colors drop every shadow of an end that has more behind it (`edge-shadow`): a line of the text color
-// stands in its place, at the end where the shadow would be.
-part "overlay.dialog::before" "list-scroll::before" "window.body::before" "confirm.body::before" "search-panel::before" "bottom-sheet search-bar::before" "search-suggestions::before" "side-panel.body::before" "list-panel::before" "overlay.dialog::after" "list-scroll::after" "window.body::after" "confirm.body::after" "search-panel::after" "bottom-sheet search-bar::after" "search-suggestions::after" "side-panel.body::after" "list-panel::after" "app-layout.column:has(issue-bar) app-layout.main::after" "board-scroll::before" "board-scroll::after" "board-phone tabs::before" "board-phone tabs::after" "access.scroll::before" "access.scroll::after" {
-    forced {
-        outline "$border-width solid CanvasText"
     }
 }
 

@@ -381,3 +381,49 @@ fn thm_06_a_theme_restates_with_more_contrast_a_color_the_dark_theme_that_starts
         }
     }
 }
+
+/// The blocks of `sheet` under forced colors, each from its opening to its closing brace.
+fn forced_blocks(sheet: &str) -> Vec<&str> {
+    let opening = "@media (forced-colors: active) {";
+    sheet
+        .match_indices(opening)
+        .map(|(at, _)| {
+            let mut depth = 0_usize;
+            for (offset, sign) in sheet[at..].char_indices() {
+                match sign {
+                    '{' => depth += 1,
+                    '}' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            return &sheet[at..=at + offset];
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            &sheet[at..]
+        })
+        .collect()
+}
+
+#[test]
+fn a_new_end_with_an_edge_shadow_gets_its_line_under_forced_colors() {
+    // Forced colors drop every shadow, so the line of the text color that stands in for the shadow of an end comes
+    // with the shadow itself: a new box that scrolls needs no list of its own to keep it (M10-F208).
+    let text = std::fs::read_to_string(Repo::discover().unwrap().path("design/theme.kdl")).unwrap();
+    let extra = "\npart \"zz-scroll::before\" {\n  supports \"(animation-timeline: scroll())\" {\n    use \"edge-block\"\n  }\n}\npart \"zz-row::after\" {\n  supports \"(animation-timeline: scroll())\" {\n    use \"edge-inline\"\n  }\n}\n";
+    let file = ThemeFile::parse_base(&format!("{text}{extra}")).unwrap();
+    let parts = parts_css(&file).unwrap();
+    for selector in [
+        "[data-part=\"zz-scroll\"]::before",
+        "[data-part=\"zz-row\"]::after",
+    ] {
+        assert!(
+            forced_blocks(&parts)
+                .iter()
+                .any(|block| block.contains(selector)
+                    && block.contains("outline: var(--border-width) solid CanvasText")),
+            "{selector} has no line under forced colors"
+        );
+    }
+}

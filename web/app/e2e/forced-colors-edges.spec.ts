@@ -108,3 +108,14 @@ test("ux_7_2 under forced colors the keyboard focus on a row is a double outline
   );
   expect(offset).toBeLessThan(0);
 });
+
+test("ux_7_2 under forced colors the ends of a box that scrolls draw a line where their shadow would be", async ({
+  page,
+}) => {
+  await page.emulateMedia({ forcedColors: "active" });
+  await openList(page);
+  const ends = await partIn(page, "list-scroll").evaluate((node) =>
+    ["::before", "::after"].map((end) => getComputedStyle(node, end).outlineStyle),
+  );
+  expect(ends).toEqual(["solid", "solid"]);
+});
