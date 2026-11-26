@@ -6,7 +6,7 @@ The lead updates this file after every step (builder started, report in, review 
 
 - **Milestone:** M10, board, calendar, relation map and dashboards ([roadmap](04-milestones.md#m10--board-calendar-relation-map-and-dashboards), plan in `docs/milestones/M10/`). The maintainer answered M10-Q1 to Q22 on 2026-11-24, all as recommended; the release state is called *Retired* (the glossary has no *Archived*). M9 is done and tagged `m9-done`; 0.6.0 is the first release (GitHub release `v0.6.0`, since 2026-11-24 with six files and one signature, ADR-0047 amendment).
 - **Done:** M0 to M9 (`m0-done` to `m9-done`; M9 tagged on 2026-11-24). Version 0.6.0 (ADR-0040: 157 of 225 features, the minor number rises to 6). The M9 review page is published (link outside the repository).
-- **Wave:** M10 waves 0 to 2 (WP-01 to WP-09) are done (2026-11-26); wave 3 (WP-10 to WP-13, the screens) is next. M9 is complete (all of its packages merged).
+- **Wave:** M10 waves 0 to 3 (WP-01 to WP-13) are done (2026-11-26); wave 4 (WP-14, the pictures and accessibility of the new screens, then WP-15, sample part 9, speed, release 0.6.1 and the exit demo) is next. Open points of the lead: M10-F207 to F209. M9 is complete (all of its packages merged).
 - **`main`:** fast-forwarded to the last green `WIN1`.
 
 ## Work packages (M10)
@@ -22,7 +22,12 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-07 | Deadline drivers and releases on the timeline | merged (2026-11-26; one fix round and a short last commit, then one fix for the head of the timeline in a low window) | `win2` / `WIN2` | Wave 2; Opus; migration 70; the bundle kept under its budget without raising it |
 | WP-08 | *E-mail me this search* | merged (2026-11-26; three fix rounds: double e-mails, a lost e-mail, then a claim of each due time) | `win4` / `WIN4` | Wave 2; Opus; migration 68 |
 | WP-09 | Pinned navigation | merged (2026-11-26; two fix rounds, the dashboard kind after WP-06, then one fix of whose a pin is) | `win5` / `WIN5` | Wave 2; Sonnet; migration 69; dashboard pins show once WP-13 gives dashboards a screen (M10-F86) |
-| WP-10 to WP-15 | Waves 3 and 4 | waiting | | See the plan |
+| WP-10 | The board on screen | merged (2026-11-26; fix rounds for the review and the ci, then one for Enter while a card is held) | `win2` / `WIN2` | Wave 3; Opus; the board by release waits for the server (M10-F205) |
+| WP-11 | The calendar and the releases on screen | merged (2026-11-26; fix rounds for the review and the ci) | `win3` / `WIN3` | Wave 3; Opus |
+| WP-12 | The relation map on screen | merged (2026-11-26; fix rounds for the review and the ci) | `win4` / `WIN4` | Wave 3; Opus |
+| WP-13 | Dashboards on screen | merged (2026-11-26; fix rounds for the review and the ci; the features of the first signed-in page put into few files, so WebKit shows it in about 6 s; a page held for good when the pins cannot be read fixed) | `win5` / `WIN5` | Wave 3; Opus; M10-F51 must be done before M10 ends |
+| WP-14 | Pictures and accessibility of the new screens | next | `win2` / `WIN2` | Wave 4; Opus |
+| WP-15 | Sample part 9, speed on 1 M issues, release 0.6.1, the exit demo | waiting for WP-14 | `win3` / `WIN3` | Wave 4; Opus; measures alone on a quiet computer |
 
 ## Work packages (M9)
 
