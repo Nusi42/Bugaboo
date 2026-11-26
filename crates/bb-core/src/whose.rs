@@ -121,7 +121,6 @@ pub const MADE_ONLY_BY_THEIR_OWNER: &[RecordKind] = &[
     RecordKind::Passkey,
     RecordKind::ConnectedApp,
     RecordKind::Session,
-    RecordKind::Pin,
 ];
 
 /// The names of the members of the changes that hold a person, as the events store them. The use
