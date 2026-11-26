@@ -1,5 +1,5 @@
 import { type RefObject } from "react";
-import { useDrop } from "react-aria-components";
+import { useDrag, useDrop } from "react-aria-components";
 
 /**
  * The drop of the screen's drag and drop (`drag-and-drop.tsx`): what is dragged is named by a `kind`
@@ -68,5 +68,26 @@ export function useDropOf(
         }
       });
     },
+  });
+}
+
+/** What a screen hears of a drag it started: when it begins and when it ends (dropped or not). */
+export interface DragEnds {
+  readonly onStart: () => void;
+  readonly onEnd: () => void;
+}
+
+/**
+ * Makes a thing draggable by the pointer as a whole, with `id` named as a thing of `kind` (a card of
+ * a board): spread `dragProps` on its element. The counterpart of `useDropOf`; the handle that drags
+ * only from a grip is `DraggableHead`. A screen that drags offers the same by keys (TEST-A11Y).
+ */
+export function useDragOf(kind: string, id: string, enabled: boolean, ends: DragEnds) {
+  return useDrag({
+    getItems: () => [{ [typeOf(kind)]: id }],
+    getAllowedDropOperations: () => ["move"],
+    isDisabled: !enabled,
+    onDragStart: ends.onStart,
+    onDragEnd: ends.onEnd,
   });
 }

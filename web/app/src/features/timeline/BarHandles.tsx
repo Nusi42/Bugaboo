@@ -4,7 +4,7 @@ import type { PointerEvent } from "react";
 
 import { DragHandle } from "../../shared/drag-and-drop.tsx";
 import type { Move } from "./dates.ts";
-import { dragKinds } from "./drag-kinds.ts";
+import { dragKinds } from "../../shared/drag-kinds.ts";
 import type { DragHandlers } from "./use-bar-drag.ts";
 
 /** A press on the dot is the dot's: it does not also start a drag of the bar. */

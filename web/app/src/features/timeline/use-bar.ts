@@ -2,7 +2,7 @@ import { useRef, type KeyboardEvent } from "react";
 
 import { useDropOf } from "../../shared/drop-of.ts";
 import { keyMoveOf } from "./bar-keys.ts";
-import { dragKinds } from "./drag-kinds.ts";
+import { dragKinds } from "../../shared/drag-kinds.ts";
 import type { BarDays, IssueLine } from "./lines.ts";
 import { shownWhileMoving, type Move } from "./moves.ts";
 import { useBarPlace, useLabelPlace } from "./bar-place.ts";

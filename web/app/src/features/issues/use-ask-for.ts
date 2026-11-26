@@ -8,9 +8,9 @@ import type { IssueChanges } from "./use-issue-changes.ts";
 
 /** What the window of *Ask for* keeps: the values, whether the save is on its way, and why it was refused. */
 export function useAskFor(
-  issue: IssueView,
+  issue: Pick<IssueView, "issue_type">,
   change: OfferedChange,
-  changes: IssueChanges,
+  changes: Pick<IssueChanges, "ask">,
   onDone: () => void,
 ) {
   const [values, setValues] = useState<NewIssueValues>({

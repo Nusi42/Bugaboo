@@ -3,7 +3,7 @@ import { useRef } from "react";
 
 import { useDropOf } from "../../shared/drop-of.ts";
 import { addDays } from "../../shared/format.ts";
-import { dragKinds } from "./drag-kinds.ts";
+import { dragKinds } from "../../shared/drag-kinds.ts";
 import { useTimeline } from "./timeline-context.ts";
 
 /**

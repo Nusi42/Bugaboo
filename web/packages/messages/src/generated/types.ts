@@ -8,6 +8,7 @@ import type { messages as agentWork } from "./agent-work.ts";
 import type { messages as agents } from "./agents.ts";
 import type { messages as assistant } from "./assistant.ts";
 import type { messages as assistantEntry } from "./assistant-entry.ts";
+import type { messages as board } from "./board.ts";
 import type { messages as connect } from "./connect.ts";
 import type { messages as fields } from "./fields.ts";
 import type { messages as files } from "./files.ts";
@@ -52,6 +53,7 @@ export type MessageKey =
   | keyof typeof agents
   | keyof typeof assistant
   | keyof typeof assistantEntry
+  | keyof typeof board
   | keyof typeof connect
   | keyof typeof fields
   | keyof typeof files
@@ -241,6 +243,31 @@ export interface MessageArguments {
   "backup-page.restore-command": { name: string | number };
   "backup-page.row-facts": { maker: string | number; size: string | number };
   "backup.left": { count: number };
+  "board.announce-can-go": { key: string | number };
+  "board.announce-column": { column: string | number; note: string | number };
+  "board.announce-picked": { key: string | number };
+  "board.card-limit-of": { column: string | number };
+  "board.cards-of": { column: string | number };
+  "board.count": { count: number };
+  "board.count-of-limit": { count: number; limit: number };
+  "board.count-over": { count: number; limit: number };
+  "board.here": { key: string | number };
+  "board.move-to-title": { key: string | number };
+  "board.moved": { column: string | number; key: string | number };
+  "board.moves-list": { key: string | number };
+  "board.no-row-value": { field: string | number };
+  "board.order-menu": { column: string | number };
+  "board.reason-cannot-change": { field: string | number; key: string | number };
+  "board.reason-no-change": {
+    column: string | number;
+    from: string | number;
+    key: string | number;
+  };
+  "board.reason-no-status": { column: string | number; key: string | number };
+  "board.reason-no-status-read": { key: string | number };
+  "board.rows-truncated": { count: number };
+  "board.sort-by": { field: string | number };
+  "board.tab": { count: number; name: string | number };
   "check-access.for-issue-type": { type: string | number };
   "check-access.level.no-role": { person: string | number };
   "check-access.level.role-organization": { level: string | number; role: string | number };

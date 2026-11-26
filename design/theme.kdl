@@ -239,6 +239,8 @@ tokens {
     size "size-timeline-row" "$size-row-compact" touch="calc($size-control + 2 * $space-1 + $border-width)"
     size "size-timeline-head" "$size-control"
     size "size-timeline-side" "240px"
+    // The width of a column of the board: heads and cells of every row line up on it (UX §4.6).
+    size "size-board-column" "264px"
     // The most a name at the end of a bar takes, and the room after a bar its Issue ID and that name need: with less
     // room before the end of the chart, the label stands before the bar (UX §4.7, the person on the bar).
     size "size-timeline-person" "calc(176px * $text-scale)"
@@ -2776,23 +2778,23 @@ part "quick-search.item[focused]" {
     use "ring-inside"
 }
 
-part "list-row[state=group-not-started]" "issue-row[state=group-not-started]" "quick-search.item[state=group-not-started]" "timeline-bar[state=group-not-started]" "timeline-phone.item[state=group-not-started]" "map-card[state=group-not-started]" {
+part "list-row[state=group-not-started]" "issue-row[state=group-not-started]" "quick-search.item[state=group-not-started]" "timeline-bar[state=group-not-started]" "timeline-phone.item[state=group-not-started]" "map-card[state=group-not-started]" "board-card[state=group-not-started]" {
     background "$tint-ns"
 }
 
-part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "quick-search.item[state=group-in-progress]" "timeline-bar[state=group-in-progress]" "timeline-phone.item[state=group-in-progress]" "map-card[state=group-in-progress]" {
+part "list-row[state=group-in-progress]" "issue-row[state=group-in-progress]" "quick-search.item[state=group-in-progress]" "timeline-bar[state=group-in-progress]" "timeline-phone.item[state=group-in-progress]" "map-card[state=group-in-progress]" "board-card[state=group-in-progress]" {
     background "$tint-ip"
 }
 
-part "list-row[state=group-done]" "issue-row[state=group-done]" "quick-search.item[state=group-done]" "timeline-bar[state=group-done]" "timeline-phone.item[state=group-done]" "map-card[state=group-done]" {
+part "list-row[state=group-done]" "issue-row[state=group-done]" "quick-search.item[state=group-done]" "timeline-bar[state=group-done]" "timeline-phone.item[state=group-done]" "map-card[state=group-done]" "board-card[state=group-done]" {
     background "$tint-done"
 }
 
-part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "quick-search.item[state=priority-critical]" "timeline-bar[state=priority-critical]" "map-card[state=priority-critical]" {
+part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "quick-search.item[state=priority-critical]" "timeline-bar[state=priority-critical]" "map-card[state=priority-critical]" "board-card[state=priority-critical]" {
     border-inline-start "$size-edge solid $danger"
 }
 
-part "list-row[state=priority-high]" "issue-row[state=priority-high]" "quick-search.item[state=priority-high]" "timeline-bar[state=priority-high]" "map-card[state=priority-high]" {
+part "list-row[state=priority-high]" "issue-row[state=priority-high]" "quick-search.item[state=priority-high]" "timeline-bar[state=priority-high]" "map-card[state=priority-high]" "board-card[state=priority-high]" {
     border-inline-start "$size-edge solid $edge-high"
 }
 
@@ -2801,14 +2803,14 @@ part "list-row[state=priority-high]" "issue-row[state=priority-high]" "quick-sea
 // says `Canvas` for it. There the edge is told by its pattern (R5, M5 exit A15): Critical a double bar, High a single bar, every other row
 // and the head of the list none (the color of the canvas, so the width stays); a bar of the timeline has a thin edge
 // like its other sides.
-part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "quick-search.item[state=priority-critical]" "timeline-bar[state=priority-critical]" "map-card[state=priority-critical]" {
+part "list-row[state=priority-critical]" "issue-row[state=priority-critical]" "quick-search.item[state=priority-critical]" "timeline-bar[state=priority-critical]" "map-card[state=priority-critical]" "board-card[state=priority-critical]" {
     forced {
         border-inline-start-style double
         border-inline-start-color CanvasText
     }
 }
 
-part "list-row[state=priority-high]" "issue-row[state=priority-high]" "quick-search.item[state=priority-high]" "timeline-bar[state=priority-high]" "map-card[state=priority-high]" {
+part "list-row[state=priority-high]" "issue-row[state=priority-high]" "quick-search.item[state=priority-high]" "timeline-bar[state=priority-high]" "map-card[state=priority-high]" "board-card[state=priority-high]" {
     forced {
         border-inline-start-color CanvasText
     }
@@ -3530,6 +3532,290 @@ part "timeline-body" {
     media "(max-width: calc($bp-computer - 1px))" {
         grid-template-columns "minmax(0, 1fr)"
     }
+}
+
+// ───────────── The board (UX §4.6, PLAN-06) ─────────────
+//
+// Columns of cards side by side, in a box that scrolls sideways; the heads stand above the rows. Every column has the same
+// width, so a head, and the cell of each row under it, line up; a faded column or a picked card moves nothing (UX §6.4):
+// the reason a column fades stands over the cards in the column, not between them.
+part "board" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+part "board-scroll" {
+    overflow-x auto
+    overscroll-behavior-x contain
+    padding-block-end "$space-2"
+}
+
+part "board-lane" {
+    display flex
+    gap "$space-3"
+    align-items stretch
+    width max-content
+    min-width "100%"
+}
+
+part "board-head" {
+    display flex
+    gap "$space-3"
+    align-items stretch
+    width max-content
+    min-width "100%"
+    padding-block "$space-2"
+}
+
+part "board-head.cell" {
+    display flex
+    flex "0 0 $size-board-column"
+    align-items center
+    justify-content space-between
+    gap "$space-2"
+    box-sizing border-box
+    width "$size-board-column"
+    min-height "$size-control"
+    padding-inline "$space-3"
+    border "$border-width solid transparent"
+    border-radius "$r-ctl"
+    background "$bg-sunken"
+}
+
+// A column the card in hand cannot go to fades: its edge turns dashed and its words quiet, never an opacity
+// that would take the contrast of its words (WCAG 1.4.3); the reason stands in it, and a dashed edge also
+// shows under forced colors. Both have a transparent edge always, so nothing moves when the edge shows.
+part "board-head.cell[state=faded]" "board-column[state=faded]" {
+    border-style dashed
+    border-color "$border-control"
+    background "$bg-canvas"
+    color "$fg-muted"
+}
+
+part "board-head.cell[state=target]" "board-column[state=target]" {
+    use "ring-inside"
+}
+
+part "board-head.title" {
+    display flex
+    align-items center
+    gap "$space-2"
+    min-width 0
+    color "$fg"
+}
+
+part "board-head.count" {
+    flex none
+    color "$fg-muted"
+    font-size "$fs-sm"
+    font-variant-numeric tabular-nums
+}
+
+// Over its card limit the title turns orange; nothing is refused (M10-Q2). The words "of" and the limit say it too.
+part "board-head.title[state=over]" "board-head.count[state=over]" {
+    color "$warning"
+}
+
+part "board-head.cell[state=faded] board-head.title" {
+    color "$fg-muted"
+}
+
+part "board-row" {
+    display flex
+    flex-direction column
+    gap "$space-2"
+    margin-block-end "$space-3"
+}
+
+part "board-row.toggle" {
+    display flex
+    align-items center
+    gap "$space-2"
+    min-height "$size-control"
+    padding-inline "$space-2"
+    border none
+    border-radius "$r-ctl"
+    background none
+    color "$fg"
+    font-family inherit
+    font-size inherit
+    text-align start
+    cursor pointer
+}
+
+part "board-row.toggle:hover" {
+    background "$bg-hover"
+}
+
+part "board-row.toggle[focus-visible]" {
+    use "ring"
+}
+
+part "board-row.count" {
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+// The place of a column in a row: its cards, and over them the reason a card in hand cannot go there.
+part "board-cell" {
+    position relative
+    display flex
+    flex "0 0 $size-board-column"
+    width "$size-board-column"
+}
+
+// A phone shows one column, as wide as the screen.
+part "board-cell[variant=phone]" {
+    flex "1 1 auto"
+    width "100%"
+}
+
+part "board-column" {
+    display flex
+    flex "1 1 auto"
+    flex-direction column
+    gap "$space-2"
+    box-sizing border-box
+    min-width 0
+    min-height "$size-row"
+    margin 0
+    padding "$space-1"
+    list-style none
+    border "$border-width solid transparent"
+    border-radius "$r-ctl"
+    background "$bg-surface"
+}
+
+part "board-column[state=over]" {
+    background "$bg-selected"
+}
+
+// The reason a card cannot go here stands over the cards of the column, as high as the column's top: it adds no height.
+part "board-column.reason" {
+    position absolute
+    inset-inline "$space-1"
+    inset-block-start "$space-1"
+    z-index "$z-raised"
+    padding "$space-2 $space-3"
+    border-radius "$r-ctl"
+    background "$bg-raised"
+    color "$fg"
+    font-size "$fs-sm"
+    box-shadow "inset 0 0 0 $border-width $border-control"
+}
+
+part "board-column.empty" {
+    padding "$space-2 $space-3"
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+part "board-card" {
+    display flex
+    flex-direction column
+    gap "$space-1"
+    box-sizing border-box
+    margin 0
+    padding "$space-2 $space-3"
+    list-style none
+    border-radius "$r-ctl"
+    border-inline-start "$size-edge solid transparent"
+    background "$bg-raised"
+    color "$fg"
+    cursor grab
+}
+
+part "board-card[state=dragging]" "board-card[state=moving]" {
+    opacity "$opacity-busy"
+}
+
+part "board-card[state=picked]" {
+    use "ring"
+}
+
+part "board-card:hover" {
+    box-shadow "inset 0 0 0 $border-width $hover-line"
+}
+
+part "board-card[state=locked]" {
+    cursor default
+}
+
+part "board-card.line" {
+    display flex
+    align-items center
+    gap "$space-2"
+    min-width 0
+}
+
+part "board-card.title" {
+    display block
+    min-width 0
+    overflow-wrap anywhere
+}
+
+part "board-card.fields" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-1" "$space-3"
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+part "board-card.move" {
+    margin-inline-start auto
+}
+
+part "board-more" {
+    display flex
+    justify-content center
+    padding-block "$space-1"
+}
+
+part "board-tools" {
+    display flex
+    flex-wrap wrap
+    align-items center
+    gap "$space-2" "$space-4"
+    min-height "$size-control"
+}
+
+// The reason a column cannot be chosen in *Move to …* stands under its name, as far in as the name.
+part "board-move.reason" {
+    display block
+    padding-inline "$space-3"
+    padding-block-end "$space-2"
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+part "board-note" {
+    color "$fg-muted"
+    font-size "$fs-sm"
+}
+
+// A phone shows one column at a time: its cards fill the width, and the heads are the tabs.
+part "board-phone" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+    min-width 0
+}
+
+part "board-customize" {
+    display flex
+    flex-direction column
+    gap "$space-3"
+}
+
+part "board-customize.limits" {
+    display grid
+    grid-template-columns "repeat(auto-fit, minmax($size-number-field, 1fr))"
+    align-items end
+    gap "$space-2" "$space-3"
 }
 
 // The chart takes all the room its column has, also below its last row: the box ends where the side ends (UX §6.5).
@@ -4813,7 +5099,7 @@ part "map-card.title" {
 // The start: an accent edge and a small tab with its word.
 // The start, a card on the shown chain and a faded card change the other sides only: the start edge keeps the color of
 // a high or critical priority (R4).
-part "map-card[state=start]" "map-card[state=on-chain]" {
+part "map-card[state=start]" "board-card[state=start]" "map-card[state=on-chain]" "board-card[state=on-chain]" {
     border-block-color "$accent"
     border-inline-end-color "$accent"
 }
@@ -4830,24 +5116,24 @@ part "map-card.tab" {
     line-height "$lh-tight"
 }
 
-part "map-card[state=faded]" {
+part "map-card[state=faded]" "board-card[state=faded]" {
     border-block-color "$border"
     border-inline-end-color "$border"
     background "$bg-canvas"
     color "$fg-muted"
 }
 
-part "map-card[state=chosen]" {
+part "map-card[state=chosen]" "board-card[state=chosen]" {
     outline "calc($border-width * 2) solid $accent"
 }
 
-part "map-card[state=on-chain]" "map-card[state=chosen]" {
+part "map-card[state=on-chain]" "board-card[state=on-chain]" "map-card[state=chosen]" "board-card[state=chosen]" {
     forced {
         outline "$border-width solid Highlight"
     }
 }
 
-part "map-card[state=faded]" {
+part "map-card[state=faded]" "board-card[state=faded]" {
     forced {
         color GrayText
     }

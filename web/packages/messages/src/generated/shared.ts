@@ -1054,6 +1054,9 @@ export const messages = {
   "issues.time-factor-sum": "Estimate {estimate} · {factor} = {total}",
   "notification.kind.time-factor-changed": "Your time factor was changed",
   "notifications.time-factor-changed": "{who} changed your time factor on this issue",
+  "board.move-to": "Move to …",
+  "timeline.set-dates": "Set dates…",
+  "timeline.add-dependency": "Add dependency…",
 } as const;
 
 register(messages);

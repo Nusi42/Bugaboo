@@ -9,7 +9,7 @@ export { SearchBar, type SearchBarProps } from "./SearchBar.tsx";
 export { ViewChoices, type ListViewControl } from "./ViewChoices.tsx";
 export { timelineGroupable, useSearchFields, type SearchFieldsAnswer } from "./search-fields.ts";
 export { useSearchLanguage, useSearchLanguageRead } from "./search-language.ts";
-export { useProjectListChoice } from "./saved-searches.ts";
+export { useChangeSearch, useProjectListChoice } from "./saved-searches.ts";
 export { SearchMailWindow } from "./SearchMailWindow.tsx";
 export {
   useSearchMails,

@@ -10,6 +10,19 @@ import {
 } from "./list-view.ts";
 import { historyStep, type HistoryStep, type SearchState } from "./search-address.ts";
 
+/**
+ * The saved search of the person's own that a page shows: the place the options of a board are kept
+ * in (*Customize* of the board saves them there, for its maker only).
+ */
+export interface KeptIn {
+  readonly id: string;
+  readonly version: number;
+  /** The text the saved search holds, as saved. */
+  readonly text: string;
+  /** How the saved search shows its results, as saved. */
+  readonly presentation: Schema<"PresentationRef">;
+}
+
 /** What a page that shows the results of a search gives its list. */
 export interface ResultsInput {
   /** The canonical text of the search. */
@@ -21,6 +34,8 @@ export interface ResultsInput {
   readonly onView: (view: ListView) => void;
   /** The text in the search box has a mistake: the results stay, with a dashed edge and a note. */
   readonly stale: boolean;
+  /** The saved search of the person's own that the page shows; none for any other search. */
+  readonly keptIn?: KeptIn | undefined;
 }
 
 /** What the view of a list is made from. */

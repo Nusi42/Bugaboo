@@ -122,7 +122,7 @@ reason = "The screen lock of the device. Not a Layout."
 
 [[allow]]
 term = "screen"
-at = ["userDocs/accessibility-statement.md"]
+at = ["userDocs/accessibility-statement.md", "userDocs/planning/board.md"]
 phrases = ["screen reader"]
 reason = "A program that reads the page aloud to a person who cannot see it. Not a Layout."
 
@@ -301,3 +301,8 @@ at = [
   "api:schema ReadyMadeItem",
 ]
 reason = "Ready-made is the glossary's own term (Ready-made box): a box Bugaboo offers ready to use. It does not mean creating something, which the glossary calls Create."
+
+[[allow]]
+term = "space"
+at = ["messages/en.json#board.keys"]
+reason = "The Space key of the keyboard, which picks up a card of the board. Not a sub-project or the documents of a project, which the glossary means."

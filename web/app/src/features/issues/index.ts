@@ -18,7 +18,9 @@ export {
 } from "./row-actions.ts";
 export type { IssueSelection } from "./use-selection.ts";
 export { peopleOf, useAssignablePeople } from "./use-assignable-people.ts";
-export { issueCells } from "./issue-cells.tsx";
+export { issueCells, priorityCell } from "./issue-cells.tsx";
+export { AskFor, type AskForProps } from "./AskFor.tsx";
+export { needsAsking, type OfferedChange } from "./ask-for.ts";
 export { priorityChoices } from "./issue-choices.ts";
 export { useProjectStatusChanges } from "./use-project-status-changes.ts";
 export { choiceIdOf, choiceLabelOf, type ProjectChange } from "./status-choices.ts";
@@ -43,7 +45,7 @@ export {
 export { sendChange } from "./issue-requests.ts";
 export { useFoundGroups } from "./found-issues.ts";
 export { groupName, groupOfKey, type GroupOfKey } from "./group-keys.ts";
-export { useOwnColumns, type OwnColumns } from "./own-columns.ts";
+export { ownColumnText, useOwnColumns, type OwnColumn, type OwnColumns } from "./own-columns.ts";
 export type { IssueRequestValues, IssueValues } from "./issue-values.ts";
 export { TimeFactorChange } from "./TimeFactorChange.tsx";
 export { AssignedPicker } from "./AssignedPicker.tsx";

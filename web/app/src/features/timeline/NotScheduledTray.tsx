@@ -3,7 +3,7 @@ import { Button, buttonLook, IssueId, part, partOf, ShowMoreOf, type PagedList }
 
 import { DraggableHead } from "../../shared/drag-and-drop.tsx";
 import { known } from "../../shared/present.ts";
-import { dragKinds } from "./drag-kinds.ts";
+import { dragKinds } from "../../shared/drag-kinds.ts";
 import { idOf, type TimelineRow } from "./timeline-data.ts";
 
 export interface NotScheduledTrayProps {

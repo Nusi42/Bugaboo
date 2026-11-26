@@ -1,71 +1,20 @@
 import { t } from "@bugaboo/messages";
-import { DelayedSkeleton, HoldWhileLoading, useHoldWhileReading } from "@bugaboo/ui";
-import { lazy, Suspense } from "react";
+import { DelayedSkeleton, useHoldWhileReading } from "@bugaboo/ui";
 
 import { isDrawnColumn, withKeptColumns } from "../../shared/list-columns.ts";
-import type { SearchLanguage } from "@bugaboo/wasm-search";
-
-import {
-  useSearchFields,
-  useSearchLanguageRead,
-  type SearchFieldsAnswer,
-} from "../search/index.ts";
+import { useSearchFields, useSearchLanguageRead } from "../search/index.ts";
+import { ChunkedView } from "./LazyViews.tsx";
 import { LoadedResults } from "./LoadedResults.tsx";
 import type { IssueResultsProps } from "./results-props.ts";
 
 export type { IssueResultsProps } from "./results-props.ts";
 
-// The timeline is its own chunk, loaded when a search is first shown as one (coding-standards §6).
-const TimelineResults = lazy(async () => ({
-  default: (await import("../timeline/index.ts")).TimelineResults,
-}));
-
-// The relation map is its own chunk, loaded when a search is first shown as one (coding-standards §6).
-const SearchMap = lazy(async () => ({
-  default: (await import("../relation-map/index.ts")).SearchMap,
-}));
-
-/** What stands in the place of the results while a view of its own chunk loads. */
-function Loading() {
-  return (
-    <>
-      <HoldWhileLoading />
-      <DelayedSkeleton lines={3} />
-    </>
-  );
-}
-
-/** A view that is its own chunk: the timeline (UX §4.7) or the relation map (UX §4.15) of the results. */
-function OwnChunkView({
-  text,
-  within,
-  view,
-  onView,
-  fields,
-  language,
-}: Pick<IssueResultsProps, "text" | "within" | "view" | "onView"> & {
-  readonly fields: SearchFieldsAnswer;
-  readonly language: SearchLanguage;
-}) {
-  return view.kind === "map" ? (
-    <SearchMap text={text} within={within} view={view} onView={onView} fields={fields} />
-  ) : (
-    <TimelineResults
-      text={text}
-      within={within}
-      view={view}
-      onView={onView}
-      fields={fields}
-      language={language}
-    />
-  );
-}
-
 /**
  * The results of a search as a list (UX section 4.2), for a project and for the *Search* page
  * alike: the columns a person chose, sorted by a click on a name, grouped by any field they may
  * read, and drawn only where the rows are on screen (PERF-04). *Show as › Timeline* draws them as
- * the timeline instead (UX §4.7), and *Show as › Map* as the relation map of the results (UX §4.15).
+ * the timeline instead (UX §4.7), *Show as › Board* as columns of cards (UX §4.6) and *Show as › Map* as the
+ * relation map of the results (UX §4.15).
  */
 export function IssueResults(props: IssueResultsProps) {
   const languageRead = useSearchLanguageRead();
@@ -81,12 +30,8 @@ export function IssueResults(props: IssueResultsProps) {
     return <DelayedSkeleton lines={3} />;
   }
   const { view, defaults } = props;
-  if (view.kind === "map" || view.kind === "timeline") {
-    return (
-      <Suspense fallback={<Loading />}>
-        <OwnChunkView {...props} fields={fields.data} language={language} />
-      </Suspense>
-    );
+  if (view.kind === "timeline" || view.kind === "board" || view.kind === "map") {
+    return <ChunkedView results={props} view={view} fields={fields.data} language={language} />;
   }
   const known = new Map(fields.data.fields.fields.map((field) => [field.word, field]));
   // Whatever the address or a saved search names, the columns that cannot be taken away are drawn.

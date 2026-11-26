@@ -58,7 +58,7 @@ export function ProjectToolbar({ shortName, beside, shownAs }: ProjectToolbarPro
   return (
     <div {...partOf(part.listToolbar)}>
       <NewIssue shortName={shortName} />
-      {/* The timeline and the map show the Legend below their own tools: one Legend on the page. */}
+      {/* The timeline, the map and the board show the Legend below their own tools: one Legend on the page. */}
       {drawsOwnLegend(shownAs) ? null : layout === "computer" && !beside ? (
         <IssueLegend />
       ) : (

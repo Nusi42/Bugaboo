@@ -48,6 +48,11 @@ export const searchKeys = {
     "search",
     ...about,
   ],
+  /**
+   * The board of a search: its columns, rows and first cards. It starts with the keys of the lists,
+   * so a change of an issue reads it again.
+   */
+  board: (...about: readonly string[]) => ["issues", "list", "board", ...about],
   /** How many issues a search finds. */
   foundCount: (text: string, within?: string) => ["issues", "list", "count", within ?? null, text],
   /** How many issues a search finds in each group of a field. */

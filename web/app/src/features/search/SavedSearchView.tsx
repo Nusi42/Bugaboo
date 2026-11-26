@@ -12,6 +12,7 @@ import {
   useListView,
   viewIsChanged,
   withoutChanges,
+  type KeptIn,
   type ResultsInput,
 } from "../../shared/use-list-view.ts";
 import { useCanonicalForms } from "./canonical-forms.ts";
@@ -29,6 +30,18 @@ export interface SavedSearchViewProps {
   readonly results: (input: ResultsInput) => ReactNode;
   /** What a phone shows before *Filters* in the row of the bar (the *Legend* button of the list). */
   readonly phoneStart?: ReactNode;
+}
+
+/** What the board of a saved search keeps its options in: the search itself, for its maker only. */
+function keptInOf(search: SavedSearch): KeptIn | undefined {
+  return search.mine
+    ? {
+        id: search.id,
+        version: search.version,
+        text: search.search_text,
+        presentation: search.presentation,
+      }
+    : undefined;
 }
 
 /** A saved search that was opened: its name, the bar with its text, what it finds with its columns. */
@@ -50,6 +63,7 @@ export function SavedSearchView({
     word: forms?.word,
   });
   const unchanged = text === saved && !viewIsChanged(state);
+  const keptIn = keptInOf(search);
   // Back at the saved text there is nothing to save, and the address is the saved search's own.
   const onText = (canonical: string, step: HistoryStep): void => {
     onState(withText(state, canonical, saved), step);
@@ -77,7 +91,7 @@ export function SavedSearchView({
         phoneStart={phoneStart}
         actions={<SavedSearchActions search={search} />}
       />
-      {results({ text, onText, view, defaults, onView, stale })}
+      {results({ text, onText, view, defaults, onView, stale, keptIn })}
     </Card>
   );
 }

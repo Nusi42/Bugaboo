@@ -29,19 +29,22 @@ export type ShownAs = Schema<"ViewKind">;
 /** The options of a timeline: the date fields, *Plan by effort* and the zoom. */
 export type TimelineOptions = Schema<"TimelineOptionsBody">;
 
+/** The options of a board: the field of its columns, the field of its rows and the card limits. */
+export type BoardOptions = Schema<"BoardOptionsBody">;
+
 /** The zoom of a timeline (*Days · Weeks · Months · Quarters*). */
 export type ZoomWord = Schema<"Zoom">;
 
 /**
  * Every kind of view, and whether the screen shows it yet: the compiler stops here when the server
- * gets a new one. The board and the calendar are read on the server; their screens come later, and
- * until then an address that names them opens the list.
+ * gets a new one. The calendar is read on the server; its screen comes later, and until then an
+ * address that names it opens the list.
  */
 const viewKinds: Readonly<Record<ShownAs, boolean>> = {
   list: true,
   timeline: true,
   map: true,
-  board: false,
+  board: true,
   calendar: false,
 };
 
@@ -54,11 +57,15 @@ const zooms: Readonly<Record<ZoomWord, true>> = {
 };
 
 /**
- * Whether a view draws its own Legend below its own tools (the timeline, the relation map), so the
- * row above the results leaves it out: one Legend on the page.
+ * Whether a view draws its own Legend below its own tools (the timeline, the relation map and the
+ * board), so the row above the results leaves it out: one Legend on the page.
  */
 export function drawsOwnLegend(kind: string | undefined): boolean {
-  const own: readonly (string | undefined)[] = ["timeline", "map"] satisfies readonly ShownAs[];
+  const own: readonly (string | undefined)[] = [
+    "timeline",
+    "map",
+    "board",
+  ] satisfies readonly ShownAs[];
   return own.includes(kind);
 }
 
@@ -92,6 +99,8 @@ export interface ListView {
   readonly timeline: TimelineOptions;
   /** *Kinds shown* of the relation map of the results (UX §4.15); kept in the address only (M10-F203). */
   readonly map: KindsShown;
+  /** The options of the board, kept while another view is shown: only the maker of a saved search changes them. */
+  readonly board: BoardOptions;
 }
 
 /** What a timeline is grouped by when a list is first shown as one: the goal (UX §4.7, M8-Q12). */
@@ -105,6 +114,9 @@ export const builtInTimeline: TimelineOptions = {
   zoom: "week",
   deadline_drivers: false,
 };
+
+/** The board a saved search has when it says nothing of one: a column for each status, no rows, no card limits. */
+export const builtInBoard: BoardOptions = { columns: null, rows: null, card_limits: [] };
 
 /** What the built-in list depends on. */
 export interface BuiltInInput {
@@ -121,6 +133,7 @@ export function builtInView({ everywhere }: BuiltInInput): ListView {
     kind: "list",
     timeline: builtInTimeline,
     map: everyKind,
+    board: builtInBoard,
   };
 }
 
@@ -151,6 +164,7 @@ export function viewOf(state: SearchState, defaults: ListView): ListView {
       state.hide === undefined && state.parts === undefined
         ? defaults.map
         : kindsShownOf(state.hide, state.parts),
+    board: defaults.board,
   };
 }
 
@@ -173,6 +187,11 @@ export function viewInWords(view: ListView, now: (word: string) => string): List
       ...view.timeline,
       start_field: start === null ? null : now(start),
       end_field: end === null ? null : now(end),
+    },
+    board: {
+      ...view.board,
+      columns: view.board.columns === null ? null : now(view.board.columns),
+      rows: view.board.rows === null ? null : now(view.board.rows),
     },
   };
 }
@@ -228,6 +247,13 @@ function timelineParts(
   };
 }
 
+/** The board options as a saved search keeps them: left out while they are the starting ones. */
+function boardOf(board: BoardOptions): Pick<Schema<"PresentationRef">, "board"> {
+  const usual =
+    board.columns === null && board.rows === null && (board.card_limits ?? []).length === 0;
+  return usual ? {} : { board };
+}
+
 /** How a saved search keeps a view (QRY-06): the widths belong to their columns. */
 export function presentationOf(view: ListView): Schema<"PresentationRef"> {
   return {
@@ -235,6 +261,7 @@ export function presentationOf(view: ListView): Schema<"PresentationRef"> {
     columns: view.columns.map((field) => ({ field, width: view.widths[field] ?? null })),
     group_by: view.groupBy,
     timeline: view.timeline,
+    ...boardOf(view.board),
   };
 }
 
@@ -263,5 +290,6 @@ export function viewFromPresentation(
     kind: presentation.view,
     timeline: presentation.timeline ?? defaults.timeline,
     map: defaults.map,
+    board: presentation.board ?? defaults.board,
   };
 }

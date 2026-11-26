@@ -13,7 +13,7 @@ import { useSelection } from "./use-selection.ts";
 export function SearchResults(input: ResultsInput) {
   return (
     <>
-      {/* The timeline and the map show the Legend below their own tools: one Legend on the page. */}
+      {/* The timeline, the map and the board show the Legend below their own tools: one Legend on the page. */}
       {drawsOwnLegend(input.view.kind) ? null : <SearchToolbar />}
       <IssueResults
         {...input}

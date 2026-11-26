@@ -6,10 +6,11 @@
 //! suite, so a new page cannot be added without being checked; the suite itself runs in
 //! `cargo xtask ci` (the browser end-to-end tests).
 //!
-//! Every drag of the timeline has a key (UX §4.7, ADR-0043): each kind of thing the timeline
-//! drags is named in `drag-kinds.ts` together with the message of the typed way that does the same
-//! (`typed:`), a drag in the timeline takes its kind from there and never writes one of its own, and
-//! the timeline that drags a bar with the pointer also moves it with keys (`keyMoveOf`).
+//! Every drag of the timeline and of the board has a key (UX §4.6, §4.7, ADR-0043): each kind of
+//! thing the screens drag is named in the shared `drag-kinds.ts` together with the message of the
+//! typed way that does the same (`typed:`), a drag in the timeline or the board takes its kind from
+//! there and never writes one of its own, and the timeline that drags a bar with the pointer also
+//! moves it with keys (`keyMoveOf`).
 //!
 //! The EN 301 549 report answers every clause of the standard (COMP-15): see `a11y_report`.
 
@@ -23,10 +24,13 @@ use crate::source::read_text;
 const PATHS_FILE: &str = "web/app/src/shared/paths.ts";
 pub(crate) const SUITE_FOLDER: &str = "web/app/e2e";
 const SUITE_PREFIX: &str = "a11y";
-/// The feature of the timeline, whose drags each have a key.
-const TIMELINE_FOLDER: &str = "web/app/src/features/timeline";
-/// The one place that names what the timeline drags, each with its typed way.
-const DRAG_KINDS_FILE: &str = "web/app/src/features/timeline/drag-kinds.ts";
+/// The features whose drags each have a key.
+const DRAG_FOLDERS: [&str; 2] = [
+    "web/app/src/features/timeline",
+    "web/app/src/features/board",
+];
+/// The one place that names what the screens drag, each with its typed way.
+const DRAG_KINDS_FILE: &str = "web/app/src/shared/drag-kinds.ts";
 /// The catalog the typed ways are messages of.
 const MESSAGES_FILE: &str = "messages/en.json";
 
@@ -55,16 +59,23 @@ impl Check for TestA11y {
     }
 }
 
-/// The code of the timeline, by path: its TypeScript files, tests left out.
+/// The code of the screens that drag, by path: their TypeScript files, tests left out, and the
+/// shared list of what they drag.
 fn timeline_files(repo: &crate::repo::Repo) -> anyhow::Result<Vec<(String, String)>> {
     let mut files = Vec::new();
-    for name in sorted_files(repo, TIMELINE_FOLDER, |name| {
-        (has_extension(name, "ts") || has_extension(name, "tsx")) && !name.contains(".test.")
-    })? {
-        let path = format!("{TIMELINE_FOLDER}/{name}");
-        let text = read_text(repo, &path)?;
-        files.push((path, text));
+    for folder in DRAG_FOLDERS {
+        for name in sorted_files(repo, folder, |name| {
+            (has_extension(name, "ts") || has_extension(name, "tsx")) && !name.contains(".test.")
+        })? {
+            let path = format!("{folder}/{name}");
+            let text = read_text(repo, &path)?;
+            files.push((path, text));
+        }
     }
+    files.push((
+        DRAG_KINDS_FILE.to_owned(),
+        read_text(repo, DRAG_KINDS_FILE)?,
+    ));
     Ok(files)
 }
 
@@ -75,7 +86,7 @@ fn drags_have_keys(files: &[(String, String)], messages: &str) -> Vec<Finding> {
     match files.iter().find(|(path, _)| path == DRAG_KINDS_FILE) {
         None => findings.push(Finding::at(
             DRAG_KINDS_FILE,
-            "The timeline has no `drag-kinds.ts`: name each kind it drags there, with its typed way.",
+            "There is no shared `drag-kinds.ts`: name each kind the timeline and the board drag there, with its typed way.",
         )),
         Some((_, text)) => findings.extend(kinds_have_typed_ways(&code(text), messages)),
     }
@@ -88,7 +99,7 @@ fn drags_have_keys(files: &[(String, String)], messages: &str) -> Vec<Finding> {
         if writes_a_kind(&text) {
             findings.push(Finding::at(
                 path,
-                "A drag of the timeline writes its own kind. Take it from `dragKinds`, where its typed way is named.",
+                "A drag of the timeline or the board writes its own kind. Take it from `dragKinds`, where its typed way is named.",
             ));
         }
     }
@@ -289,11 +300,11 @@ visit(paths.longer); // paths.home and paths.signIn
                     .to_owned(),
             ),
             (
-                format!("{TIMELINE_FOLDER}/bar-keys.ts"),
+                format!("{}/bar-keys.ts", DRAG_FOLDERS[0]),
                 "export function keyMoveOf(event) {}".to_owned(),
             ),
             (
-                format!("{TIMELINE_FOLDER}/Bar.tsx"),
+                format!("{}/Bar.tsx", DRAG_FOLDERS[0]),
                 "useBarDrag(1); keyMoveOf(event); <DragHandle kind={dragKinds.dot.kind} />; useDropOf(dragKinds.dot.kind, ref)".to_owned(),
             ),
         ]

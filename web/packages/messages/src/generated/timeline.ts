@@ -49,8 +49,6 @@ export const messages = {
     "{count, plural, one {# issue has no dates} other {# issues have no dates}}",
   "timeline.not-scheduled-none": "Every issue of this search has dates.",
   "timeline.drag-issue": "Drag {key} onto the timeline",
-  "timeline.set-dates": "Set dates…",
-  "timeline.add-dependency": "Add dependency…",
   "timeline.open": "Open",
   "timeline.card": "Selected: {key}",
   "timeline.no-dates": "No dates yet",

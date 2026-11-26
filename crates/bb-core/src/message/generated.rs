@@ -1576,6 +1576,63 @@ pub const BACKUP_SHOWN_ONCE: MessageKey = MessageKey::new("backup.shown-once");
 /// The message `backup.title`.
 pub const BACKUP_TITLE: MessageKey = MessageKey::new("backup.title");
 
+/// The message `board.card-limits-help`.
+pub const BOARD_CARD_LIMITS_HELP: MessageKey = MessageKey::new("board.card-limits-help");
+
+/// The message `board.columns-from`.
+pub const BOARD_COLUMNS_FROM: MessageKey = MessageKey::new("board.columns-from");
+
+/// The message `board.customize`.
+pub const BOARD_CUSTOMIZE: MessageKey = MessageKey::new("board.customize");
+
+/// The message `board.customize-card`.
+pub const BOARD_CUSTOMIZE_CARD: MessageKey = MessageKey::new("board.customize-card");
+
+/// The message `board.customize-title`.
+pub const BOARD_CUSTOMIZE_TITLE: MessageKey = MessageKey::new("board.customize-title");
+
+/// The message `board.empty-column`.
+pub const BOARD_EMPTY_COLUMN: MessageKey = MessageKey::new("board.empty-column");
+
+/// The message `board.keys`.
+pub const BOARD_KEYS: MessageKey = MessageKey::new("board.keys");
+
+/// The message `board.limit-invalid`.
+pub const BOARD_LIMIT_INVALID: MessageKey = MessageKey::new("board.limit-invalid");
+
+/// The message `board.limits-later`.
+pub const BOARD_LIMITS_LATER: MessageKey = MessageKey::new("board.limits-later");
+
+/// The message `board.move-to`.
+pub const BOARD_MOVE_TO: MessageKey = MessageKey::new("board.move-to");
+
+/// The message `board.no-rows`.
+pub const BOARD_NO_ROWS: MessageKey = MessageKey::new("board.no-rows");
+
+/// The message `board.no-value`.
+pub const BOARD_NO_VALUE: MessageKey = MessageKey::new("board.no-value");
+
+/// The message `board.read-failed`.
+pub const BOARD_READ_FAILED: MessageKey = MessageKey::new("board.read-failed");
+
+/// The message `board.refresh`.
+pub const BOARD_REFRESH: MessageKey = MessageKey::new("board.refresh");
+
+/// The message `board.rows`.
+pub const BOARD_ROWS: MessageKey = MessageKey::new("board.rows");
+
+/// The message `board.save`.
+pub const BOARD_SAVE: MessageKey = MessageKey::new("board.save");
+
+/// The message `board.show-as-board`.
+pub const BOARD_SHOW_AS_BOARD: MessageKey = MessageKey::new("board.show-as-board");
+
+/// The message `board.show-more`.
+pub const BOARD_SHOW_MORE: MessageKey = MessageKey::new("board.show-more");
+
+/// The message `board.tabs`.
+pub const BOARD_TABS: MessageKey = MessageKey::new("board.tabs");
+
 /// The message `check-access.all-fields`.
 pub const CHECK_ACCESS_ALL_FIELDS: MessageKey = MessageKey::new("check-access.all-fields");
 
@@ -14585,6 +14642,294 @@ pub fn backups_none(path: impl std::fmt::Display) -> Message {
     Message::with_arguments(
         MessageKey::new("backups.none"),
         vec![("path", Value::Text(path.to_string()))],
+    )
+}
+
+/// The message `board.announce-can-go`.
+#[must_use]
+pub fn board_announce_can_go(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.announce-can-go"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The values of the message `board.announce-column`, by name.
+#[derive(Clone, Copy)]
+pub struct BoardAnnounceColumn<'a> {
+    /// The value of `{column}`.
+    pub column: &'a dyn std::fmt::Display,
+    /// The value of `{note}`.
+    pub note: &'a dyn std::fmt::Display,
+}
+
+/// The message `board.announce-column`.
+#[must_use]
+pub fn board_announce_column(values: BoardAnnounceColumn<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.announce-column"),
+        vec![
+            ("column", Value::Text(values.column.to_string())),
+            ("note", Value::Text(values.note.to_string())),
+        ],
+    )
+}
+
+/// The message `board.announce-picked`.
+#[must_use]
+pub fn board_announce_picked(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.announce-picked"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `board.card-limit-of`.
+#[must_use]
+pub fn board_card_limit_of(column: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.card-limit-of"),
+        vec![("column", Value::Text(column.to_string()))],
+    )
+}
+
+/// The message `board.cards-of`.
+#[must_use]
+pub fn board_cards_of(column: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.cards-of"),
+        vec![("column", Value::Text(column.to_string()))],
+    )
+}
+
+/// The message `board.count`.
+#[must_use]
+pub fn board_count(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.count"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The values of the message `board.count-of-limit`, by name.
+#[derive(Clone, Copy)]
+pub struct BoardCountOfLimit {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{limit}`.
+    pub limit: i64,
+}
+
+/// The message `board.count-of-limit`.
+#[must_use]
+pub fn board_count_of_limit(values: BoardCountOfLimit) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.count-of-limit"),
+        vec![
+            ("count", Value::Number(values.count)),
+            ("limit", Value::Number(values.limit)),
+        ],
+    )
+}
+
+/// The values of the message `board.count-over`, by name.
+#[derive(Clone, Copy)]
+pub struct BoardCountOver {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{limit}`.
+    pub limit: i64,
+}
+
+/// The message `board.count-over`.
+#[must_use]
+pub fn board_count_over(values: BoardCountOver) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.count-over"),
+        vec![
+            ("count", Value::Number(values.count)),
+            ("limit", Value::Number(values.limit)),
+        ],
+    )
+}
+
+/// The message `board.here`.
+#[must_use]
+pub fn board_here(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.here"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `board.move-to-title`.
+#[must_use]
+pub fn board_move_to_title(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.move-to-title"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The values of the message `board.moved`, by name.
+#[derive(Clone, Copy)]
+pub struct BoardMoved<'a> {
+    /// The value of `{column}`.
+    pub column: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+}
+
+/// The message `board.moved`.
+#[must_use]
+pub fn board_moved(values: BoardMoved<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.moved"),
+        vec![
+            ("column", Value::Text(values.column.to_string())),
+            ("key", Value::Text(values.key.to_string())),
+        ],
+    )
+}
+
+/// The message `board.moves-list`.
+#[must_use]
+pub fn board_moves_list(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.moves-list"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `board.no-row-value`.
+#[must_use]
+pub fn board_no_row_value(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.no-row-value"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The message `board.order-menu`.
+#[must_use]
+pub fn board_order_menu(column: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.order-menu"),
+        vec![("column", Value::Text(column.to_string()))],
+    )
+}
+
+/// The values of the message `board.reason-cannot-change`, by name.
+#[derive(Clone, Copy)]
+pub struct BoardReasonCannotChange<'a> {
+    /// The value of `{field}`.
+    pub field: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+}
+
+/// The message `board.reason-cannot-change`.
+#[must_use]
+pub fn board_reason_cannot_change(values: BoardReasonCannotChange<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.reason-cannot-change"),
+        vec![
+            ("field", Value::Text(values.field.to_string())),
+            ("key", Value::Text(values.key.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `board.reason-no-change`, by name.
+#[derive(Clone, Copy)]
+pub struct BoardReasonNoChange<'a> {
+    /// The value of `{column}`.
+    pub column: &'a dyn std::fmt::Display,
+    /// The value of `{from}`.
+    pub from: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+}
+
+/// The message `board.reason-no-change`.
+#[must_use]
+pub fn board_reason_no_change(values: BoardReasonNoChange<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.reason-no-change"),
+        vec![
+            ("column", Value::Text(values.column.to_string())),
+            ("from", Value::Text(values.from.to_string())),
+            ("key", Value::Text(values.key.to_string())),
+        ],
+    )
+}
+
+/// The values of the message `board.reason-no-status`, by name.
+#[derive(Clone, Copy)]
+pub struct BoardReasonNoStatus<'a> {
+    /// The value of `{column}`.
+    pub column: &'a dyn std::fmt::Display,
+    /// The value of `{key}`.
+    pub key: &'a dyn std::fmt::Display,
+}
+
+/// The message `board.reason-no-status`.
+#[must_use]
+pub fn board_reason_no_status(values: BoardReasonNoStatus<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.reason-no-status"),
+        vec![
+            ("column", Value::Text(values.column.to_string())),
+            ("key", Value::Text(values.key.to_string())),
+        ],
+    )
+}
+
+/// The message `board.reason-no-status-read`.
+#[must_use]
+pub fn board_reason_no_status_read(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.reason-no-status-read"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
+/// The message `board.rows-truncated`.
+#[must_use]
+pub fn board_rows_truncated(count: i64) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.rows-truncated"),
+        vec![("count", Value::Number(count))],
+    )
+}
+
+/// The message `board.sort-by`.
+#[must_use]
+pub fn board_sort_by(field: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.sort-by"),
+        vec![("field", Value::Text(field.to_string()))],
+    )
+}
+
+/// The values of the message `board.tab`, by name.
+#[derive(Clone, Copy)]
+pub struct BoardTab<'a> {
+    /// The value of `{count}`.
+    pub count: i64,
+    /// The value of `{name}`.
+    pub name: &'a dyn std::fmt::Display,
+}
+
+/// The message `board.tab`.
+#[must_use]
+pub fn board_tab(values: BoardTab<'_>) -> Message {
+    Message::with_arguments(
+        MessageKey::new("board.tab"),
+        vec![
+            ("count", Value::Number(values.count)),
+            ("name", Value::Text(values.name.to_string())),
+        ],
     )
 }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  builtInBoard,
   builtInTimeline,
   builtInView,
   noGrouping,
@@ -31,6 +32,7 @@ describe("a list saved with the words of the old language (D3)", () => {
     kind: "list",
     timeline: builtInTimeline,
     map: everyKind,
+    board: builtInBoard,
   } as const;
 
   it("keeps the column, the width and the grouping of every field, an own one included", () => {
@@ -41,6 +43,7 @@ describe("a list saved with the words of the old language (D3)", () => {
       kind: "list",
       timeline: builtInTimeline,
       map: everyKind,
+      board: builtInBoard,
     });
   });
 
@@ -156,6 +159,7 @@ describe("the view as a saved search keeps it", () => {
     kind: "list",
     timeline: builtInTimeline,
     map: everyKind,
+    board: builtInBoard,
   } as const;
 
   it("is written with the widths on the columns and a null for no grouping", () => {
@@ -264,5 +268,27 @@ describe("the kinds shown of a search shown as a map (ISS-16, UX §4.15)", () =>
     expect(searchLocation(withView(readSearch({ search: {} }), view, everywhere)).search).toEqual({
       show: "map",
     });
+  });
+});
+
+describe("a board in a saved search (PLAN-06, ADR-0034)", () => {
+  const board = {
+    columns: "status group",
+    rows: "assigned to",
+    card_limits: [{ column: "In progress", limit: 3 }],
+  } as const;
+
+  it("plan_06_keeps_the_columns_rows_and_card_limits_of_a_board_through_a_round_trip", () => {
+    const view = { ...project, kind: "board", board } as const;
+    expect(viewFromPresentation(presentationOf(view), project)).toEqual(view);
+  });
+
+  it("leaves the options out of the saved view while they are the starting ones", () => {
+    expect(presentationOf({ ...project, kind: "board" }).board).toBeUndefined();
+  });
+
+  it("opens an address that names the board as one", () => {
+    const state = readSearch({ pathname: "/search", search: { show: "board" } });
+    expect(viewOf(state, everywhere).kind).toBe("board");
   });
 });

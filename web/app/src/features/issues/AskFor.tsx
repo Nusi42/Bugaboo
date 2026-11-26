@@ -21,10 +21,12 @@ import { useAskFor } from "./use-ask-for.ts";
 import type { IssueChanges } from "./use-issue-changes.ts";
 
 export interface AskForProps {
-  readonly issue: IssueView;
+  /** The issue the change is made on: the window needs its project and its type, from the page or from a card. */
+  readonly issue: Pick<IssueView, "issue_type" | "project">;
   /** The status change that needs something filled in; its button text is the title of the window. */
   readonly change: OfferedChange;
-  readonly changes: IssueChanges;
+  /** What sends the change: the issue page's own changes, or a card of the board. */
+  readonly changes: Pick<IssueChanges, "ask">;
   readonly onClose: () => void;
 }
 
