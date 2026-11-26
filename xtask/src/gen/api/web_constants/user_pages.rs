@@ -581,6 +581,7 @@ mod tests {
                 WORDS_SOURCE,
                 &[("MAX_WORD_BYTES", 255), ("MIN_PREFIX_CHARS", 2)],
             ),
+            file(RELATION_MAP_SOURCE, &[("MAP_ISSUES_MOST", 200)]),
             file(
                 NOTIFICATION_SOURCE,
                 &[
@@ -627,6 +628,8 @@ mod tests {
         let limits = text(SEARCH_LIMITS_PAGE);
         assert!(limits.contains("| Filters in one search"), "{limits}");
         assert!(limits.contains("4096 bytes"), "{limits}");
+        assert!(limits.contains("| Issues on one relation map"), "{limits}");
+        assert!(limits.contains("| 200 "), "{limits}");
         let numbers = text(NOTIFICATION_NUMBERS_PAGE);
         assert!(numbers.contains("90 days"), "{numbers}");
         assert!(numbers.contains("5 minutes"), "{numbers}");
