@@ -142,6 +142,7 @@ export { Overlay, type OverlayProps } from "./Overlay.tsx";
 export { Priority, type PriorityProps } from "./Priority.tsx";
 export {
   groupTint,
+  plainOnPhone,
   rowStates,
   type RowStateInput,
   type RowStateWord,

@@ -4575,7 +4575,15 @@ part "map-scroll" {
     overflow auto
     border "$border-width solid $border"
     border-radius "$r-card"
-    background "$bg-canvas"
+    // A shadow stands at each edge the picture goes on beyond, as in every box that scrolls, here sideways too: covers
+    // that scroll with the picture hide it at the ends.
+    --cue-cover "$bg-canvas"
+    background-color "$bg-canvas"
+    background-image "linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(var(--cue-cover), var(--cue-cover)), linear-gradient(to right, color-mix(in srgb, $cue 50%, transparent), transparent), linear-gradient(to left, color-mix(in srgb, $cue 50%, transparent), transparent)"
+    background-position "left, right, left, right"
+    background-size "$space-5 100%, $space-5 100%, $space-3 100%, $space-3 100%"
+    background-repeat no-repeat
+    background-attachment "local, local, scroll, scroll"
     overscroll-behavior contain
     cursor grab
 }
@@ -4693,6 +4701,13 @@ part "map-line[variant=other-2]" {
     }
 }
 
+part "map-line[variant=alike]" {
+    forced {
+        stroke-dasharray "$border-width $space-1"
+        stroke-linecap round
+    }
+}
+
 part "map-line[state=on-chain]" {
     forced {
         stroke Highlight
@@ -4703,6 +4718,28 @@ part "map-line[state=on-chain] map-line.head" {
     forced {
         fill Highlight
     }
+}
+
+// The line of a kind in the Legend and in its chip of *Kinds shown*: a short piece of the same line (`map-line`), so it
+// has the same color and, under forced colors, the same pattern.
+part "map-swatch" {
+    flex none
+    width "$space-5"
+    height "$space-3"
+    overflow visible
+}
+
+part "map-swatch map-line" {
+    vector-effect non-scaling-stroke
+}
+
+// A chip that is off is told by more than its color: its line is drawn only while it is on.
+part "map-kind map-swatch" {
+    visibility hidden
+}
+
+part "map-kind[selected] map-swatch" {
+    visibility visible
 }
 
 // The word of a line stands on its middle, on the color of the picture with room around it, so no text touches a line
@@ -4774,8 +4811,11 @@ part "map-card.title" {
 }
 
 // The start: an accent edge and a small tab with its word.
-part "map-card[state=start]" {
-    border-color "$accent"
+// The start, a card on the shown chain and a faded card change the other sides only: the start edge keeps the color of
+// a high or critical priority (R4).
+part "map-card[state=start]" "map-card[state=on-chain]" {
+    border-block-color "$accent"
+    border-inline-end-color "$accent"
 }
 
 part "map-card.tab" {
@@ -4791,13 +4831,10 @@ part "map-card.tab" {
 }
 
 part "map-card[state=faded]" {
-    border-color "$border"
+    border-block-color "$border"
+    border-inline-end-color "$border"
     background "$bg-canvas"
     color "$fg-muted"
-}
-
-part "map-card[state=on-chain]" {
-    border-color "$accent"
 }
 
 part "map-card[state=chosen]" {
@@ -4806,14 +4843,12 @@ part "map-card[state=chosen]" {
 
 part "map-card[state=on-chain]" "map-card[state=chosen]" {
     forced {
-        border-color Highlight
         outline "$border-width solid Highlight"
     }
 }
 
 part "map-card[state=faded]" {
     forced {
-        border-color GrayText
         color GrayText
     }
 }
@@ -5070,59 +5105,6 @@ part "legend.swatch[variant=critical]" {
 
 part "legend.swatch[variant=high]" {
     background "$edge-high"
-}
-
-// The lines of the relation map: a short line in the color and the pattern of its kind (UX §4.15).
-part "legend.swatch[variant=line-dependency]" "legend.swatch[variant=line-part-of]" "legend.swatch[variant=line-alike]" "legend.swatch[variant=line-other-1]" "legend.swatch[variant=line-other-2]" {
-    width "$space-5"
-    height 0
-    border 0
-    border-top "calc($border-width * 2) solid $fg-subtle"
-    border-radius 0
-    background none
-}
-
-part "legend.swatch[variant=line-dependency]" {
-    border-top-color "$warning"
-}
-
-part "legend.swatch[variant=line-part-of]" {
-    border-top-color "$accent"
-}
-
-part "legend.swatch[variant=line-other-1]" {
-    border-top-style dashed
-}
-
-part "legend.swatch[variant=line-other-2]" {
-    border-top-color "$danger"
-}
-
-part "legend.swatch[variant=line-dependency]" "legend.swatch[variant=line-part-of]" "legend.swatch[variant=line-alike]" "legend.swatch[variant=line-other-1]" "legend.swatch[variant=line-other-2]" {
-    forced {
-        border-top-color CanvasText
-    }
-}
-
-part "legend.swatch[variant=line-part-of]" {
-    forced {
-        border-top-style double
-    }
-}
-
-part "legend.swatch[variant=line-other-2]" {
-    forced {
-        border-top-style dotted
-    }
-}
-
-// A chip that is off is told by more than its color: its line is drawn only while it is on.
-part "map-kind legend.swatch" {
-    visibility hidden
-}
-
-part "map-kind[selected] legend.swatch" {
-    visibility visible
 }
 
 // Forced colors drop the fill of a bar, so both are drawn in the text color there.
@@ -19180,4 +19162,11 @@ part "setting-head > stack > row" "setting-head > stack > muted" "setting-head >
 part "setting-head > save-status" {
     grid-column 2
     grid-row 1
+}
+
+// The words before a title (*blocks*, the chain of the relation map) are one sentence with it: the same size, only
+// quieter (UX §7.3). At the end, after every rule of `muted`, which is less specific (stylelint no-descending-specificity).
+part "list-row.cell[variant=title] muted" {
+    font-size inherit
+    line-height inherit
 }

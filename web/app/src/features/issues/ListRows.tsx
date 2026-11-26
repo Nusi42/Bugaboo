@@ -5,6 +5,7 @@ import {
   ListCell,
   part,
   partOf,
+  plainOnPhone,
   rowStates,
   type ListColumn,
   type SwipeSide,
@@ -79,7 +80,7 @@ export function IssueItem({ id, line }: { readonly id: string; readonly line: Fo
       textValue={spoken}
       {...swipe.rowProps}
       {...partOf(part.listRow, {
-        variants: [context.phone ? "phone" : "grid", context.phone && !context.ticks && "plain"],
+        variants: [context.phone ? "phone" : "grid", plainOnPhone(context.phone, context.ticks)],
         states: [...rowStates(line), selected && "selected", current && "current"],
       })}
     >

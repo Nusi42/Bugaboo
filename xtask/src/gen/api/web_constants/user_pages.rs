@@ -16,6 +16,7 @@ use super::notifications::{
     HANDLE_SOURCE, MAIL_SOURCE, NOTIFICATION_SOURCE, SIGN_UP_SOURCE, parsed as parsed_file,
 };
 use super::number_const;
+use super::numbers::RELATION_MAP_SOURCE;
 use crate::generate::privacy::table;
 use crate::source::Source;
 
@@ -99,11 +100,18 @@ fn search_limits(sources: &[Source]) -> anyhow::Result<String> {
             word("MIN_PREFIX_CHARS")?.to_string(),
             "`cra*` finds words that start with cra; `c*` is looked up as the word c.".to_owned(),
         ],
+        vec![
+            "Issues on one relation map".to_owned(),
+            number(sources, RELATION_MAP_SOURCE, "MAP_ISSUES_MOST")?.to_string(),
+            "Its *Everything* walks as many steps as `within N steps` may.".to_owned(),
+        ],
     ];
     let mut out = header("Limits of a search");
     out.push_str("A search that goes over a limit is told so in plain words below the box, before anything is sent to the server. The limits keep one search from keeping the server busy for everybody.\n\n");
     out.push_str(&table(&["What", "The most", "Note"], &rows));
-    out.push_str("\nSee [Searching for issues](search.md).\n");
+    out.push_str(
+        "\nSee [Searching for issues](search.md) and [The relation map](relation-map.md).\n",
+    );
     Ok(out)
 }
 

@@ -1,12 +1,20 @@
 import { t } from "@bugaboo/messages";
-import { Alert, alertTone, DelayedSkeleton, selectLook, useLayout } from "@bugaboo/ui";
+import {
+  Alert,
+  alertTone,
+  DelayedSkeleton,
+  part,
+  partOf,
+  selectLook,
+  useLayout,
+} from "@bugaboo/ui";
 import { useNavigate } from "@tanstack/react-router";
 
 import { messageOf } from "../../shared/errors.ts";
 import { issueMapAddress } from "../../shared/paths.ts";
 import { relationKindLinesOf, useRelationKinds } from "../relation-kinds/index.ts";
 import { ViewChoices, type ListViewControl, type SearchFieldsAnswer } from "../search/index.ts";
-import { useKindsShown, useSearchMap } from "./map-data.ts";
+import { useSearchMap } from "./map-data.ts";
 import { cutWords } from "./map-view.ts";
 import { RelationMap } from "./RelationMap.tsx";
 
@@ -27,35 +35,44 @@ export interface SearchMapProps extends ListViewControl {
 export function SearchMap({ text, within, view, onView, fields }: SearchMapProps) {
   const phone = useLayout() === "phone";
   const navigate = useNavigate();
-  const [shown, setShown] = useKindsShown();
   const kindsRead = useRelationKinds();
   const kinds = relationKindLinesOf(kindsRead.data?.pages).map((kind) => kind.id);
+  const shown = view.map;
   const map = useSearchMap({
     text,
     within,
     shown,
     kinds: kindsRead.data === undefined ? undefined : kinds,
   });
-  if (map.isError) {
-    return <Alert tone={alertTone.danger}>{messageOf(map.error)}</Alert>;
+  // *Show as* stands first whatever the map is doing, so it never goes from under the cursor and a
+  // map that could not be read can go back to the list. On a phone it is in the sheet of the filters.
+  const start = phone ? null : (
+    <ViewChoices view={view} fields={fields} onView={onView} look={selectLook.inline} />
+  );
+  if (map.data === undefined) {
+    return (
+      <>
+        <div {...partOf(part.mapTools)}>{start}</div>
+        {map.isError ? (
+          <Alert tone={alertTone.danger}>{messageOf(map.error)}</Alert>
+        ) : (
+          <DelayedSkeleton lines={4} />
+        )}
+      </>
+    );
   }
-  return map.data === undefined ? (
-    <DelayedSkeleton lines={4} />
-  ) : (
+  return (
     <RelationMap
       answer={map.data}
       kindPages={kindsRead.data?.pages}
       label={(count) => t("relation-map.search-picture-label", { count })}
       cut={cutWords.search()}
       nothing={t("relation-map.nothing-found")}
-      start={
-        // On a phone *Show as* is in the sheet of the filters, as for a list (UX §4.2).
-        phone ? null : (
-          <ViewChoices view={view} fields={fields} onView={onView} look={selectLook.inline} />
-        )
-      }
+      start={start}
       shown={shown}
-      onShown={setShown}
+      onShown={(next) => {
+        onView({ ...view, map: next });
+      }}
       onStartFrom={(key) => {
         void navigate({ href: issueMapAddress(key) });
       }}

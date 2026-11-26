@@ -1,6 +1,6 @@
 import { t } from "@bugaboo/messages";
 import { part, partOf, pixelsOf, usePlace } from "@bugaboo/ui";
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 
 import { useBackgroundDrag } from "./background-drag.ts";
 import { MapCardButton, type ChainMark, type Pointing } from "./MapCardButton.tsx";
@@ -65,9 +65,25 @@ function Placed({
   );
 }
 
-/** The name of a column: *Start*, then the steps away. */
+/** The name of a column after the start: the steps away. */
 function headOf(column: number): string {
-  return column === 0 ? t("relation-map.start") : t("relation-map.column", { count: column });
+  return t("relation-map.column", { count: column });
+}
+
+/** The names of the columns after the start, which its card names itself (its tab *Start*). */
+function ColumnHeads({ picture, sizes }: Pick<MapPictureProps, "picture" | "sizes">) {
+  return picture.columns.slice(1).map((cards, before) => {
+    const column = before + 1;
+    return (
+      <Placed
+        key={cards[0]?.issue.id ?? headOf(column)}
+        at={headPlace(column, sizes)}
+        label={false}
+        on={false}
+        text={headOf(column)}
+      />
+    );
+  });
 }
 
 /** How a line or a card stands while a chain is shown. */
@@ -105,17 +121,7 @@ function Stage(
           <Line key={each.key} each={each} look={look} mark={markOf(lineOn(each.key), shown)} />
         ))}
       </svg>
-      {picture.start === undefined
-        ? null
-        : picture.columns.map((cards, column) => (
-            <Placed
-              key={cards[0]?.issue.id ?? headOf(column)}
-              at={headPlace(column, sizes)}
-              label={false}
-              on={false}
-              text={headOf(column)}
-            />
-          ))}
+      {picture.start === undefined ? null : <ColumnHeads picture={picture} sizes={sizes} />}
       {drawn.map(({ each }) => (
         <Placed
           key={each.key}
@@ -154,7 +160,8 @@ export function MapPicture(props: MapPictureProps) {
   // *Fit*: the zoom at which the picture and the room around it fit the box, measured once for each
   // press; a new answer keeps the zoom the person has.
   const fitted = useRef(0);
-  useEffect(() => {
+  // Before the picture is painted, so the first frame already has the zoom it keeps.
+  useLayoutEffect(() => {
     const element = box.current;
     if (fits === fitted.current || element === null || size.width <= 0 || size.height <= 0) {
       return;

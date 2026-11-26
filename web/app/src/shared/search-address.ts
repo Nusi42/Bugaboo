@@ -50,6 +50,10 @@ export interface SearchState {
   readonly drivers?: boolean;
   /** The two date fields of a timeline, by their search words. */
   readonly dates?: readonly [string, string];
+  /** The kinds of relation a map turns off, by their IDs, as the address writes them. */
+  readonly hide?: string;
+  /** `0` when a map turns *part of* off. */
+  readonly parts?: string;
   /** The issue open in the side panel of a project's list, by its issue ID. */
   readonly open?: string | undefined;
 }
@@ -66,6 +70,8 @@ export interface SearchParts {
   readonly effort?: string;
   readonly drivers?: string;
   readonly dates?: string;
+  readonly hide?: string;
+  readonly parts?: string;
 }
 
 /** Where a search state is written: the path and the parts after the question mark. */
@@ -128,6 +134,8 @@ export function readSearch(location: {
   const effort = textOf(raw, "effort");
   const drivers = textOf(raw, "drivers");
   const dates = datesOf(textOf(raw, "dates"));
+  const hide = textOf(raw, "hide");
+  const parts = textOf(raw, "parts");
   return {
     text: written === undefined || written.trim() === "" ? "" : written,
     ...(written === "" ? { everything: true } : {}),
@@ -142,6 +150,20 @@ export function readSearch(location: {
     ...(effort === undefined ? {} : { effort: effort === "1" }),
     ...(drivers === undefined ? {} : { drivers: drivers === "1" }),
     ...(dates === undefined ? {} : { dates }),
+    ...(hide === undefined || hide === "" ? {} : { hide }),
+    ...(parts === undefined || parts === "" ? {} : { parts }),
+  };
+}
+
+/** The parts of the address that say the options of a timeline and of a map. */
+function viewOptionParts(state: SearchState): SearchParts {
+  return {
+    ...(state.zoom === undefined ? {} : { zoom: state.zoom }),
+    ...(state.effort === undefined ? {} : { effort: state.effort ? "1" : "0" }),
+    ...(state.drivers === undefined ? {} : { drivers: state.drivers ? "1" : "0" }),
+    ...(state.dates === undefined ? {} : { dates: state.dates.join(",") }),
+    ...(state.hide === undefined ? {} : { hide: state.hide }),
+    ...(state.parts === undefined ? {} : { parts: state.parts }),
   };
 }
 
@@ -172,18 +194,7 @@ export function searchLocation(state: SearchState): SearchLocation {
   if (state.open !== undefined) {
     search.open = state.open;
   }
-  if (state.zoom !== undefined) {
-    search.zoom = state.zoom;
-  }
-  if (state.effort !== undefined) {
-    search.effort = state.effort ? "1" : "0";
-  }
-  if (state.drivers !== undefined) {
-    search.drivers = state.drivers ? "1" : "0";
-  }
-  if (state.dates !== undefined) {
-    search.dates = state.dates.join(",");
-  }
+  Object.assign(search, viewOptionParts(state));
   let pathname: string = paths.search;
   if (state.saved !== undefined) {
     pathname = savedSearchAddress(state.saved);

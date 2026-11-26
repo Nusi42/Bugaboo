@@ -79,7 +79,7 @@ export const paths = {
   projectCheckAccess: "/p/$project/settings/check-access",
   projectIssues: "/p/$project/issues",
   issue: appPaths.issue,
-  issueMap: "/issues/$issue/map",
+  issueMap: `${appPaths.issue}/map`,
   run: "/runs/$run",
   search: "/search",
   savedSearch: appPaths.savedSearch,

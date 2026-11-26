@@ -751,6 +751,7 @@ export interface MessageArguments {
   "relation-map.picture-label": { count: number; key: string | number };
   "relation-map.search-picture-label": { count: number };
   "relation-map.sentence": { key: string | number; lead: string | number };
+  "relation-map.start-from-key": { key: string | number };
   "relation-map.title": { key: string | number };
   "relation-map.too-many": { most: string | number };
   "relation-map.too-many-found": { most: string | number };

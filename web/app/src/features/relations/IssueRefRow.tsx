@@ -1,17 +1,11 @@
-import type { Schema } from "@bugaboo/api-client";
 import { listRowLook, ListRow, partOf, part, useLayout } from "@bugaboo/ui";
 import type { ReactNode } from "react";
 
 import { issueAddress } from "../../shared/paths.ts";
 import { issueCells } from "../issues/index.ts";
-import { statusGroupOf, statusWordsOf } from "./ref-status.ts";
+import { drawnGroupOf, drawnPriorityOf, statusGroupOf, statusWordsOf } from "./ref-status.ts";
 import type { ShownIssue } from "./shown-issue.ts";
 import { refColumns } from "./ref-columns.ts";
-
-/** An issue whose priority the viewer may not see is drawn plain: the normal priority draws no edge. */
-const plainPriority: Schema<"Priority"> = "normal";
-/** An issue whose status the viewer may not see is drawn plain, like one that has not started. */
-const plainGroup: Schema<"StatusGroup"> = "not-started";
 
 export interface IssueRefRowProps {
   readonly issue: ShownIssue;
@@ -33,8 +27,8 @@ export function IssueRefRow({ issue, meaning, action }: IssueRefRowProps) {
   const word = statusWordsOf(issue);
   return (
     <ListRow
-      group={group ?? plainGroup}
-      priority={issue.priority ?? plainPriority}
+      group={drawnGroupOf(issue)}
+      priority={drawnPriorityOf(issue)}
       columns={refColumns}
       {...(phone ? { variant: listRowLook.phone } : {})}
       cells={{

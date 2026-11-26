@@ -14,5 +14,6 @@ A search that goes over a limit is told so in plain words below the box, before 
 | Length of the text of a search           | 4096 bytes | Letters with accents and other scripts take more than one byte.          |
 | Longest word that is looked for          | 255 bytes  | A longer run of letters is not looked up.                                |
 | Fewest letters before a `*`              | 2          | `cra*` finds words that start with cra; `c*` is looked up as the word c. |
+| Issues on one relation map               | 200        | Its *Everything* walks as many steps as `within N steps` may.            |
 
-See [Searching for issues](search.md).
+See [Searching for issues](search.md) and [The relation map](relation-map.md).

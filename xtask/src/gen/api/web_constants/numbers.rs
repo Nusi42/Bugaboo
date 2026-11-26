@@ -1,14 +1,13 @@
 //! The single numbers of the server that the browser client takes as constants: each is a plain
 //! `const` of one Rust file, read as source and written once for the browser.
 
-use anyhow::{Context as _, bail};
-
 use super::super::TS_HEADER;
+use super::notifications::parsed;
 use super::number_const;
 use crate::source::Source;
 
 const MANY_CHANGES_SOURCE: &str = "crates/bb-core/src/many_changes.rs";
-const RELATION_MAP_SOURCE: &str = "crates/bb-app/src/relations/map.rs";
+pub(super) const RELATION_MAP_SOURCE: &str = "crates/bb-app/src/relations/map.rs";
 
 /// One number of the server as a constant for the browser client: `name` of the Rust file
 /// `source`, written as `export const <ts>` with what it is, so the browser does not write it a
@@ -20,11 +19,7 @@ fn one_number(
     ts: &str,
     what: &str,
 ) -> anyhow::Result<String> {
-    let Some((_, text)) = sources.iter().find(|(path, _)| path == source) else {
-        bail!("{source} is missing");
-    };
-    let file = syn::parse_file(text).with_context(|| format!("{source} is not Rust"))?;
-    let number = number_const(&file, source, name)?;
+    let number = number_const(&parsed(sources, source)?, source, name)?;
     Ok(format!(
         "{TS_HEADER}/** {what} (`{name}` of the server). */
 export const {ts} = {number};

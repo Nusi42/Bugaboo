@@ -21106,6 +21106,15 @@ pub fn relation_map_sentence(values: RelationMapSentence<'_>) -> Message {
     )
 }
 
+/// The message `relation-map.start-from-key`.
+#[must_use]
+pub fn relation_map_start_from_key(key: impl std::fmt::Display) -> Message {
+    Message::with_arguments(
+        MessageKey::new("relation-map.start-from-key"),
+        vec![("key", Value::Text(key.to_string()))],
+    )
+}
+
 /// The message `relation-map.title`.
 #[must_use]
 pub fn relation_map_title(key: impl std::fmt::Display) -> Message {

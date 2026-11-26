@@ -40,6 +40,7 @@ export const messages = {
   "relation-map.chain-hint":
     "Point at an issue to see its chain. Click it to keep the chain and walk on from it.",
   "relation-map.start-from-here": "Start from here",
+  "relation-map.start-from-key": "Start from here: {key}",
   "relation-map.back": "Back to {key}",
   "relation-map.open-issue": "Open issue",
   "relation-map.legend": "What the lines mean",

@@ -11,6 +11,7 @@
 import type { Schema } from "@bugaboo/api-client";
 
 import { listWord, projectColumns, searchColumns } from "./list-columns.ts";
+import { everyKind, kindsShownOf, kindsShownParts, type KindsShown } from "./relation-map-view.ts";
 import type { SearchState } from "./search-address.ts";
 
 /**
@@ -89,6 +90,8 @@ export interface ListView {
   readonly kind: ShownAs;
   /** The options of the timeline, kept while the list is shown. */
   readonly timeline: TimelineOptions;
+  /** *Kinds shown* of the relation map of the results (UX §4.15); kept in the address only (M10-F203). */
+  readonly map: KindsShown;
 }
 
 /** What a timeline is grouped by when a list is first shown as one: the goal (UX §4.7, M8-Q12). */
@@ -117,6 +120,7 @@ export function builtInView({ everywhere }: BuiltInInput): ListView {
     groupBy: builtInGroup,
     kind: "list",
     timeline: builtInTimeline,
+    map: everyKind,
   };
 }
 
@@ -143,6 +147,10 @@ export function viewOf(state: SearchState, defaults: ListView): ListView {
     groupBy: groupBy === undefined ? defaults.groupBy : groupBy === noGrouping ? null : groupBy,
     kind: isViewKind(state.view) ? state.view : defaults.kind,
     timeline: timelineOf(state, defaults.timeline),
+    map:
+      state.hide === undefined && state.parts === undefined
+        ? defaults.map
+        : kindsShownOf(state.hide, state.parts),
   };
 }
 
@@ -197,6 +205,7 @@ export function withView(state: SearchState, view: ListView, defaults: ListView)
     ...(sameWidths(view.widths, defaults.widths) ? {} : { widths: view.widths }),
     ...(view.groupBy === defaults.groupBy ? {} : { groupBy: view.groupBy ?? noGrouping }),
     ...timelineParts(view.timeline, defaults.timeline),
+    ...kindsShownParts(view.map),
   };
 }
 
@@ -253,5 +262,6 @@ export function viewFromPresentation(
     groupBy: presentation.group_by,
     kind: presentation.view,
     timeline: presentation.timeline ?? defaults.timeline,
+    map: defaults.map,
   };
 }

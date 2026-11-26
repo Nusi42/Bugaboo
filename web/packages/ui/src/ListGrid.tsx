@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { iconColumns, listColumns, type ListColumn } from "./list-columns.ts";
 import { partOf } from "./parts.ts";
 import { iconSize, listRowLook, type ListRowLook } from "./props.ts";
-import { rowStates, type RowStateInput } from "./row-state.ts";
+import { plainOnPhone, rowStates, type RowStateInput } from "./row-state.ts";
 import type { StatusGroup } from "./status.ts";
 import { StatusIcon } from "./StatusIcon.tsx";
 import { ColumnHeaderCell, GridCell, RowBox, RowHeaderText, TableBox } from "./ListRoles.tsx";
@@ -53,7 +53,7 @@ export interface ListRowProps extends RowStateInput {
   readonly cells: Readonly<Partial<Record<ListColumn, ReactNode>>>;
   /** The columns the list has, in the order they stand; all of them without it. */
   readonly columns?: readonly ListColumn[];
-  /** The row is ticked. */
+  /** The row is ticked: it is tinted so; the box to tick is drawn by the list that has one, never here. */
   readonly selected?: boolean;
   /** The issue of this row is open next to the list. */
   readonly current?: boolean;
@@ -74,8 +74,7 @@ export function ListRow({
   return (
     <RowBox
       look={partOf(part.listRow, {
-        // These rows have no box to tick: a card of a phone takes the lines without its column.
-        variants: [variant, variant === listRowLook.phone && "plain"],
+        variants: [variant, plainOnPhone(variant === listRowLook.phone, false)],
         states: [...rowStates({ group, priority }), selected && "selected", current && "current"],
       })}
       selected={selected}

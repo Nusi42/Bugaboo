@@ -41,7 +41,8 @@ export interface MapView {
 export function useMapView(phone: boolean): MapView {
   const [form, setForm] = useState<MapForm>(phone ? "list" : "picture");
   const [zoom, setZoom] = useState(fullSize);
-  const [fits, setFits] = useState(0);
+  // A map opens fitted to its box, as far as the smallest zoom allows: *Fit* is asked once at the start.
+  const [fits, setFits] = useState(1);
   const [pointed, setPointed] = useState<string | null>(null);
   const [chosen, setChosen] = useState<string | null>(null);
   return {

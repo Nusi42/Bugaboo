@@ -114,7 +114,12 @@ pub(super) async fn run(db: &TestDatabase) -> Result<Vec<Mapped>, Failure> {
             behind: Some(of_issue.status.is_success() && names(&of_issue.body, &made[2])),
         });
         let of_search = person
-            .send("POST", "/api/v1/map", Some(json!({"search_text": ""})))
+            .send(
+                "POST",
+                "/api/v1/map",
+                // The map of the project's search: the hidden issue of another project is not in it either.
+                Some(json!({"search_text": "", "project": "ACME"})),
+            )
             .await?;
         everyone.push(Mapped {
             role,

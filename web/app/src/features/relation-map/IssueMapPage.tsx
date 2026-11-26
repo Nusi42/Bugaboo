@@ -5,7 +5,8 @@ import { messageOf } from "../../shared/errors.ts";
 import { issueAddress } from "../../shared/paths.ts";
 import { usePageTitle } from "../../shared/use-page.ts";
 import { relationKindLinesOf, useRelationKinds } from "../relation-kinds/index.ts";
-import { useIssueMap, type KindsShown, type StepsAway } from "./map-data.ts";
+import type { KindsShown, StepsAway } from "../../shared/relation-map-view.ts";
+import { startKeyOf, useIssueMap } from "./map-data.ts";
 import { cutWords } from "./map-view.ts";
 import { RelationMap } from "./RelationMap.tsx";
 
@@ -29,8 +30,6 @@ export interface IssueMapPageProps {
  * start and keeps the steps and the kinds; the address holds all of it, so back walks back.
  */
 export function IssueMapPage({ address, ask, onAsk }: IssueMapPageProps) {
-  const title = t("relation-map.title", { key: address });
-  usePageTitle(title);
   const kindsRead = useRelationKinds();
   const kinds = relationKindLinesOf(kindsRead.data?.pages).map((kind) => kind.id);
   const map = useIssueMap({
@@ -39,7 +38,11 @@ export function IssueMapPage({ address, ask, onAsk }: IssueMapPageProps) {
     shown: ask.shown,
     kinds: kindsRead.data === undefined ? undefined : kinds,
   });
-  const back = { href: issueAddress(address), label: t("relation-map.back", { key: address }) };
+  // The start as the answer names it: an issue that moved to another project has its key now.
+  const startKey = startKeyOf(map.data) ?? address;
+  const title = t("relation-map.title", { key: startKey });
+  usePageTitle(title);
+  const back = { href: issueAddress(startKey), label: t("relation-map.back", { key: startKey }) };
   return (
     // A wide page from its first frame: the picture takes the room the window leaves (UX §6.4).
     <div {...partOf(part.mapPage)}>
@@ -51,18 +54,18 @@ export function IssueMapPage({ address, ask, onAsk }: IssueMapPageProps) {
           <RelationMap
             answer={map.data}
             kindPages={kindsRead.data?.pages}
-            label={(count) => t("relation-map.picture-label", { key: address, count })}
+            label={(count) => t("relation-map.picture-label", { key: startKey, count })}
             cut={cutWords.issue()}
-            nothing={t("relation-map.nothing", { key: address })}
+            nothing={t("relation-map.nothing", { key: startKey })}
             steps={{
               value: ask.steps,
               onChange: (steps) => {
-                onAsk(address, { ...ask, steps });
+                onAsk(startKey, { ...ask, steps });
               },
             }}
             shown={ask.shown}
             onShown={(shown) => {
-              onAsk(address, { ...ask, shown });
+              onAsk(startKey, { ...ask, shown });
             }}
             onStartFrom={(key) => {
               onAsk(key, ask);

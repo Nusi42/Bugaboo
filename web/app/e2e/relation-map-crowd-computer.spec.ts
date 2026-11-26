@@ -39,3 +39,12 @@ test("iss_16_over_200_issues_the_map_says_so", async ({ page }) => {
   ).toBeVisible();
   await expect(page.locator('[data-part="map-card"]')).toHaveCount(mapIssuesMost);
 });
+
+test("iss_16_a_search_with_more_results_than_a_map_holds_says_so", async ({ page }) => {
+  await signIn(page, ada);
+  await page.goto("/search?s=project%20is%20WEB&show=map");
+  await expect(
+    page.getByText(t("relation-map.too-many-found", { most: mapIssuesMost }), { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator('[data-part="map-card"]')).toHaveCount(mapIssuesMost);
+});

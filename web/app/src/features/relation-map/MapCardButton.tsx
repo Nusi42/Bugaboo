@@ -12,6 +12,7 @@ import {
 } from "@bugaboo/ui";
 import { useRef } from "react";
 
+import { drawnGroupOf, drawnPriorityOf } from "../relations/index.ts";
 import type { Point } from "./geometry.ts";
 import type { MapIssue } from "./layout.ts";
 
@@ -59,7 +60,7 @@ export function MapCardButton(props: MapCardButtonProps) {
   const { issue, place, start, chosen, mark } = props;
   const card = useRef<HTMLButtonElement>(null);
   usePlace(card, { "map-x": place.x, "map-y": place.y });
-  const group = issue.status?.status_group ?? "not-started";
+  const group = drawnGroupOf(issue);
   return (
     <button
       ref={card}
@@ -68,7 +69,7 @@ export function MapCardButton(props: MapCardButtonProps) {
       aria-pressed={chosen}
       {...partOf(part.mapCard, {
         states: [
-          ...rowStates({ group, priority: issue.priority ?? "normal" }),
+          ...rowStates({ group, priority: drawnPriorityOf(issue) }),
           start && "start",
           chosen && "chosen",
           mark,

@@ -403,26 +403,6 @@ async fn iss_16_the_map_of_a_search_holds_its_results_and_the_relations_between_
         assert!(on_map(&answer).iter().all(|(_, away)| away.is_none()));
         assert_eq!(answer["lines"].as_array().map(Vec::len), Some(1));
         assert_eq!(answer["truncated"], false);
-        // The map of a project's search holds the results of that project only (PRJ-06).
-        let in_other = ok(&ada
-            .send(
-                "POST",
-                SEARCH_MAP,
-                Some(json!({"search_text": "", "project": "OTHER"})),
-            )
-            .await?)?
-        .clone();
-        assert_eq!(keys(&in_other), made[2..].to_vec());
-        assert_eq!(in_other["lines"].as_array().map(Vec::len), Some(0));
-        // A project the person may not see is not found.
-        let unknown = ada
-            .send(
-                "POST",
-                SEARCH_MAP,
-                Some(json!({"search_text": "", "project": "NOWHERE"})),
-            )
-            .await?;
-        assert_eq!(unknown.status, StatusCode::NOT_FOUND);
         // A reader of ACME only sees no issue of another project on the map of everything, and
         // no line to one.
         let secret = ok(&ada
@@ -452,6 +432,67 @@ async fn iss_16_the_map_of_a_search_holds_its_results_and_the_relations_between_
         assert_eq!(theirs["lines"].as_array().map(Vec::len), Some(1));
         let walked = map(&mut bob, &made[0], "").await?;
         assert_eq!(keys(&walked), made[..2]);
+        Ok(())
+    })
+    .await
+}
+
+#[tokio::test]
+async fn prj_06_the_map_of_a_search_in_a_project_holds_that_project_only() -> TestResult {
+    each_database("prj_06_map_project", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (blocks, _) = kinds(&mut ada).await?;
+        let mut made = issues(&site, &mut ada, 1).await?;
+        for short_name in ["OTHER", "SECRET"] {
+            let project = ok(&ada
+                .send(
+                    "POST",
+                    PROJECTS,
+                    Some(json!({"short_name": short_name, "name": short_name})),
+                )
+                .await?)?["id"]
+                .as_str()
+                .ok_or("no project ID")?
+                .to_owned();
+            made.push(key_of(
+                &ada.send(
+                    "POST",
+                    &format!("{PROJECTS}/{project}/issues"),
+                    Some(site.new_issue("Elsewhere")),
+                )
+                .await?,
+            )?);
+        }
+        relate(&mut ada, &blocks, &made[0], &made[1]).await?;
+        // The map of a project's search holds the results of that project only (PRJ-06).
+        let in_other = ok(&ada
+            .send(
+                "POST",
+                SEARCH_MAP,
+                Some(json!({"search_text": "", "project": "OTHER"})),
+            )
+            .await?)?
+        .clone();
+        assert_eq!(keys(&in_other), made[1..2].to_vec());
+        assert_eq!(in_other["lines"].as_array().map(Vec::len), Some(0));
+        // A project that exists but the reader may not see answers as one that does not exist.
+        let (mut bob, _) = site.person_in_acme(StartingRole::TeamMember, "bob").await?;
+        let mut answer = async |project: &str| {
+            bob.send(
+                "POST",
+                SEARCH_MAP,
+                Some(json!({"search_text": "", "project": project})),
+            )
+            .await
+        };
+        let outside = answer("SECRET").await?;
+        let nowhere = answer("NOWHERE").await?;
+        assert_eq!(outside.status, StatusCode::NOT_FOUND);
+        assert_eq!(
+            (outside.status, outside.code()),
+            (nowhere.status, nowhere.code())
+        );
         Ok(())
     })
     .await

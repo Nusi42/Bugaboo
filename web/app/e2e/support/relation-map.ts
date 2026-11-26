@@ -8,6 +8,7 @@ import { createIssue, prepareWeb } from "./issues.ts";
 import { createProject } from "./projects.ts";
 import { BLOCKS } from "./relate.ts";
 import { inOrder } from "./sequence.ts";
+import { changeIssue } from "./timeline.ts";
 
 // The scene of the relation map (ISS-16, UX §4.15): the project WEB of the tests of issues, with
 // the map of UX §4.15 around WEB-1 (*Login fails after password reset*), two steps away, and an
@@ -69,7 +70,7 @@ export async function relate(
 }
 
 /**
- * Gets the server ready: WEB-1 blocks WEB-4, which is blocked by WEB-5; WEB-1 is related to WEB-2,
+ * Gets the server ready (WEB-1 Critical, WEB-4 High): WEB-1 blocks WEB-4, which is blocked by WEB-5; WEB-1 is related to WEB-2,
  * which is blocked by WEB-6; WEB-7 causes WEB-1; and WEB-8 blocks SECRET-1, which blocks WEB-9.
  */
 export async function prepareRelationMap(server: Instance): Promise<void> {
@@ -85,6 +86,9 @@ export async function prepareRelationMap(server: Instance): Promise<void> {
   await relate(admin, mapped.reset, kindWords.causes, mapped.start);
   await relate(admin, mapped.beforeHidden, kindWords.blocks, hidden.key);
   await relate(admin, hidden.key, kindWords.blocks, mapped.afterHidden);
+  // Priorities that draw an edge, on the start and on a chain.
+  await changeIssue(admin, mapped.start, { priority: "critical" });
+  await changeIssue(admin, mapped.notes, { priority: "high" });
   await admin.dispose();
 }
 

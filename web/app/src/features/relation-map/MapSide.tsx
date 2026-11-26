@@ -1,12 +1,13 @@
 import { t } from "@bugaboo/messages";
-import { Button, Legend, LegendItem, Link, live, part, partOf } from "@bugaboo/ui";
+import { Button, Legend, Link, live, part, partOf } from "@bugaboo/ui";
 import { useId } from "react";
 
 import { issueAddress } from "../../shared/paths.ts";
-import { IssueLegend } from "../issues/index.ts";
+import { IssueLegend, LegendButton } from "../issues/index.ts";
 import type { RelationKindLine } from "../relation-kinds/index.ts";
 import { chainOf, type MapPicture } from "./layout.ts";
-import { swatchOf, type Looks } from "./line-look.ts";
+import type { Looks } from "./line-look.ts";
+import { LineLegendItem } from "./LineSwatch.tsx";
 import { sentenceOf, stepSentence } from "./words.ts";
 
 export interface ChainPanelProps {
@@ -82,14 +83,14 @@ export function LineLegend({
       {kinds.map((kind) => {
         const look = looks.ofKind(kind.id);
         return (
-          <LegendItem key={kind.id} look={swatchOf(look)}>
+          <LineLegendItem key={kind.id} look={look}>
             {look === "alike"
               ? t("relation-map.legend-alike", { word: kind.forward })
               : t("relation-map.legend-arrow", { word: kind.forward, other: kind.backward })}
-          </LegendItem>
+          </LineLegendItem>
         );
       })}
-      <LegendItem look={swatchOf(looks.partOf)}>{t("relation-map.legend-part-of")}</LegendItem>
+      <LineLegendItem look={looks.partOf}>{t("relation-map.legend-part-of")}</LineLegendItem>
     </Legend>
   );
 }
@@ -107,5 +108,21 @@ export function MapSide(
       <LineLegend kinds={props.kinds} looks={props.looks} />
       <IssueLegend />
     </aside>
+  );
+}
+
+/** What a phone shows under the picture: what the lines mean, and the *Legend* button of the card colors. */
+export function PhoneLegends({
+  kinds,
+  looks,
+}: {
+  readonly kinds: readonly RelationKindLine[];
+  readonly looks: Looks;
+}) {
+  return (
+    <>
+      <LineLegend kinds={kinds} looks={looks} />
+      <LegendButton />
+    </>
   );
 }

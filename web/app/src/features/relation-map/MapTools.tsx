@@ -12,8 +12,9 @@ import type { ReactNode } from "react";
 import { ToggleButton } from "react-aria-components";
 
 import type { RelationKindLine } from "../relation-kinds/index.ts";
-import { swatchOf, type LineLook, type Looks } from "./line-look.ts";
-import { stepChoices, type KindsShown, type StepsAway } from "./map-data.ts";
+import type { LineLook, Looks } from "./line-look.ts";
+import { LineSwatch } from "./LineSwatch.tsx";
+import { stepChoices, type KindsShown, type StepsAway } from "../../shared/relation-map-view.ts";
 import { zoomSteps, type MapForm } from "./view-state.ts";
 
 /** The word of a choice of *Steps away*: its number, or *Everything*. */
@@ -65,7 +66,7 @@ function KindChip({
 }) {
   return (
     <ToggleButton {...partOf(part.mapKind)} isSelected={isSelected} onChange={onChange}>
-      <span {...partOf(part.legendSwatch, { variants: [swatchOf(look)] })} aria-hidden />
+      <LineSwatch look={look} />
       {word}
     </ToggleButton>
   );

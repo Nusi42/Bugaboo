@@ -57,6 +57,9 @@ const timesheetChain = chainSentence(
   mapped.timesheet,
 );
 
+/** The relations between issues of WEB: WEB-1 blocks WEB-4, WEB-5 blocks WEB-4, WEB-1 related to WEB-2, WEB-6 blocks WEB-2, WEB-7 causes WEB-1. */
+const webRelations = 5;
+
 /** Presses a chip of *Kinds shown*. */
 async function toggleKind(page: Page, word: string): Promise<void> {
   await page.getByRole("button", { name: word, exact: true }).click();
@@ -179,6 +182,13 @@ test("iss_16_the_list_form_holds_the_same_chains_as_the_picture", async ({ page 
   await expect(
     list.getByRole("heading", { name: t("relation-map.column", { count: 2 }) }),
   ).toBeVisible();
+  // Each row but the start's walks on with *Start from here*, as the side does in the picture.
+  await row
+    .getByRole("button", { name: t("relation-map.start-from-key", { key: mapped.timesheet }) })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: t("relation-map.title", { key: mapped.timesheet }) }),
+  ).toBeVisible();
 });
 
 test("iss_16_show_as_map_draws_a_search_and_the_relations_between_its_results", async ({
@@ -190,9 +200,25 @@ test("iss_16_show_as_map_draws_a_search_and_the_relations_between_its_results", 
     .getByLabel(t("timeline.show-as"), { exact: true })
     .first()
     .selectOption({ label: t("timeline.show-as-map") });
-  await expect(page.getByRole("figure", { name: /./u })).toBeVisible();
+  const picture = page.getByRole("figure", { name: /./u });
+  await expect(picture).toBeVisible();
   await expect(cardOf(page, mapped.start)).toBeVisible();
   await expect(cardOf(page, mapped.timesheet)).toBeVisible();
+  // The relations between the results, each with its words; none to the issue of SECRET, which
+  // the search does not find.
+  await expect(page.locator('[data-part="map-lines"] [data-part="map-line"]')).toHaveCount(
+    webRelations,
+  );
+  await expect(
+    page.locator('[data-part="map-label"]').filter({ hasText: kindWords.causes }),
+  ).toHaveCount(1);
+  await expect(page.locator('[data-part="map-card"][data-issue^="SECRET-"]')).toHaveCount(0);
+  // *Kinds shown* stand in the address.
+  await page.getByRole("button", { name: kindWords.causes, exact: true }).click();
+  await expect(page).toHaveURL(/hide=/u);
+  await expect(page.locator('[data-part="map-lines"] [data-part="map-line"]')).toHaveCount(
+    webRelations - 1,
+  );
   // *Start from here* opens the map of that issue.
   await cardOf(page, mapped.notes).click();
   await page.getByRole("button", { name: t("relation-map.start-from-here"), exact: true }).click();
@@ -201,13 +227,23 @@ test("iss_16_show_as_map_draws_a_search_and_the_relations_between_its_results", 
   ).toBeVisible();
 });
 
+test("prj_06_a_projects_issues_shown_as_a_map_hold_that_project_only", async ({ page }) => {
+  await signIn(page, ada);
+  await page.goto("/p/WEB/issues?show=map");
+  await expect(cardOf(page, mapped.start)).toBeVisible();
+  await expect(page.locator('[data-part="map-lines"] [data-part="map-line"]')).toHaveCount(
+    webRelations,
+  );
+  await expect(page.locator('[data-part="map-card"][data-issue^="SECRET-"]')).toHaveCount(0);
+});
+
 test("iss_16_the_screen_draws_nothing_the_answer_does_not_hold", async ({ page }) => {
   // Ana sees WEB but not SECRET: the issue between WEB-8 and WEB-9 is hidden, so the map of WEB-8
   // holds WEB-8 alone, with no line, no gap and no word of another issue.
   await signIn(page, ana);
   await openMap(page, mapped.beforeHidden);
   expect(await cardKeys(page)).toStrictEqual([mapped.beforeHidden]);
-  await expect(page.locator('[data-part="map-line"]')).toHaveCount(0);
+  await expect(page.locator('[data-part="map-lines"] [data-part="map-line"]')).toHaveCount(0);
   await expect(page.locator('[data-part="map-label"]')).toHaveCount(0);
   await expect(
     page.getByText(t("relation-map.nothing", { key: mapped.beforeHidden })),
@@ -228,9 +264,23 @@ test("iss_16_the_keyboard_reaches_every_card_and_start_from_here", async ({ page
     }),
   );
   await page.keyboard.press("Enter");
-  const startFromHere = page
-    .locator('[data-part="map-chain"]')
-    .getByRole("button", { name: t("relation-map.start-from-here"), exact: true });
-  await startFromHere.focus();
-  await expect(startFromHere).toBeFocused();
+  // From the chosen card, the next stop of Tab is *Start from here* of its chain.
+  await page.keyboard.press("Tab");
+  await expect(
+    page
+      .locator('[data-part="map-chain"]')
+      .getByRole("button", { name: t("relation-map.start-from-here"), exact: true }),
+  ).toBeFocused();
+});
+
+test("iss_16_the_start_and_the_chain_keep_the_edge_of_their_priority", async ({ page }) => {
+  // WEB-1 is Critical: on the start and on a shown chain its start edge keeps the color of its priority.
+  await signIn(page, ada);
+  await openMap(page, mapped.start);
+  await cardOf(page, mapped.timesheet).click();
+  const edges = await cardOf(page, mapped.start).evaluate((card) => {
+    const style = getComputedStyle(card);
+    return { start: style.borderInlineStartColor, top: style.borderTopColor };
+  });
+  expect(edges.start).not.toBe(edges.top);
 });

@@ -43,3 +43,11 @@ export function rowStates({ group, priority }: RowStateInput): readonly RowState
 export function groupTint(group: StatusGroup): TintWord {
   return groupWord[group];
 }
+
+/**
+ * Whether the card of a phone is `plain`: it takes the lines without the column of a box to tick
+ * where its list has no such box. The one rule for every list of issues.
+ */
+export function plainOnPhone(phone: boolean, ticks: boolean): "plain" | false {
+  return phone && !ticks && "plain";
+}

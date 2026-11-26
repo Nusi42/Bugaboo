@@ -31,13 +31,21 @@ export const searchKeys = {
     ...about,
   ],
   /**
-   * A relation map: of an issue, or of a search. It starts with the keys of the lists, so a change
-   * of an issue reads it again.
+   * The relation map of an issue, and the one of a search. They start with the keys of the lists,
+   * so a change of an issue reads them again.
    */
-  map: (...about: readonly (string | number | boolean | null)[]) => [
+  issueMap: (...about: readonly (string | number | boolean | null)[]) => [
     "issues",
     "list",
     "map",
+    "issue",
+    ...about,
+  ],
+  searchMap: (...about: readonly (string | number | boolean | null)[]) => [
+    "issues",
+    "list",
+    "map",
+    "search",
     ...about,
   ],
   /** How many issues a search finds. */

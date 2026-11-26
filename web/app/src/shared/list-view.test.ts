@@ -10,6 +10,7 @@ import {
   viewOf,
   withView,
 } from "./list-view.ts";
+import { everyKind } from "./relation-map-view.ts";
 import { readSearch, searchLocation } from "./search-address.ts";
 import { testSearchLanguage } from "./search-language-testing.ts";
 
@@ -29,6 +30,7 @@ describe("a list saved with the words of the old language (D3)", () => {
     groupBy: "statusGroup",
     kind: "list",
     timeline: builtInTimeline,
+    map: everyKind,
   } as const;
 
   it("keeps the column, the width and the grouping of every field, an own one included", () => {
@@ -38,6 +40,7 @@ describe("a list saved with the words of the old language (D3)", () => {
       groupBy: "status group",
       kind: "list",
       timeline: builtInTimeline,
+      map: everyKind,
     });
   });
 
@@ -152,6 +155,7 @@ describe("the view as a saved search keeps it", () => {
     groupBy: "priority",
     kind: "list",
     timeline: builtInTimeline,
+    map: everyKind,
   } as const;
 
   it("is written with the widths on the columns and a null for no grouping", () => {
@@ -238,5 +242,27 @@ describe("the date fields of a timeline in the address (ADR-0043, decision 2)", 
     expect(viewOf(readSearch({ search: searchLocation(state).search }), saved).timeline).toEqual(
       builtInTimeline,
     );
+  });
+});
+
+describe("the kinds shown of a search shown as a map (ISS-16, UX §4.15)", () => {
+  it("iss_16_keeps_the_kinds_shown_of_a_search_map_in_the_address_and_back", () => {
+    const state = readSearch({ search: { show: "map", hide: "k1,k2", parts: "0" } });
+    const view = viewOf(state, everywhere);
+    expect(view.kind).toBe("map");
+    expect(view.map).toEqual({ hidden: ["k1", "k2"], partOf: false });
+    expect(searchLocation(withView(readSearch({ search: {} }), view, everywhere)).search).toEqual({
+      show: "map",
+      hide: "k1,k2",
+      parts: "0",
+    });
+  });
+
+  it("iss_16_a_map_that_shows_every_kind_writes_nothing_of_its_kinds", () => {
+    const view = viewOf(readSearch({ search: { show: "map" } }), everywhere);
+    expect(view.map).toEqual(everyKind);
+    expect(searchLocation(withView(readSearch({ search: {} }), view, everywhere)).search).toEqual({
+      show: "map",
+    });
   });
 });

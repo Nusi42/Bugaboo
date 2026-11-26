@@ -1,4 +1,4 @@
-import type { LegendLook, PartChoices } from "@bugaboo/ui";
+import type { PartChoices } from "@bugaboo/ui";
 import type { NameKey } from "@bugaboo/wasm";
 
 import { exactName, readsAlike } from "../../shared/same-name.ts";
@@ -57,11 +57,6 @@ export function lookOfLine(line: MapLine, looks: Looks): LineLook {
 /** Whether a line of this look has a direction, and so an arrow. */
 export function hasDirection(look: LineLook): boolean {
   return look !== "alike";
-}
-
-/** The swatch of the Legend and of a chip of *Kinds shown* that shows a line of this look. */
-export function swatchOf(look: LineLook): LegendLook {
-  return `line-${look}`;
 }
 
 /** The pages of the kinds of relation read so far. */

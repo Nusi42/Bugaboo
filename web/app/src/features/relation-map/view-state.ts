@@ -1,8 +1,12 @@
 /** How the relation map is shown: as the picture, or as the list of its chains (UX §4.15). */
 export type MapForm = "picture" | "list";
 
-/** The zooms a person can choose, as parts of the size of the text; *Fit* picks the largest that fits. */
-export const zoomSteps: readonly number[] = [0.25, 0.5, 0.75, 1, 1.25, 1.5];
+/**
+ * The zooms a person can choose, as parts of the size of the text; *Fit* picks the largest that
+ * fits. The smallest keeps the words of a card readable and a card a target of more than 24 px
+ * (WCAG 2.5.8), so a map larger than that scrolls instead.
+ */
+export const zoomSteps: readonly number[] = [0.75, 1, 1.25, 1.5];
 
 /** The size of the text: what a map starts at. */
 export const fullSize = 1;

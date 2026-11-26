@@ -21,6 +21,7 @@ export function registerRelationBlocks(): void {
 }
 export { IssueRefLine } from "./IssueRefLine.tsx";
 export { IssueRefRow } from "./IssueRefRow.tsx";
+export { drawnGroupOf, drawnPriorityOf } from "./ref-status.ts";
 export {
   createRelation,
   deleteRelation,

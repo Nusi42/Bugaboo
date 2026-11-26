@@ -6773,6 +6773,7 @@ pub(super) const CATALOG: &[(&str, &str)] = &[
     ("relation-map.show-as-picture", "Show as picture"),
     ("relation-map.start", "Start"),
     ("relation-map.start-from-here", "Start from here"),
+    ("relation-map.start-from-key", "Start from here: {key}"),
     ("relation-map.steps-away", "Steps away"),
     ("relation-map.title", "Relation map of {key}"),
     (

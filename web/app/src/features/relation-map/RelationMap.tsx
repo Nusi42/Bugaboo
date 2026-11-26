@@ -2,12 +2,12 @@ import { part, partOf, useLayout } from "@bugaboo/ui";
 
 import { pictureOf, type MapAnswer, type MapPicture } from "./layout.ts";
 import { useLooks, type KindPages, type Looks } from "./line-look.ts";
-import type { KindsShown } from "./map-data.ts";
+import type { KindsShown } from "../../shared/relation-map-view.ts";
 import { mapSizes, useMapView, type MapView } from "./map-view.ts";
 import { MapList } from "./MapList.tsx";
 import { MapNotes, PhoneChain } from "./MapNotes.tsx";
 import { MapPicture as Picture } from "./MapPicture.tsx";
-import { LineLegend, MapSide } from "./MapSide.tsx";
+import { MapSide, PhoneLegends } from "./MapSide.tsx";
 import { MapTools, type MapToolsProps, type StepsTool } from "./MapTools.tsx";
 
 export interface RelationMapProps {
@@ -37,7 +37,8 @@ function ShownForm({
   looks,
   label,
   answer,
-}: Pick<RelationMapProps, "label" | "answer"> & {
+  onStartFrom,
+}: Pick<RelationMapProps, "label" | "answer" | "onStartFrom"> & {
   readonly view: MapView;
   readonly picture: MapPicture;
   readonly looks: Looks;
@@ -56,7 +57,7 @@ function ShownForm({
       onFit={view.onFit}
     />
   ) : (
-    <MapList picture={picture} />
+    <MapList picture={picture} onStartFrom={onStartFrom} />
   );
 }
 
@@ -90,7 +91,7 @@ export function RelationMap(props: RelationMapProps) {
       {phone ? (
         <>
           {shown}
-          {view.form === "picture" ? <LineLegend kinds={kinds} looks={looks} /> : null}
+          {view.form === "picture" ? <PhoneLegends kinds={kinds} looks={looks} /> : null}
           <PhoneChain {...chain} onClose={view.unchoose} />
         </>
       ) : (
