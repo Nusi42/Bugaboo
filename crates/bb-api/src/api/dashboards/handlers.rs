@@ -399,9 +399,16 @@ async fn stop_sharing_dashboard(
     State(auth): State<AuthHandle>,
     Info(info): Info,
     Session(session_token): Session,
-    ApiPath((dashboard, kind, id)): ApiPath<(String, ShareKind, String)>,
+    ApiPath((dashboard, kind, id)): ApiPath<(String, String, String)>,
 ) -> Result<Response, ApiError> {
-    let read = dashboard_id(&dashboard).and_then(|dashboard| Ok((dashboard, target(kind, &id)?)));
+    // The parts of the address are read after the caller is known, so an access key is turned
+    // away first, whatever the address holds; a place that is none is not found.
+    let read = dashboard_id(&dashboard).and_then(|dashboard| {
+        let kind = ShareKind::from_code(&kind).ok_or_else(|| ApiError::new(ErrorCode::NotFound))?;
+        let target =
+            ShareTarget::parse(kind, &id).ok_or_else(|| ApiError::new(ErrorCode::NotFound))?;
+        Ok((dashboard, target))
+    });
     let (dashboard, target) = auth.after_who_asks(&info, &session_token, read).await?;
     let stopped = auth
         .api()?
