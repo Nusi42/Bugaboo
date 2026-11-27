@@ -23,6 +23,7 @@ use serde::Serialize;
 use crate::auth::{AppError, AuthStore, Ctx, internal};
 use crate::ports::KeepPeriods;
 use crate::privacy::export::title_of;
+use crate::privacy::walk::KindOfRows;
 
 /// The plan of the removal of a person.
 pub struct RemovalPlanQuery {
@@ -113,6 +114,19 @@ impl<S: AuthStore> Ctx<'_, S> {
         };
         shared.map_err(|error| internal::<S>(&error))
     }
+
+    /// The rows of `kind` the plan counts. A part of a record (a box of a dashboard) goes and
+    /// stays with its record, which the plan counts; only the rows of a part that name the person
+    /// by a link of their own (who decided a proposal) are counted with the part.
+    async fn rows_counted(&self, person: UserId, kind: &KindOfRows) -> Result<u64, AppError> {
+        if kind.marks.person_links().whole().is_none() {
+            return Ok(kind.rows);
+        }
+        self.store()
+            .rows_linked(person, &kind.kind, Link::ALL)
+            .await
+            .map_err(|error| internal::<S>(&error))
+    }
 }
 
 /// The plan of the removal of a person, with *Remove people*.
@@ -144,17 +158,7 @@ pub async fn removal_plan<S: AuthStore>(
     let mut kept_as_former_user = Vec::new();
     let mut by_law: BTreeMap<KeepKind, u64> = BTreeMap::new();
     for kind in &kinds {
-        // A part of a record (a box of a dashboard) goes and stays with its record, which the plan
-        // counts; only the rows of a part that name the person by a link of their own (who
-        // decided a proposal) are counted here.
-        let rows = if kind.marks.person_links().whole().is_some() {
-            ctx.store()
-                .rows_linked(input.person, &kind.kind, Link::ALL)
-                .await
-                .map_err(failed)?
-        } else {
-            kind.rows
-        };
+        let rows = ctx.rows_counted(input.person, kind).await?;
         if rows == 0 {
             continue;
         }

@@ -81,23 +81,7 @@ fn field_problems(
     let rows = has(|scope| matches!(scope, Scope::Rows(_)));
     let never = has(|scope| *scope == Scope::Never);
     let part = has(|scope| *scope == Scope::Part);
-    if part && !owned_id {
-        problems.push(
-            "The field carries `#[person_for(part_of)]`, but its type is not the ID of a record \
-             that belongs to a person (`ids_of_owned_records!` in `bb_core::personal`)."
-                .to_owned(),
-        );
-    }
-    // The record's own ID is no reference to it; every other field of such an ID says whether the
-    // row is a part of the person's record.
-    if owned_id && field.name != OWN_ID && !part && !never {
-        problems.push(
-            "The field holds the ID of a record that belongs to a person. Add \
-             `#[person_for(part_of)]` when the row is a part of that record (it is then the \
-             person's), or `#[names_no_person]` when it is not (ADR-0044)."
-                .to_owned(),
-        );
-    }
+    problems.extend(part_problem(field, owned_id, part, never));
     if carries_changes && !changes {
         problems.push(
             "The field holds the changes of a record, whose values can name a person. Add \
@@ -165,6 +149,26 @@ fn field_problems(
         );
     }
     problems
+}
+
+/// What is wrong with a field of the ID of a record that belongs to a person, or with
+/// `#[person_for(part_of)]` (`part`) on a field of another type; `never` is `#[names_no_person]`.
+fn part_problem(field: &Field, owned_id: bool, part: bool, never: bool) -> Option<String> {
+    if part && !owned_id {
+        return Some(
+            "The field carries `#[person_for(part_of)]`, but its type is not the ID of a record \
+             that belongs to a person (`ids_of_owned_records!` in `bb_core::personal`)."
+                .to_owned(),
+        );
+    }
+    // The record's own ID is no reference to it; every other field of such an ID says whether the
+    // row is a part of the person's record.
+    (owned_id && field.name != OWN_ID && !part && !never).then(|| {
+        "The field holds the ID of a record that belongs to a person. Add \
+         `#[person_for(part_of)]` when the row is a part of that record (it is then the \
+         person's), or `#[names_no_person]` when it is not (ADR-0044)."
+            .to_owned()
+    })
 }
 
 /// The name of the field that holds a record's own ID.

@@ -2,7 +2,7 @@
 //! (ADR-0044, decision 6): the issues they found and their open proposals go in the same change;
 //! a decided proposal is history and stays. The rules of another person keep theirs.
 
-use bb_app::agent_work::{AgentWorkRecords as _, GrantStore as _};
+use bb_app::agent_work::GrantStore as _;
 use bb_app::auth::AccountStore as _;
 use bb_app::ports::{ChangeStore as _, PersonData as _};
 use bb_core::agent_records::{Proposal, ProposalState, StandingRule};
