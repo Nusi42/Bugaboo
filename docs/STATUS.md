@@ -6,7 +6,7 @@ The lead updates this file after every step (builder started, report in, review 
 
 - **Milestone:** M10, board, calendar, relation map and dashboards ([roadmap](04-milestones.md#m10--board-calendar-relation-map-and-dashboards), plan in `docs/milestones/M10/`). The maintainer answered M10-Q1 to Q22 on 2026-11-24, all as recommended; the release state is called *Retired* (the glossary has no *Archived*). M9 is done and tagged `m9-done`; 0.6.0 is the first release (GitHub release `v0.6.0`, since 2026-11-24 with six files and one signature, ADR-0047 amendment).
 - **Done:** M0 to M9 (`m0-done` to `m9-done`; M9 tagged on 2026-11-24). Version 0.6.0 (ADR-0040: 157 of 225 features, the minor number rises to 6). The M9 review page is published (link outside the repository).
-- **Wave:** M10 waves 0 to 3 (WP-01 to WP-13) are done (2026-11-26); wave 4 (WP-14, the pictures and accessibility of the new screens, then WP-15, sample part 9, speed, release 0.6.1 and the exit demo) is next. Open points of the lead: M10-F207 to F209. M9 is complete (all of its packages merged).
+- **Wave:** M10 waves 0 to 3 (WP-01 to WP-13) are done (2026-11-26); in wave 4, WP-14 and M10-F51 (*Download my data* holds every part of a person's records) are merged (2026-11-27); WP-15 (sample part 9, speed, release 0.6.1 and the exit demo) is next. Open points of the lead: M10-F207 to F209, F215. M9 is complete (all of its packages merged).
 - **`main`:** fast-forwarded to the last green `WIN1`.
 
 ## Work packages (M10)
@@ -26,8 +26,9 @@ The lead updates this file after every step (builder started, report in, review 
 | WP-11 | The calendar and the releases on screen | merged (2026-11-26; fix rounds for the review and the ci) | `win3` / `WIN3` | Wave 3; Opus |
 | WP-12 | The relation map on screen | merged (2026-11-26; fix rounds for the review and the ci) | `win4` / `WIN4` | Wave 3; Opus |
 | WP-13 | Dashboards on screen | merged (2026-11-26; fix rounds for the review and the ci; the features of the first signed-in page put into few files, so WebKit shows it in about 6 s; a page held for good when the pins cannot be read fixed) | `win5` / `WIN5` | Wave 3; Opus; M10-F51 must be done before M10 ends |
-| WP-14 | Pictures and accessibility of the new screens | next | `win2` / `WIN2` | Wave 4; Opus |
-| WP-15 | Sample part 9, speed on 1 M issues, release 0.6.1, the exit demo | waiting for WP-14 | `win3` / `WIN3` | Wave 4; Opus; measures alone on a quiet computer |
+| WP-14 | Pictures and accessibility of the new screens | merged (2026-11-27; one fix round: the pictures skipped outside Windows, the weekdays over a month, the steps of the phone calendar, IDs of the sample drawn from its seed) | `win2` / `WIN2` | Wave 4; Opus; 48 reference pictures, TEST-VISUAL |
+| — | M10-F51: *Download my data* holds every part of a person's records | merged (2026-11-27; three fix rounds: the finds and open proposals of a rule go with it, the plan counts a part with its record) | `win4` / `WIN4` | Opus; migration 71 |
+| WP-15 | Sample part 9, speed on 1 M issues, release 0.6.1, the exit demo | next | `win3` / `WIN3` | Wave 4; Opus; measures alone on a quiet computer |
 
 ## Work packages (M9)
 
