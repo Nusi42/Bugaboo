@@ -145,3 +145,44 @@ async fn priv_04_the_rules_of_a_removed_person_go_with_their_finds_and_open_prop
     })
     .await
 }
+
+#[tokio::test]
+async fn priv_04_a_find_of_a_rule_that_is_gone_or_ended_is_not_written() -> TestResult {
+    each_database("priv_04_find_of_a_rule_gone", async |db| {
+        let Given {
+            fixture,
+            data,
+            owner,
+            fixer,
+        } = given(db).await?;
+        let storage = &fixture.storage;
+        let mut made = Made::new();
+        let issue = data.issues[0].id;
+        let rule =
+            rule_that_found(storage, &mut made, (owner, fixer), &data, &[], at(ENDS)).await?;
+        let gone = bb_core::id::StandingRuleId::from_random(made.bytes());
+        // As the job of the rules writes what it found, in a change after it read the rule: the
+        // rule a removal deleted meanwhile gets nothing; the open rule gets its find.
+        made.step += 1;
+        let step = made.step;
+        let written = storage
+            .record_change(&event(&mut made.source, step), move |tx| {
+                Box::pin(async move {
+                    let find = |rule| bb_core::agent_records::RuleMatch {
+                        rule,
+                        issue,
+                        at: at(2),
+                    };
+                    let lost = AuthStorage::insert_match(tx, &find(gone)).await?;
+                    let kept = AuthStorage::insert_match(tx, &find(rule.id)).await?;
+                    Ok((lost, kept))
+                })
+            })
+            .await?;
+        assert_eq!(written, (false, true));
+        assert!(storage.matches_of(gone, None, 10).await?.is_empty());
+        assert_eq!(storage.matches_of(rule.id, None, 10).await?.len(), 1);
+        Ok(())
+    })
+    .await
+}

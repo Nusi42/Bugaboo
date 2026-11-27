@@ -226,7 +226,7 @@ async fn priv_03_the_file_holds_the_projects_of_a_connected_app_and_the_finds_of
 }
 
 /// The titles and counts of one list of a removal plan.
-fn plan_list(plan: &serde_json::Value, list: &str) -> Vec<(String, i64)> {
+pub(super) fn plan_list(plan: &serde_json::Value, list: &str) -> Vec<(String, i64)> {
     plan[list]
         .as_array()
         .into_iter()

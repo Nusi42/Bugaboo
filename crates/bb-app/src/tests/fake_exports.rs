@@ -195,7 +195,7 @@ impl PersonData for FakeStore {
                     .walk
                     .iter()
                     .filter(|walked| walked.person == person && walked.kind == kind)
-                    .filter(|walked| walked.row.links.iter().any(|link| links.contains(link)))
+                    .filter(|walked| counted(walked, links))
                     .count(),
             )
         }))
@@ -221,6 +221,21 @@ impl PersonData for FakeStore {
             RowsPage { rows, next }
         }))
     }
+}
+
+/// Whether a row of the walk counts for `links`, by the rule the store follows
+/// (`PersonLinks::counted` and `PersonLinks::parts`): it names the person by a counted link, and
+/// is no part of one of the person's records. The fake knows a row's links only by their words.
+fn counted(walked: &WalkedRow, links: &[bb_core::personal::Link]) -> bool {
+    let person_links = walked.marks.person_links();
+    let words = |of: &mut dyn Iterator<Item = &'static bb_core::personal::PersonLink>| {
+        of.filter_map(bb_core::personal::PersonLink::link)
+            .collect::<Vec<_>>()
+    };
+    let counted = words(&mut person_links.counted(links));
+    let parts = words(&mut person_links.parts());
+    walked.row.links.iter().any(|link| counted.contains(link))
+        && !walked.row.links.iter().any(|link| parts.contains(link))
 }
 
 /// What the files of exports in memory hold.

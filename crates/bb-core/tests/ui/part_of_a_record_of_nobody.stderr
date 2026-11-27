@@ -4,7 +4,7 @@ error[E0277]: `IssueId` is not the ID of a record a person owns, so it cannot ca
 8 |     pub search: IssueId,
   |                 ^^^^^^^ the trait `IdOfAnOwnedRecord` is not implemented for `IssueId`
   |
-  = note: add the type to `ids_of_owned_records!` in `bb_core::personal`, with its record and where the person of the record is read
+  = note: add the type to `ids_of_owned_records!` in `bb_core::personal`, with its record
   = help: the following other types implement trait `IdOfAnOwnedRecord`:
             AccessKeyId
             CommentId
@@ -25,7 +25,7 @@ error[E0277]: `IssueId` is not the ID of a record a person owns, so it cannot ca
 8 |     pub search: IssueId,
   |                 ^^^^^^^ the trait `IdOfAnOwnedRecord` is not implemented for `IssueId`
   |
-  = note: add the type to `ids_of_owned_records!` in `bb_core::personal`, with its record and where the person of the record is read
+  = note: add the type to `ids_of_owned_records!` in `bb_core::personal`, with its record
   = help: the following other types implement trait `IdOfAnOwnedRecord`:
             AccessKeyId
             CommentId

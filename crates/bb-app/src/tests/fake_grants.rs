@@ -340,6 +340,15 @@ impl GrantStore for super::fake::FakeStore {
     }
 
     async fn insert_match(tx: &mut Tx, rule_match: &RuleMatch) -> Result<bool, FakeError> {
+        let open = tx
+            .state
+            .work
+            .rules
+            .iter()
+            .any(|rule| rule.id == rule_match.rule && rule.state == GivingState::Open);
+        if !open {
+            return Ok(false);
+        }
         let known = tx
             .state
             .work

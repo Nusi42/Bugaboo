@@ -66,14 +66,26 @@ impl PersonData for AuthStorage {
         let Some(table) = all.iter().find(|table| table.name == kind) else {
             return Ok(0);
         };
-        // A part is counted with its record, never by the link it takes from the record.
-        let arms = arms::arms(table, &all, person, dialect, |link| {
-            !matches!(link.scope(), LinkScope::PartOf { .. })
-                && link.link().is_some_and(|what| links.contains(&what))
-        })?;
+        let person_links = table.marks.person_links();
+        let counted: Vec<&PersonLink> = person_links.counted(links).collect();
+        let arms = arms::arms(table, &all, person, dialect, |link| counted.contains(&link))?;
         if arms.is_empty() {
             return Ok(0);
         }
+        // A row that is a part of one of the person's records goes and stays with that record,
+        // which is counted itself: no arm counts it, whatever its own links say.
+        let mut parts = Vec::new();
+        for part in person_links.parts() {
+            parts.extend(link_parts(table, &all, part, person, dialect)?);
+        }
+        let arms = arms
+            .into_iter()
+            .map(|arm| {
+                parts
+                    .iter()
+                    .fold(arm, |arm, part| arm.add(arms::not_true(part.clone())))
+            })
+            .collect();
         let mut reads = self.database().begin_read_serial().await?;
         let rows = walk_count(&mut reads, &arms::counted(table, arms)).await?;
         reads.commit().await?;

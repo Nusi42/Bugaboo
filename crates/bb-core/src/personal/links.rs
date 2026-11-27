@@ -13,9 +13,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::event::RecordKind;
 use crate::own_fields::FieldType;
-use crate::whose::{FieldOf, Whose, field_of, whose};
+use crate::whose::{FieldOf, field_of};
 
 words! {
     /// What a person is to a row that names them. The words are the ones in `#[person(…)]`,
@@ -76,14 +75,14 @@ impl<T: RefersToARecord> RefersToARecord for Option<T> {}
 /// The ID of a record that belongs to a person, so a field of it can carry
 /// `#[person_for(part_of)]`: the rows that hold it are a part of that record (the boxes of a
 /// dashboard, the breaks of a work day, the versions of a comment) and are the person's when the
-/// record is. `OWNER` says where the person of the record is read, once for the type of its ID; what
-/// the person is to a part is what that field says they are to the record ([`part_link`]). Only
-/// `ids_of_owned_records!` below implements it, so no part can say otherwise. A field of such a type
-/// that is no part of its record says `#[names_no_person]` (DATA-MARKS, which reads the list from
-/// `ids_of_owned_records!`).
+/// record is. `OWNER` says where the person of the record is read: the one field of the record that
+/// names a person in every row; what the person is to a part is what that field says they are to
+/// the record ([`part_link`]). Only `ids_of_owned_records!` below implements it, so no part can say
+/// otherwise. A field of such a type that is no part of its record says `#[names_no_person]`
+/// (DATA-MARKS, which reads the list from `ids_of_owned_records!`).
 #[diagnostic::on_unimplemented(
     message = "`{Self}` is not the ID of a record a person owns, so it cannot carry `#[person_for(part_of)]`",
-    note = "add the type to `ids_of_owned_records!` in `bb_core::personal`, with its record and where the person of the record is read"
+    note = "add the type to `ids_of_owned_records!` in `bb_core::personal`, with its record"
 )]
 pub trait IdOfAnOwnedRecord: listed::Listed {
     /// Where the person of the record is read: its entity, its field of the ID and its field that
@@ -97,89 +96,78 @@ mod listed {
 }
 
 /// What the person is to a part of a record whose ID is `T`: the link of the field that names the
-/// person of the record. A field without one stops the build, in the `const` of the marks.
+/// person of the record.
 #[must_use]
 pub const fn part_link<T: IdOfAnOwnedRecord>() -> Link {
-    link_of(T::OWNER)
-}
-
-/// Where the person of a record of `kind` is read, as `whose` says. A kind that is the person
-/// themselves or nobody's has no owner to read: in the `const` of `ids_of_owned_records!` it stops
-/// the build.
-const fn owned(kind: RecordKind) -> FieldOf {
-    let owner = whose(kind);
-    assert!(
-        matches!(owner, Whose::Owner { .. }),
-        "only the ID of a record that belongs to a person can be listed"
-    );
-    match owner {
-        Whose::Owner { of } => of,
-        // Never reached: the assertion above stops the build first.
-        Whose::ThePerson | Whose::Nobody => crate::whose::PERSON_ADDRESS,
-    }
-}
-
-/// The link of the field `of.value` of the entity `of.marks`, which names the person in every row.
-const fn link_of(of: FieldOf) -> Link {
-    let links = of.marks.person_links().links();
-    let mut found = None;
-    let mut at = 0;
-    while at < links.len() {
-        let link = links[at];
-        if found.is_none()
-            && crate::words::same_text(link.field, of.value)
-            && matches!(link.scope, LinkScope::Every)
-        {
-            found = link.link;
-        }
-        at += 1;
-    }
-    assert!(
-        found.is_some(),
-        "the field that names the person of a record carries no #[person(...)]"
-    );
-    match found {
+    match the_person_link(T::OWNER.marks).link {
         Some(word) => word,
-        // Never reached: the assertion above stops the build first.
+        // Never reached: `the_person_link` takes only a link of a person in every row.
         None => Link::Subject,
     }
 }
 
-/// Each entry is the type of an ID, its record, and where the person of the record is read. The
-/// build stops when the person is read in another record, or when the record's own ID is of
-/// another type.
+/// The one link of the entity of `marks` that names a person in every row. An entity with none,
+/// or with more than one, has no one person to belong to: in the `const` of the list it stops the
+/// build.
+const fn the_person_link(marks: super::EntityMarks) -> PersonLink {
+    let links = marks.person_links().links();
+    let mut found = None;
+    let mut count = 0;
+    let mut at = 0;
+    while at < links.len() {
+        let link = links[at];
+        if matches!(link.scope, LinkScope::Every) && link.link.is_some() {
+            found = Some(link);
+            count += 1;
+        }
+        at += 1;
+    }
+    assert!(
+        count == 1,
+        "a record whose ID is listed names its person in exactly one field, by #[person(...)]"
+    );
+    match found {
+        Some(link) => link,
+        // Never reached: the assertion above stops the build first.
+        None => PersonLink::new("", None, LinkScope::Every),
+    }
+}
+
+/// Where the person of the record `E` is read: its one field that names a person in every row.
+const fn person_of<E: super::Entity>() -> FieldOf {
+    field_of::<E>(the_person_link(E::MARKS).field)
+}
+
+/// Each entry is the type of an ID and its record. The person of the record is read from the
+/// record's own marks, and the build stops when the record's own ID is of another type.
 macro_rules! ids_of_owned_records {
-    ($($ty:ty => ($record:path, $owner:expr)),+ $(,)?) => {
+    ($($ty:ty => $record:path),+ $(,)?) => {
         $(
             impl listed::Listed for $ty {}
             impl IdOfAnOwnedRecord for $ty {
-                const OWNER: FieldOf = $owner;
+                const OWNER: FieldOf = person_of::<$record>();
             }
-            const _: () = assert!(
-                crate::words::same_text(
-                    <$record as super::Entity>::MARKS.name(),
-                    <$ty as IdOfAnOwnedRecord>::OWNER.marks.name(),
-                ),
-                "the person of an ID is read in another record than its own"
-            );
             const _: fn(&$record) -> $ty = |record| record.id;
             // A field of the ID that is no part of its record says so with `#[names_no_person]`.
             impl CanNameAPerson for $ty {}
             impl CanNameAPerson for Option<$ty> {}
         )+
+        /// Where the person of each listed record is read, for the test that `whose` agrees.
+        #[cfg(test)]
+        const LISTED: &[FieldOf] = &[$(<$ty as IdOfAnOwnedRecord>::OWNER),+];
     };
 }
 
+// A comment is nobody's in `whose` (the people in its events are found by their own links), yet
+// its versions are its author's, as the comment is.
 ids_of_owned_records!(
-    crate::id::DashboardId => (crate::dashboard::Dashboard, owned(RecordKind::Dashboard)),
-    crate::id::SavedSearchId => (crate::saved_search::SavedSearch, owned(RecordKind::SavedSearch)),
-    crate::id::WorkDayId => (crate::working_time::record::WorkDay, owned(RecordKind::WorkDay)),
-    crate::id::AccessKeyId => (crate::access_key::AccessKey, owned(RecordKind::AccessKey)),
-    crate::id::GrantId => (crate::oauth::OAuthGrant, owned(RecordKind::ConnectedApp)),
-    crate::id::StandingRuleId => (crate::agent_records::StandingRule, owned(RecordKind::StandingRule)),
-    // A comment is nobody's in `whose` (the people in its events are found by their own links),
-    // yet its versions are its author's, as the comment is: its own link says so.
-    crate::id::CommentId => (crate::comment::Comment, field_of::<crate::comment::Comment>("author")),
+    crate::id::DashboardId => crate::dashboard::Dashboard,
+    crate::id::SavedSearchId => crate::saved_search::SavedSearch,
+    crate::id::WorkDayId => crate::working_time::record::WorkDay,
+    crate::id::AccessKeyId => crate::access_key::AccessKey,
+    crate::id::GrantId => crate::oauth::OAuthGrant,
+    crate::id::StandingRuleId => crate::agent_records::StandingRule,
+    crate::id::CommentId => crate::comment::Comment,
 );
 
 /// A type that holds an e-mail address as text, so a field of it can carry
@@ -348,6 +336,25 @@ impl PersonLinks {
         })
     }
 
+    /// The links by which rows that name a person by one of `words` are counted: every link of the
+    /// entity with such a word, never the link of a part, which names the person only as much as
+    /// the record it is a part of does (the plan of a removal counts that record).
+    pub fn counted(&self, words: &[Link]) -> impl Iterator<Item = &'static PersonLink> {
+        self.links.iter().filter(move |link| {
+            !matches!(link.scope, LinkScope::PartOf { .. })
+                && link.link.is_some_and(|word| words.contains(&word))
+        })
+    }
+
+    /// The links that make a row a part of a record of the person (`LinkScope::PartOf`): such a
+    /// row goes and stays with its record, so it is not counted apart even when its own links name
+    /// the person too.
+    pub fn parts(&self) -> impl Iterator<Item = &'static PersonLink> {
+        self.links
+            .iter()
+            .filter(|link| matches!(link.scope, LinkScope::PartOf { .. }))
+    }
+
     /// The links of the field `field`.
     pub fn of_field(&self, field: &str) -> impl Iterator<Item = &'static PersonLink> {
         self.links.iter().filter(move |link| link.field == field)
@@ -357,6 +364,24 @@ impl PersonLinks {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn priv_03_a_listed_record_reads_its_person_where_whose_does() {
+        use crate::event::RecordKind;
+        use crate::whose::{Whose, whose};
+        for kind in RecordKind::ALL {
+            let Whose::Owner { of } = whose(*kind) else {
+                continue;
+            };
+            for listed in LISTED
+                .iter()
+                .filter(|listed| listed.marks.name() == of.marks.name())
+            {
+                assert_eq!(*listed, of, "{kind:?}");
+            }
+        }
+        assert_eq!(LISTED.len(), 7);
+    }
 
     #[test]
     fn a_link_keeps_its_field_word_and_scope() {

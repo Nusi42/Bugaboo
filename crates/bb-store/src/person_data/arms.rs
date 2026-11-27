@@ -61,7 +61,7 @@ pub(super) fn arms(
 /// not one in two hundred, and still looks the rows of a subquery up by its index instead of
 /// reading the table (the values of the time entries of a person with a thousand of them: 130 ms
 /// read whole, 3 ms looked up).
-fn not_true(condition: Cond) -> Expr {
+pub(super) fn not_true(condition: Cond) -> Expr {
     Expr::case(condition, Expr::val(false))
         .finally(Expr::val(true))
         .into()

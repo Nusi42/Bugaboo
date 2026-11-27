@@ -132,7 +132,8 @@ pub trait GrantStore: AgentWorkStore + 'static {
         /// is history of its issue and stays. A removal calls it before it deletes by link, which then
         /// finds no rule left; how many rules went.
         fn delete_rules_of(person: UserId) -> u64;
-        /// Writes down that an issue came under a rule; whether it was new.
+        /// Writes down that an issue came under a rule while the rule is there and open; whether it
+        /// was written (not when it was known, or the rule is gone or ended).
         fn insert_match(rule_match: &RuleMatch) -> bool;
         /// Ends every open hand-over and standing rule of an agent.
         fn end_grants_of_agent(agent: AgentId) -> ();

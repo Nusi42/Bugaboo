@@ -13,8 +13,8 @@ refers_to_a_record!(crate::id::EntityId, crate::event::EntityRef);
 carries_changes!(crate::event::FieldChange);
 holds_json!(serde_json::Value);
 ids_of_owned_records!(
-    crate::id::DashboardId => owned(RecordKind::Dashboard),
-    crate::id::CommentId => field_of::<crate::comment::Comment>(\"author\"),
+    crate::id::DashboardId => crate::dashboard::Dashboard,
+    crate::id::CommentId => crate::comment::Comment,
 );
 ";
 

@@ -501,15 +501,26 @@ impl GrantStore for AuthStorage {
         transaction: &mut Transaction,
         rule_match: &RuleMatch,
     ) -> Result<bool, StoreError> {
-        let mut insert = Query::insert();
-        insert
-            .into_table(RuleMatchRow::Table)
-            .columns([RuleMatchRow::Rule, RuleMatchRow::Issue, RuleMatchRow::At])
-            .values([
+        // The job reads its rule before this change; a find is written only while the rule is still
+        // there and open, so a removal or an end meanwhile leaves no find nobody can walk.
+        let mut open = Query::select();
+        open.expr(Expr::val(1_i64))
+            .from(StandingRuleRow::Table)
+            .and_where(Expr::col(StandingRuleRow::Id).eq(rule_match.rule.stored()))
+            .and_where(Expr::col(StandingRuleRow::State).eq(GivingState::Open.code()));
+        let mut found = Query::select();
+        found
+            .exprs([
                 Expr::val(rule_match.rule.stored()),
                 Expr::val(rule_match.issue.stored()),
                 Expr::val(to_micros(rule_match.at)),
             ])
+            .and_where(Expr::exists(open));
+        let mut insert = Query::insert();
+        insert
+            .into_table(RuleMatchRow::Table)
+            .columns([RuleMatchRow::Rule, RuleMatchRow::Issue, RuleMatchRow::At])
+            .select_from(found)
             .map_err(|_| StoreError::Corrupt("a match"))?;
         insert.on_conflict(
             sea_query::OnConflict::columns([RuleMatchRow::Rule, RuleMatchRow::Issue])
