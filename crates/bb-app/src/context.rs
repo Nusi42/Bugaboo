@@ -15,8 +15,9 @@ pub trait Clock {
 
     /// Sixteen random bytes for a new ID or the random code of an issue ID: the secure random
     /// source of the operating system. A clock that fixes the moment for the sample fixes these too,
-    /// from its seed. The secrets of sessions, links and keys never come from here: they are drawn
-    /// from the operating system where they are made (`SecretToken`).
+    /// from its seed, so it is not for the secrets of signing in: the secrets of sessions, links
+    /// and keys are drawn from the operating system where they are made (`SecretToken`). A token
+    /// that only tells two edits apart, as a lock token does, may come from here.
     fn random(&self) -> [u8; 16] {
         SystemIds.random()
     }
