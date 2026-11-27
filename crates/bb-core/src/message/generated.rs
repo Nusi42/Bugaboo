@@ -6182,6 +6182,22 @@ pub const PERSONAL_FIELD_ACCEPTED_WARNING_KIND: MessageKey =
 pub const PERSONAL_FIELD_ACCEPTED_WARNING_START_DATE: MessageKey =
     MessageKey::new("personal-field.accepted-warning.start-date");
 
+/// The message `personal-field.access-key-permission.key`.
+pub const PERSONAL_FIELD_ACCESS_KEY_PERMISSION_KEY: MessageKey =
+    MessageKey::new("personal-field.access-key-permission.key");
+
+/// The message `personal-field.access-key-permission.permission`.
+pub const PERSONAL_FIELD_ACCESS_KEY_PERMISSION_PERMISSION: MessageKey =
+    MessageKey::new("personal-field.access-key-permission.permission");
+
+/// The message `personal-field.access-key-project.key`.
+pub const PERSONAL_FIELD_ACCESS_KEY_PROJECT_KEY: MessageKey =
+    MessageKey::new("personal-field.access-key-project.key");
+
+/// The message `personal-field.access-key-project.project`.
+pub const PERSONAL_FIELD_ACCESS_KEY_PROJECT_PROJECT: MessageKey =
+    MessageKey::new("personal-field.access-key-project.project");
+
 /// The message `personal-field.access-key.agent`.
 pub const PERSONAL_FIELD_ACCESS_KEY_AGENT: MessageKey =
     MessageKey::new("personal-field.access-key.agent");
@@ -6501,6 +6517,22 @@ pub const PERSONAL_FIELD_BACKUP_RUN_PERSON: MessageKey =
 pub const PERSONAL_FIELD_BACKUP_RUN_SIZE: MessageKey =
     MessageKey::new("personal-field.backup-run.size");
 
+/// The message `personal-field.comment-version.comment`.
+pub const PERSONAL_FIELD_COMMENT_VERSION_COMMENT: MessageKey =
+    MessageKey::new("personal-field.comment-version.comment");
+
+/// The message `personal-field.comment-version.saved-at`.
+pub const PERSONAL_FIELD_COMMENT_VERSION_SAVED_AT: MessageKey =
+    MessageKey::new("personal-field.comment-version.saved-at");
+
+/// The message `personal-field.comment-version.text`.
+pub const PERSONAL_FIELD_COMMENT_VERSION_TEXT: MessageKey =
+    MessageKey::new("personal-field.comment-version.text");
+
+/// The message `personal-field.comment-version.version`.
+pub const PERSONAL_FIELD_COMMENT_VERSION_VERSION: MessageKey =
+    MessageKey::new("personal-field.comment-version.version");
+
 /// The message `personal-field.comment.author`.
 pub const PERSONAL_FIELD_COMMENT_AUTHOR: MessageKey =
     MessageKey::new("personal-field.comment.author");
@@ -6546,6 +6578,18 @@ pub const PERSONAL_FIELD_DASHBOARD_BOX_POSITION: MessageKey =
 /// The message `personal-field.dashboard-box.spec`.
 pub const PERSONAL_FIELD_DASHBOARD_BOX_SPEC: MessageKey =
     MessageKey::new("personal-field.dashboard-box.spec");
+
+/// The message `personal-field.dashboard-share.dashboard`.
+pub const PERSONAL_FIELD_DASHBOARD_SHARE_DASHBOARD: MessageKey =
+    MessageKey::new("personal-field.dashboard-share.dashboard");
+
+/// The message `personal-field.dashboard-share.shared-at`.
+pub const PERSONAL_FIELD_DASHBOARD_SHARE_SHARED_AT: MessageKey =
+    MessageKey::new("personal-field.dashboard-share.shared-at");
+
+/// The message `personal-field.dashboard-share.target`.
+pub const PERSONAL_FIELD_DASHBOARD_SHARE_TARGET: MessageKey =
+    MessageKey::new("personal-field.dashboard-share.target");
 
 /// The message `personal-field.dashboard.created-at`.
 pub const PERSONAL_FIELD_DASHBOARD_CREATED_AT: MessageKey =
@@ -7263,6 +7307,14 @@ pub const PERSONAL_FIELD_NOTIFICATION_RECIPIENT: MessageKey =
 pub const PERSONAL_FIELD_NOTIFICATION_RECORD: MessageKey =
     MessageKey::new("personal-field.notification.record");
 
+/// The message `personal-field.oauth-grant-project.grant`.
+pub const PERSONAL_FIELD_OAUTH_GRANT_PROJECT_GRANT: MessageKey =
+    MessageKey::new("personal-field.oauth-grant-project.grant");
+
+/// The message `personal-field.oauth-grant-project.project`.
+pub const PERSONAL_FIELD_OAUTH_GRANT_PROJECT_PROJECT: MessageKey =
+    MessageKey::new("personal-field.oauth-grant-project.project");
+
 /// The message `personal-field.oauth-grant.allowed-at`.
 pub const PERSONAL_FIELD_OAUTH_GRANT_ALLOWED_AT: MessageKey =
     MessageKey::new("personal-field.oauth-grant.allowed-at");
@@ -7641,6 +7693,18 @@ pub const PERSONAL_FIELD_ROW_NAMING_PERSON_PERSON: MessageKey =
 pub const PERSONAL_FIELD_ROW_NAMING_PERSON_ROW: MessageKey =
     MessageKey::new("personal-field.row-naming-person.row");
 
+/// The message `personal-field.rule-match.at`.
+pub const PERSONAL_FIELD_RULE_MATCH_AT: MessageKey =
+    MessageKey::new("personal-field.rule-match.at");
+
+/// The message `personal-field.rule-match.issue`.
+pub const PERSONAL_FIELD_RULE_MATCH_ISSUE: MessageKey =
+    MessageKey::new("personal-field.rule-match.issue");
+
+/// The message `personal-field.rule-match.rule`.
+pub const PERSONAL_FIELD_RULE_MATCH_RULE: MessageKey =
+    MessageKey::new("personal-field.rule-match.rule");
+
 /// The message `personal-field.saved-search.board`.
 pub const PERSONAL_FIELD_SAVED_SEARCH_BOARD: MessageKey =
     MessageKey::new("personal-field.saved-search.board");
@@ -7772,6 +7836,18 @@ pub const PERSONAL_FIELD_SEARCH_MAIL_SEARCH: MessageKey =
 /// The message `personal-field.search-mail.updated-at`.
 pub const PERSONAL_FIELD_SEARCH_MAIL_UPDATED_AT: MessageKey =
     MessageKey::new("personal-field.search-mail.updated-at");
+
+/// The message `personal-field.search-share.search`.
+pub const PERSONAL_FIELD_SEARCH_SHARE_SEARCH: MessageKey =
+    MessageKey::new("personal-field.search-share.search");
+
+/// The message `personal-field.search-share.shared-at`.
+pub const PERSONAL_FIELD_SEARCH_SHARE_SHARED_AT: MessageKey =
+    MessageKey::new("personal-field.search-share.shared-at");
+
+/// The message `personal-field.search-share.target`.
+pub const PERSONAL_FIELD_SEARCH_SHARE_TARGET: MessageKey =
+    MessageKey::new("personal-field.search-share.target");
 
 /// The message `personal-field.security-log-entry.action`.
 pub const PERSONAL_FIELD_SECURITY_LOG_ENTRY_ACTION: MessageKey =
@@ -8186,6 +8262,18 @@ pub const PERSONAL_FIELD_USUAL_WORK_DAY_WEEKDAY: MessageKey =
 pub const PERSONAL_FIELD_USUAL_WORK_DAY_WORKS: MessageKey =
     MessageKey::new("personal-field.usual-work-day.works");
 
+/// The message `personal-field.work-break.day`.
+pub const PERSONAL_FIELD_WORK_BREAK_DAY: MessageKey =
+    MessageKey::new("personal-field.work-break.day");
+
+/// The message `personal-field.work-break.end`.
+pub const PERSONAL_FIELD_WORK_BREAK_END: MessageKey =
+    MessageKey::new("personal-field.work-break.end");
+
+/// The message `personal-field.work-break.start`.
+pub const PERSONAL_FIELD_WORK_BREAK_START: MessageKey =
+    MessageKey::new("personal-field.work-break.start");
+
 /// The message `personal-field.work-day.date`.
 pub const PERSONAL_FIELD_WORK_DAY_DATE: MessageKey =
     MessageKey::new("personal-field.work-day.date");
@@ -8213,12 +8301,32 @@ pub const PERSONAL_FIELD_WORK_DAY_WARNINGS: MessageKey =
 pub const PERSONAL_FIELD_WORK_DAY_ZONE: MessageKey =
     MessageKey::new("personal-field.work-day.zone");
 
+/// The message `personal-field.work-period.day`.
+pub const PERSONAL_FIELD_WORK_PERIOD_DAY: MessageKey =
+    MessageKey::new("personal-field.work-period.day");
+
+/// The message `personal-field.work-period.end`.
+pub const PERSONAL_FIELD_WORK_PERIOD_END: MessageKey =
+    MessageKey::new("personal-field.work-period.end");
+
+/// The message `personal-field.work-period.start`.
+pub const PERSONAL_FIELD_WORK_PERIOD_START: MessageKey =
+    MessageKey::new("personal-field.work-period.start");
+
 /// The message `personal-kind.accepted-warning`.
 pub const PERSONAL_KIND_ACCEPTED_WARNING: MessageKey =
     MessageKey::new("personal-kind.accepted-warning");
 
 /// The message `personal-kind.access-key`.
 pub const PERSONAL_KIND_ACCESS_KEY: MessageKey = MessageKey::new("personal-kind.access-key");
+
+/// The message `personal-kind.access-key-permission`.
+pub const PERSONAL_KIND_ACCESS_KEY_PERMISSION: MessageKey =
+    MessageKey::new("personal-kind.access-key-permission");
+
+/// The message `personal-kind.access-key-project`.
+pub const PERSONAL_KIND_ACCESS_KEY_PROJECT: MessageKey =
+    MessageKey::new("personal-kind.access-key-project");
 
 /// The message `personal-kind.agent`.
 pub const PERSONAL_KIND_AGENT: MessageKey = MessageKey::new("personal-kind.agent");
@@ -8251,11 +8359,19 @@ pub const PERSONAL_KIND_BACKUP_RUN: MessageKey = MessageKey::new("personal-kind.
 /// The message `personal-kind.comment`.
 pub const PERSONAL_KIND_COMMENT: MessageKey = MessageKey::new("personal-kind.comment");
 
+/// The message `personal-kind.comment-version`.
+pub const PERSONAL_KIND_COMMENT_VERSION: MessageKey =
+    MessageKey::new("personal-kind.comment-version");
+
 /// The message `personal-kind.dashboard`.
 pub const PERSONAL_KIND_DASHBOARD: MessageKey = MessageKey::new("personal-kind.dashboard");
 
 /// The message `personal-kind.dashboard-box`.
 pub const PERSONAL_KIND_DASHBOARD_BOX: MessageKey = MessageKey::new("personal-kind.dashboard-box");
+
+/// The message `personal-kind.dashboard-share`.
+pub const PERSONAL_KIND_DASHBOARD_SHARE: MessageKey =
+    MessageKey::new("personal-kind.dashboard-share");
 
 /// The message `personal-kind.data-export`.
 pub const PERSONAL_KIND_DATA_EXPORT: MessageKey = MessageKey::new("personal-kind.data-export");
@@ -8333,6 +8449,10 @@ pub const PERSONAL_KIND_NOTIFICATION: MessageKey = MessageKey::new("personal-kin
 /// The message `personal-kind.oauth-grant`.
 pub const PERSONAL_KIND_OAUTH_GRANT: MessageKey = MessageKey::new("personal-kind.oauth-grant");
 
+/// The message `personal-kind.oauth-grant-project`.
+pub const PERSONAL_KIND_OAUTH_GRANT_PROJECT: MessageKey =
+    MessageKey::new("personal-kind.oauth-grant-project");
+
 /// The message `personal-kind.oauth-web-address`.
 pub const PERSONAL_KIND_OAUTH_WEB_ADDRESS: MessageKey =
     MessageKey::new("personal-kind.oauth-web-address");
@@ -8387,6 +8507,9 @@ pub const PERSONAL_KIND_REVIEW: MessageKey = MessageKey::new("personal-kind.revi
 pub const PERSONAL_KIND_ROW_NAMING_PERSON: MessageKey =
     MessageKey::new("personal-kind.row-naming-person");
 
+/// The message `personal-kind.rule-match`.
+pub const PERSONAL_KIND_RULE_MATCH: MessageKey = MessageKey::new("personal-kind.rule-match");
+
 /// The message `personal-kind.saved-search`.
 pub const PERSONAL_KIND_SAVED_SEARCH: MessageKey = MessageKey::new("personal-kind.saved-search");
 
@@ -8399,6 +8522,9 @@ pub const PERSONAL_KIND_SEARCH_COLUMN: MessageKey = MessageKey::new("personal-ki
 
 /// The message `personal-kind.search-mail`.
 pub const PERSONAL_KIND_SEARCH_MAIL: MessageKey = MessageKey::new("personal-kind.search-mail");
+
+/// The message `personal-kind.search-share`.
+pub const PERSONAL_KIND_SEARCH_SHARE: MessageKey = MessageKey::new("personal-kind.search-share");
 
 /// The message `personal-kind.security-log-entry`.
 pub const PERSONAL_KIND_SECURITY_LOG_ENTRY: MessageKey =
@@ -8450,8 +8576,14 @@ pub const PERSONAL_KIND_UPLOAD: MessageKey = MessageKey::new("personal-kind.uplo
 pub const PERSONAL_KIND_USUAL_WORK_DAY: MessageKey =
     MessageKey::new("personal-kind.usual-work-day");
 
+/// The message `personal-kind.work-break`.
+pub const PERSONAL_KIND_WORK_BREAK: MessageKey = MessageKey::new("personal-kind.work-break");
+
 /// The message `personal-kind.work-day`.
 pub const PERSONAL_KIND_WORK_DAY: MessageKey = MessageKey::new("personal-kind.work-day");
+
+/// The message `personal-kind.work-period`.
+pub const PERSONAL_KIND_WORK_PERIOD: MessageKey = MessageKey::new("personal-kind.work-period");
 
 /// The message `personal-purpose.activity`.
 pub const PERSONAL_PURPOSE_ACTIVITY: MessageKey = MessageKey::new("personal-purpose.activity");

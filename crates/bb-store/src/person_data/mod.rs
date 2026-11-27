@@ -259,13 +259,13 @@ fn link_parts(
             )?
         }
         // A part of a record of the person (a box of their dashboard): one part, the IDs of their
-        // records of the kind looked up in the index of the field, as for a reference to a record.
-        LinkScope::PartOf { kind } => {
-            let id_column = column(table, field, false)?;
-            let record = owned_record(all, kind, &id_column, (person, dialect))?
-                .ok_or(StoreError::Corrupt("a part of a record that is nobody's"))?;
-            vec![Cond::all().add(record)]
-        }
+        // records looked up in the index of the field, as for a reference to a record.
+        LinkScope::PartOf { of } => vec![Cond::all().add(owned_by(
+            all,
+            of,
+            column(table, field, false)?,
+            (person, dialect),
+        )?)],
         LinkScope::FieldType { .. } => {
             let typed = of_its_type(table, all, link)?.ok_or(StoreError::Corrupt("a link"))?;
             vec![
@@ -330,13 +330,24 @@ fn owned_record(
 ) -> Result<Option<Expr>, StoreError> {
     Ok(match whose(kind) {
         Whose::ThePerson => Some(Expr::col(id_column.clone()).eq(person.stored())),
-        Whose::Owner { of } => Some(member_of(
-            id_column.clone(),
-            ids_where(all, of, person.stored())?,
-            dialect,
-        )),
+        Whose::Owner { of } => Some(owned_by(all, of, id_column.clone(), (person, dialect))?),
         Whose::Nobody => None,
     })
+}
+
+/// The condition that `id_column` holds the ID of a record whose person, read where `of` says, is
+/// `person`.
+fn owned_by(
+    all: &[StoredTable],
+    of: FieldOf,
+    id_column: Alias,
+    (person, dialect): (UserId, Dialect),
+) -> Result<Expr, StoreError> {
+    Ok(member_of(
+        id_column,
+        ids_where(all, of, person.stored())?,
+        dialect,
+    ))
 }
 
 /// The IDs (the field `of.id`) of the rows of the entity of `of` whose field `of.value` is

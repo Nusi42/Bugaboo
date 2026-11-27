@@ -13,8 +13,8 @@ pub(crate) enum Scope {
     Every,
     /// Some rows (`#[person_for(…)]`), as the page words them.
     Rows(String),
-    /// The rows that are a part of a record of the person (`#[person_for(part_of, …)]`): the
-    /// field holds the ID of the record, whose type the derive checks.
+    /// The rows that are a part of a record of the person (`#[person_for(part_of)]`): the field
+    /// holds the ID of the record, and the person is to the part what they are to the record.
     Part,
     /// The rows that hold the person's e-mail address (`#[person_email(…)]`).
     Email,
@@ -100,19 +100,20 @@ fn read_person_for(attr: &Attribute) -> Result<LinkMark, String> {
             .find(|(key, _)| key == name)
             .map(|(_, value)| value.clone())
     };
-    let Some(word) = part("link") else {
-        return Err("needs link = \"…\" in #[person_for(…)]".to_owned());
-    };
+    // A part takes what the person is to it from its record, so it names no link.
     if part("part_of").is_some() {
-        return if parts.len() == 2 {
+        return if parts.len() == 1 {
             Ok(LinkMark {
-                word,
+                word: String::new(),
                 scope: Scope::Part,
             })
         } else {
-            Err("takes only link = \"…\" beside part_of in #[person_for(…)]".to_owned())
+            Err("takes nothing beside part_of in #[person_for(part_of)]".to_owned())
         };
     }
+    let Some(word) = part("link") else {
+        return Err("needs link = \"…\" in #[person_for(…)]".to_owned());
+    };
     let rows = match (
         part("record"),
         part("kind"),
@@ -212,6 +213,45 @@ pub(crate) fn read_listed_types(items: &[Item], list: &str) -> Vec<String> {
     names
 }
 
+/// The types in `ids_of_owned_records!(Type => owner, …)`: the IDs of records that belong to a
+/// person, the last part of each path.
+pub(crate) fn read_owned_ids(items: &[Item]) -> Vec<String> {
+    /// One entry: the type of the ID, `=>`, and where its owner is read.
+    struct Entry(Type);
+    impl syn::parse::Parse for Entry {
+        fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
+            let ty: Type = input.parse()?;
+            input.parse::<syn::Token![=>]>()?;
+            input.parse::<syn::Expr>()?;
+            Ok(Self(ty))
+        }
+    }
+    let mut names = Vec::new();
+    for item in items {
+        let Item::Macro(item) = item else { continue };
+        if item
+            .mac
+            .path
+            .segments
+            .last()
+            .is_none_or(|s| s.ident != "ids_of_owned_records")
+        {
+            continue;
+        }
+        if let Ok(entries) = item
+            .mac
+            .parse_body_with(syn::punctuated::Punctuated::<Entry, syn::Token![,]>::parse_terminated)
+        {
+            names.extend(
+                entries
+                    .iter()
+                    .filter_map(|Entry(ty)| type_names(ty).into_iter().next()),
+            );
+        }
+    }
+    names
+}
+
 /// The aliases (`type Owner = UserId;`) and newtypes (`struct Owner(UserId);`) of the types in
 /// `known` declared in `items`: a field of one of them names a person (or a record) as much.
 pub(crate) fn aliases_of(items: &[Item], known: &[String]) -> Vec<String> {
@@ -266,13 +306,11 @@ mod tests {
         assert_eq!(links[1].as_ref().unwrap().scope, Scope::Every);
         assert_eq!(links[2].as_ref().unwrap().scope, Scope::Email);
         assert_eq!(links[3].as_ref().unwrap().scope, Scope::Never);
-        let part = read_links(&field(
-            "#[person_for(part_of, link = \"author\")] a: DashboardId",
-        ));
+        let part = read_links(&field("#[person_for(part_of)] a: DashboardId"));
         assert_eq!(part[0].as_ref().unwrap().scope, Scope::Part);
         assert!(
             read_links(&field(
-                "#[person_for(part_of, record, link = \"author\")] a: DashboardId"
+                "#[person_for(part_of, link = \"author\")] a: DashboardId"
             ))[0]
                 .is_err()
         );

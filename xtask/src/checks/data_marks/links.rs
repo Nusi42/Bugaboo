@@ -56,13 +56,14 @@ fn field_problems(
     let refers_to_a_record = names(&model.record_types);
     let carries_changes = names(&model.change_types);
     let holds_json = names(&model.json_types);
+    let owned_id = names(&model.owned_id_types);
     let mut problems = Vec::new();
     let mut scopes = Vec::new();
     for link in &field.links {
         match link {
             Err(problem) => problems.push(format!("The field {problem}.")),
             Ok(link) => {
-                let has_a_word = !matches!(link.scope, Scope::Never | Scope::Changes);
+                let has_a_word = !matches!(link.scope, Scope::Never | Scope::Changes | Scope::Part);
                 if has_a_word && !words.contains(link.word.as_str()) {
                     problems.push(format!(
                         "`{}` is not a link; use one of {all_words}.",
@@ -79,6 +80,24 @@ fn field_problems(
     let json = has(|scope| *scope == Scope::Json);
     let rows = has(|scope| matches!(scope, Scope::Rows(_)));
     let never = has(|scope| *scope == Scope::Never);
+    let part = has(|scope| *scope == Scope::Part);
+    if part && !owned_id {
+        problems.push(
+            "The field carries `#[person_for(part_of)]`, but its type is not the ID of a record \
+             that belongs to a person (`ids_of_owned_records!` in `bb_core::personal`)."
+                .to_owned(),
+        );
+    }
+    // The record's own ID is no reference to it; every other field of such an ID says whether the
+    // row is a part of the person's record.
+    if owned_id && field.name != OWN_ID && !part && !never {
+        problems.push(
+            "The field holds the ID of a record that belongs to a person. Add \
+             `#[person_for(part_of)]` when the row is a part of that record (it is then the \
+             person's), or `#[names_no_person]` when it is not (ADR-0044)."
+                .to_owned(),
+        );
+    }
     if carries_changes && !changes {
         problems.push(
             "The field holds the changes of a record, whose values can name a person. Add \
@@ -117,7 +136,7 @@ fn field_problems(
                 .to_owned(),
         );
     }
-    if never && !refers_to_a_record && !holds_json {
+    if never && !refers_to_a_record && !holds_json && !owned_id {
         problems.push(
             "The field carries `#[names_no_person]`, but its type is neither a reference to a \
              record nor JSON."
@@ -147,6 +166,9 @@ fn field_problems(
     }
     problems
 }
+
+/// The name of the field that holds a record's own ID.
+const OWN_ID: &str = "id";
 
 /// Whether the type is a person type, or one inside the containers a link sees through
 /// (`bb_core::personal::NamesAPerson` is implemented for them): no tuple anywhere, and the

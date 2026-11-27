@@ -1,50 +1,37 @@
-error[E0277]: `IssueId` is not the ID of a record a person owns, so it cannot carry `#[person_for(part_of, ...)]`
+error[E0277]: `IssueId` is not the ID of a record a person owns, so it cannot carry `#[person_for(part_of)]`
  --> tests/ui/part_of_a_record_of_nobody.rs:8:17
   |
 8 |     pub search: IssueId,
   |                 ^^^^^^^ the trait `IdOfAnOwnedRecord` is not implemented for `IssueId`
   |
-  = note: add the type to `ids_of_owned_records!` in `bb_core::personal`, with the kind of its record
-help: the following other types implement trait `IdOfAnOwnedRecord`
- --> src/personal/links.rs
-  |
-  |               impl IdOfAnOwnedRecord for $ty {
-  |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |               |
-  |               `DashboardId`
-  |               `SavedSearchId`
-...
-  | / ids_of_owned_records!(
-  | |     crate::id::DashboardId => Dashboard,
-  | |     crate::id::SavedSearchId => SavedSearch,
-  | | );
-  | |_- in this macro invocation
-  = note: this error originates in the macro `ids_of_owned_records` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: add the type to `ids_of_owned_records!` in `bb_core::personal`, with where the person of its record is read
+  = help: the following other types implement trait `IdOfAnOwnedRecord`:
+            AccessKeyId
+            CommentId
+            DashboardId
+            GrantId
+            SavedSearchId
+            StandingRuleId
+            WorkDayId
 
-error[E0277]: `IssueId` is not the ID of a record a person owns, so it cannot carry `#[person_for(part_of, ...)]`
+error[E0277]: `IssueId` is not the ID of a record a person owns, so it cannot carry `#[person_for(part_of)]`
  --> tests/ui/part_of_a_record_of_nobody.rs:8:17
   |
 8 |     pub search: IssueId,
   |                 ^^^^^^^ the trait `IdOfAnOwnedRecord` is not implemented for `IssueId`
   |
-  = note: add the type to `ids_of_owned_records!` in `bb_core::personal`, with the kind of its record
-help: the following other types implement trait `IdOfAnOwnedRecord`
- --> src/personal/links.rs
-  |
-  |               impl IdOfAnOwnedRecord for $ty {
-  |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |               |
-  |               `DashboardId`
-  |               `SavedSearchId`
-...
-  | / ids_of_owned_records!(
-  | |     crate::id::DashboardId => Dashboard,
-  | |     crate::id::SavedSearchId => SavedSearch,
-  | | );
-  | |_- in this macro invocation
+  = note: add the type to `ids_of_owned_records!` in `bb_core::personal`, with where the person of its record is read
+  = help: the following other types implement trait `IdOfAnOwnedRecord`:
+            AccessKeyId
+            CommentId
+            DashboardId
+            GrantId
+            SavedSearchId
+            StandingRuleId
+            WorkDayId
 note: required by a bound in `an_id_of_an_owned_record`
  --> tests/ui/part_of_a_record_of_nobody.rs:4:10
   |
 4 | #[derive(Entity)]
   |          ^^^^^^ required by this bound in `an_id_of_an_owned_record`
-  = note: this error originates in the macro `ids_of_owned_records` which comes from the expansion of the derive macro `Entity` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the derive macro `Entity` (in Nightly builds, run with -Z macro-backtrace for more info)

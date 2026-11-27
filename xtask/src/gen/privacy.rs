@@ -95,6 +95,8 @@ pub(crate) struct Model {
     pub(crate) change_types: Vec<String>,
     /// The types that hold JSON (`holds_json!`).
     pub(crate) json_types: Vec<String>,
+    /// The IDs of records that belong to a person (`ids_of_owned_records!`).
+    pub(crate) owned_id_types: Vec<String>,
 }
 
 pub(crate) fn generate(repo: &Repo) -> anyhow::Result<Vec<Generated>> {
@@ -135,6 +137,12 @@ pub(crate) fn read_model(sources: &[Source]) -> anyhow::Result<Model> {
             .map(|file| links::read_listed_types(&file.items, list))
             .unwrap_or_default()
     };
+    let owned_id_types = sources
+        .iter()
+        .find(|(path, _)| path == LINKS_PATH)
+        .and_then(|(_, text)| syn::parse_file(text).ok())
+        .map(|file| links::read_owned_ids(&file.items))
+        .unwrap_or_default();
     let change_types = listed_in_links("carries_changes");
     let json_types = listed_in_links("holds_json");
     entities.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.path.cmp(&b.path)));
@@ -146,6 +154,7 @@ pub(crate) fn read_model(sources: &[Source]) -> anyhow::Result<Model> {
         record_types,
         change_types,
         json_types,
+        owned_id_types,
     })
 }
 
@@ -527,7 +536,7 @@ fn links_line(entity: &EntityDef) -> Option<String> {
                     links::Scope::Every => Some(format!("`{name}` is the {word}")),
                     links::Scope::Rows(rows) => Some(format!("`{name}` is the {word} in {rows}")),
                     links::Scope::Part => Some(format!(
-                        "`{name}` is the {word} in the rows that are a part of a record that is the person or belongs to them (`whose`), found by its ID"
+                        "`{name}` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record"
                     )),
                     links::Scope::Changes => Some(format!(
                         "the values of `{name}` name a person as the members declared for each kind say"

@@ -133,6 +133,7 @@ pub struct StandingRule {
     pub person: UserId,
     /// The saved search.
     #[not_personal]
+    #[names_no_person]
     pub search: SavedSearchId,
     /// The project of the search; the rule works only there.
     #[not_personal]
@@ -360,6 +361,7 @@ pub struct Proposal {
     pub id: AgentNoteId,
     /// The rule.
     #[not_personal]
+    #[names_no_person]
     pub rule: StandingRuleId,
     /// The agent that proposed it.
     #[not_personal]
@@ -395,6 +397,7 @@ pub struct Proposal {
 pub struct RuleMatch {
     /// The rule.
     #[not_personal]
+    #[person_for(part_of)]
     pub rule: StandingRuleId,
     /// The issue.
     #[not_personal]

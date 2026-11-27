@@ -25,7 +25,11 @@ use super::rig::Rig;
 const AN_EDITOR: &str = "7b0c1e2a-3d4f-4a5b-8c6d-7e8f9a0b1c2d";
 
 /// Writes a comment; the answer.
-async fn comment(browser: &mut Browser, issue: &str, text: &str) -> Result<Reply, Failure> {
+pub(super) async fn comment(
+    browser: &mut Browser,
+    issue: &str,
+    text: &str,
+) -> Result<Reply, Failure> {
     browser
         .send(
             "POST",
@@ -36,7 +40,7 @@ async fn comment(browser: &mut Browser, issue: &str, text: &str) -> Result<Reply
 }
 
 /// Takes the lock on the text of a comment; its token.
-async fn lock(browser: &mut Browser, comment: &str) -> Result<String, Failure> {
+pub(super) async fn lock(browser: &mut Browser, comment: &str) -> Result<String, Failure> {
     let taken = browser
         .send(
             "POST",

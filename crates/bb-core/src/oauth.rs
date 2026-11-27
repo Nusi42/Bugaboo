@@ -224,6 +224,7 @@ impl OAuthGrant {
 pub struct OAuthGrantProject {
     /// The grant.
     #[not_personal]
+    #[person_for(part_of)]
     pub grant: GrantId,
     /// The project, by ID so moving it changes nothing.
     #[not_personal]
@@ -238,6 +239,7 @@ pub struct OAuthToken {
     pub secret_hash: Digest,
     /// The grant it belongs to.
     #[not_personal]
+    #[names_no_person]
     pub grant: GrantId,
     /// What it is for.
     #[not_personal]
@@ -265,6 +267,7 @@ pub struct OAuthCode {
     pub secret_hash: Digest,
     /// The grant the code makes work.
     #[not_personal]
+    #[names_no_person]
     pub grant: GrantId,
     /// The address the code was given for; the exchange has to name the same one.
     #[personal(category = "content", basis = "contract")]

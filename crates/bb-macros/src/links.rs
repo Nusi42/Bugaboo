@@ -5,9 +5,9 @@
 //!   names a person when the record is one or belongs to one, as `bb_core::event::whose` says;
 //! - `#[person_for(field_type = "person", key = "field", link = "subject")]` on a reference that
 //!   names a person in the rows whose own field (`key`) is of that type, once for each type;
-//! - `#[person_for(part_of, link = "author")]` on the ID of a record a person owns, in the rows
-//!   that are a part of it (the boxes of a dashboard): the kind is the one of the type of the ID
-//!   (`bb_core::personal::IdOfAnOwnedRecord`);
+//! - `#[person_for(part_of)]` on the ID of a record that belongs to a person, in the rows that are
+//!   a part of it (the boxes of a dashboard): where the person of the record is read, and what the
+//!   person is to it, come from the type of the ID (`bb_core::personal::IdOfAnOwnedRecord`);
 //! - `#[person_email(recipient)]` on the text of an e-mail address;
 //! - `#[person_in_changes]` on the changes of a record, whose members say what a person in them is
 //!   to the event (`bb_core::whose::IN_CHANGES`);
@@ -103,20 +103,25 @@ pub(crate) fn read(field: &Field, name: &str) -> syn::Result<FieldLinks> {
         if one.way == Way::Never {
             continue;
         }
-        let scope = if one.way == Way::Part {
-            quote_spanned! { ty.span() => PartOf {
-                kind: <#ty as ::bb_core::personal::IdOfAnOwnedRecord>::KIND,
-            } }
+        // A part takes where its person is read and what they are to it from the type of the ID.
+        let (scope, link) = if one.way == Way::Part {
+            (
+                quote_spanned! { ty.span() => PartOf {
+                    of: <#ty as ::bb_core::personal::IdOfAnOwnedRecord>::OWNER,
+                } },
+                quote_spanned! { ty.span() =>
+                Some(<#ty as ::bb_core::personal::IdOfAnOwnedRecord>::LINK) },
+            )
         } else {
-            one.scope.clone()
+            let link = one.link.as_ref().map_or_else(
+                || quote! { None },
+                |word| {
+                    quote_spanned! { word.span() =>
+                    Some(::bb_core::personal::Link::from_code_const(#word)) }
+                },
+            );
+            (one.scope.clone(), link)
         };
-        let link = one.link.as_ref().map_or_else(
-            || quote! { None },
-            |word| {
-                quote_spanned! { word.span() =>
-                Some(::bb_core::personal::Link::from_code_const(#word)) }
-            },
-        );
         links.push(quote_spanned! { one.span =>
             ::bb_core::personal::PersonLink::new(
                 #name, #link, ::bb_core::personal::LinkScope::#scope)
@@ -184,7 +189,7 @@ fn word(attr: &Attribute, what: &str, way: Way, scope: TokenStream) -> syn::Resu
     })
 }
 
-/// `#[person_for(record, link = "…")]`, `#[person_for(part_of, link = "…")]` or
+/// `#[person_for(record, link = "…")]`, `#[person_for(part_of)]` or
 /// `#[person_for(field_type = "…", key = "…", link = "…")]`.
 fn read_for(attr: &Attribute) -> syn::Result<Written> {
     let mut record = false;
@@ -223,27 +228,27 @@ fn read_for(attr: &Attribute) -> syn::Result<Written> {
         *target = Some(meta.value()?.parse::<LitStr>()?);
         Ok(())
     })?;
+    if part_of {
+        if record || field_type.is_some() || key.is_some() || kind.is_some() || link.is_some() {
+            return Err(syn::Error::new(
+                attr.span(),
+                "`#[person_for(part_of)]` takes nothing else: the type of the ID says whose record it is and what the person is to it",
+            ));
+        }
+        return Ok(Written {
+            way: Way::Part,
+            span: attr.span(),
+            link: None,
+            scope: TokenStream::new(),
+            field_type: None,
+        });
+    }
     let Some(link) = link else {
         return Err(syn::Error::new(
             attr.span(),
             "`#[person_for(...)]` needs `link = \"...\"`: what the person is to the row",
         ));
     };
-    if part_of {
-        if record || field_type.is_some() || key.is_some() || kind.is_some() {
-            return Err(syn::Error::new(
-                attr.span(),
-                "`#[person_for(part_of, ...)]` takes only `link`: the kind is the one of the ID",
-            ));
-        }
-        return Ok(Written {
-            way: Way::Part,
-            span: attr.span(),
-            link: Some(link),
-            scope: TokenStream::new(),
-            field_type: None,
-        });
-    }
     let (scope, field_type) = match (record, field_type, key, kind) {
         (true, None, None, None) => (quote! { Record { kind: None } }, None),
         (true, None, None, Some(kind)) => (quote! { Record { kind: Some(#kind) } }, None),
@@ -257,7 +262,7 @@ fn read_for(attr: &Attribute) -> syn::Result<Written> {
         _ => {
             return Err(syn::Error::new(
                 attr.span(),
-                "`#[person_for(...)]` takes `record` (and maybe `kind`), `part_of`, or `field_type` and `key`, besides `link`",
+                "`#[person_for(...)]` takes `part_of` alone, or `record` (and maybe `kind`) or `field_type` and `key` besides `link`",
             ));
         }
     };

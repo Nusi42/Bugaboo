@@ -131,6 +131,7 @@ pub struct SearchMail {
     pub holder: UserId,
     /// The saved search it sends; at most one e-mailed search of each saved search for a person.
     #[personal(category = "identity", basis = "contract")]
+    #[names_no_person]
     pub search: SavedSearchId,
     /// The weekdays it goes on.
     #[personal(category = "activity", basis = "contract")]

@@ -237,6 +237,7 @@ pub struct Attachment {
     pub issue: IssueId,
     /// The comment it was added to; none for a file of the issue itself.
     #[not_personal]
+    #[names_no_person]
     pub comment: Option<CommentId>,
     /// The file: the hash of its content.
     #[not_personal]
@@ -275,6 +276,7 @@ pub struct Upload {
     pub issue: IssueId,
     /// The comment the file is for; none for a file of the issue itself.
     #[not_personal]
+    #[names_no_person]
     pub comment: Option<CommentId>,
     /// Who sends it.
     #[personal(category = "activity", basis = "contract")]

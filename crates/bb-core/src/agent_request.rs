@@ -104,9 +104,11 @@ pub struct AgentRequest {
     pub person: UserId,
     /// The access key that asked, if a key did.
     #[personal(category = "identity", basis = "contract")]
+    #[names_no_person]
     pub asked_by_key: Option<AccessKeyId>,
     /// The grant of the AI app that asked, if an app did.
     #[personal(category = "identity", basis = "contract")]
+    #[names_no_person]
     pub asked_by_grant: Option<GrantId>,
     /// The name of the app or the key that asked, as it is shown to the person.
     #[personal(category = "identity", basis = "contract")]

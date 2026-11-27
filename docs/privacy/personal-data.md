@@ -75,6 +75,8 @@ One permission of a key whose *What it may do* is single permissions.
 
 Defined in `crates/bb-core/src/access_key.rs`.
 
+A person in its rows: `key` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record.
+
 | Field        | Personal data | Category | Legal basis | What it holds                               |
 | ------------ | ------------- | -------- | ----------- | ------------------------------------------- |
 | `key`        | No            | –        | –           | The key.                                    |
@@ -85,6 +87,8 @@ Defined in `crates/bb-core/src/access_key.rs`.
 One project a key is limited to. The key counts in it and its sub-projects.
 
 Defined in `crates/bb-core/src/access_key.rs`.
+
+A person in its rows: `key` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record.
 
 | Field     | Personal data | Category | Legal basis | What it holds                                    |
 | --------- | ------------- | -------- | ----------- | ------------------------------------------------ |
@@ -320,6 +324,8 @@ An earlier text of a comment, kept when the comment was edited (ISS-05). Shown t
 
 Defined in `crates/bb-core/src/comment.rs`.
 
+A person in its rows: `comment` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record.
+
 | Field      | Personal data | Category  | Legal basis | What it holds                                        |
 | ---------- | ------------- | --------- | ----------- | ---------------------------------------------------- |
 | `comment`  | No            | –         | –           | The comment.                                         |
@@ -352,7 +358,7 @@ A box of a dashboard, in the order of the dashboard.
 
 Defined in `crates/bb-core/src/dashboard.rs`.
 
-A person in its rows: `dashboard` is the author in the rows that are a part of a record that is the person or belongs to them (`whose`), found by its ID.
+A person in its rows: `dashboard` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record.
 
 | Field       | Personal data | Category  | Legal basis | What it holds                                                                                                                                       |
 | ----------- | ------------- | --------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -366,6 +372,8 @@ A person in its rows: `dashboard` is the author in the rows that are a part of a
 A dashboard that is shared with a group or a project.
 
 Defined in `crates/bb-core/src/dashboard.rs`.
+
+A person in its rows: `dashboard` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record.
 
 | Field       | Personal data | Category | Legal basis | What it holds             |
 | ----------- | ------------- | -------- | ----------- | ------------------------- |
@@ -1103,6 +1111,8 @@ One project a grant is limited to. The grant counts in it and its sub-projects.
 
 Defined in `crates/bb-core/src/oauth.rs`.
 
+A person in its rows: `grant` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record.
+
 | Field     | Personal data | Category | Legal basis | What it holds                                    |
 | --------- | ------------- | -------- | ----------- | ------------------------------------------------ |
 | `grant`   | No            | –        | –           | The grant.                                       |
@@ -1620,6 +1630,8 @@ An issue that newly came under a standing rule, written down with the moment (AI
 
 Defined in `crates/bb-core/src/agent_records.rs`.
 
+A person in its rows: `rule` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record.
+
 | Field   | Personal data | Category | Legal basis | What it holds                          |
 | ------- | ------------- | -------- | ----------- | -------------------------------------- |
 | `rule`  | No            | –        | –           | The rule.                              |
@@ -1656,7 +1668,7 @@ One card limit of the board of a saved search, in order.
 
 Defined in `crates/bb-core/src/saved_search.rs`.
 
-A person in its rows: `search` is the author in the rows that are a part of a record that is the person or belongs to them (`whose`), found by its ID.
+A person in its rows: `search` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record.
 
 | Field      | Personal data | Category  | Legal basis            | What it holds                                                                                                                                                   |
 | ---------- | ------------- | --------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1671,7 +1683,7 @@ One column of a saved search, in order.
 
 Defined in `crates/bb-core/src/saved_search.rs`.
 
-A person in its rows: `search` is the author in the rows that are a part of a record that is the person or belongs to them (`whose`), found by its ID.
+A person in its rows: `search` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record.
 
 | Field      | Personal data | Category  | Legal basis            | What it holds                                                                           |
 | ---------- | ------------- | --------- | ---------------------- | --------------------------------------------------------------------------------------- |
@@ -1708,6 +1720,8 @@ A person in its rows: `holder` is the holder.
 A saved search that is shared with a group or a project.
 
 Defined in `crates/bb-core/src/saved_search.rs`.
+
+A person in its rows: `search` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record.
 
 | Field       | Personal data | Category | Legal basis | What it holds             |
 | ----------- | ------------- | -------- | ----------- | ------------------------- |
@@ -2192,6 +2206,8 @@ One break of a day, inside one of its periods.
 
 Defined in `crates/bb-core/src/working_time/record.rs`.
 
+A person in its rows: `day` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record.
+
 | Field   | Personal data | Category        | Legal basis        | What it holds    |
 | ------- | ------------- | --------------- | ------------------ | ---------------- |
 | `day`   | No            | –               | –                  | The day.         |
@@ -2221,6 +2237,8 @@ A person in its rows: `person` is the subject.
 One period of work of a day, from a start to an end (none while it runs).
 
 Defined in `crates/bb-core/src/working_time/record.rs`.
+
+A person in its rows: `day` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record.
 
 | Field   | Personal data | Category        | Legal basis        | What it holds    |
 | ------- | ------------- | --------------- | ------------------ | ---------------- |

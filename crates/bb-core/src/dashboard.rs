@@ -315,7 +315,7 @@ pub struct Dashboard {
 pub struct DashboardBox {
     /// The dashboard. A box is the dashboard's maker's as much as the dashboard is.
     #[not_personal]
-    #[person_for(part_of, link = "author")]
+    #[person_for(part_of)]
     pub dashboard: DashboardId,
     /// The ID of the box, which says nothing of the other boxes.
     #[not_personal]
@@ -334,6 +334,7 @@ pub struct DashboardBox {
 pub struct DashboardShare {
     /// The dashboard.
     #[not_personal]
+    #[person_for(part_of)]
     pub dashboard: DashboardId,
     /// The group or the project.
     #[not_personal]

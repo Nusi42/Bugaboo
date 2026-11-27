@@ -4,7 +4,7 @@
 //! the person is to the row: always (`#[person(author)]`), in the rows about some kinds of record
 //! (`#[person_for(record, …)]`, as `crate::event::whose` says for each kind), in the rows whose own
 //! field is of a type that holds people (`#[person_for(field_type = …)]`), in the rows that are a
-//! part of a record of the person (`#[person_for(part_of, …)]`), as the e-mail address of
+//! part of a record of the person (`#[person_for(part_of)]`), as the e-mail address of
 //! the person (`#[person_email(…)]`), in the values of the changes it holds (`#[person_in_changes]`,
 //! where each member says what the person is to the event in `crate::whose::IN_CHANGES`) or in
 //! the JSON it holds (`#[person_in_json(…)]`). A reference or JSON that never names a person says
@@ -15,7 +15,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::event::RecordKind;
 use crate::own_fields::FieldType;
-use crate::whose::{Whose, whose};
+use crate::whose::{FieldOf, Whose, field_of, whose};
 
 words! {
     /// What a person is to a row that names them. The words are the ones in `#[person(…)]`,
@@ -73,41 +73,91 @@ refers_to_a_record!(crate::id::EntityId, crate::event::EntityRef);
 
 impl<T: RefersToARecord> RefersToARecord for Option<T> {}
 
-/// The ID of a record of one kind that a person owns as `crate::whose::whose` says, so a field of
-/// it can carry `#[person_for(part_of, …)]`: the rows that hold it are a part of that record (the
-/// boxes of a dashboard, the columns of a saved search) and are the person's when the record is.
-/// `KIND` is the kind of the record, written once here for the type of its ID.
+/// The ID of a record that belongs to a person, so a field of it can carry
+/// `#[person_for(part_of)]`: the rows that hold it are a part of that record (the boxes of a
+/// dashboard, the breaks of a work day, the versions of a comment) and are the person's when the
+/// record is. `OWNER` says where the person of the record is read, once for the type of its ID; what
+/// the person is to a part is what the field of `OWNER` says they are to the record. A field of such
+/// a type that is no part of its record says `#[names_no_person]` (DATA-MARKS, which reads the list
+/// from `ids_of_owned_records!` below).
 #[diagnostic::on_unimplemented(
-    message = "`{Self}` is not the ID of a record a person owns, so it cannot carry `#[person_for(part_of, ...)]`",
-    note = "add the type to `ids_of_owned_records!` in `bb_core::personal`, with the kind of its record"
+    message = "`{Self}` is not the ID of a record a person owns, so it cannot carry `#[person_for(part_of)]`",
+    note = "add the type to `ids_of_owned_records!` in `bb_core::personal`, with where the person of its record is read"
 )]
 pub trait IdOfAnOwnedRecord {
-    /// The kind of the record.
-    const KIND: RecordKind;
+    /// Where the person of the record is read: its entity, its field of the ID and its field that
+    /// names the person.
+    const OWNER: FieldOf;
+    /// What the person is to a part: the link of the field of `OWNER` that names them.
+    const LINK: Link = link_of(Self::OWNER);
 }
 
-/// Whether a record of `kind` is a person or belongs to one, as `whose` says.
-const fn is_owned(kind: RecordKind) -> bool {
-    !matches!(whose(kind), Whose::Nobody)
+/// Where the person of a record of `kind` is read, as `whose` says. A kind that is the person
+/// themselves or nobody's has no owner to read: in the `const` of `ids_of_owned_records!` it stops
+/// the build.
+const fn owned(kind: RecordKind) -> FieldOf {
+    let owner = whose(kind);
+    assert!(
+        matches!(owner, Whose::Owner { .. }),
+        "only the ID of a record that belongs to a person can be listed"
+    );
+    match owner {
+        Whose::Owner { of } => of,
+        // Never reached: the assertion above stops the build first.
+        Whose::ThePerson | Whose::Nobody => crate::whose::PERSON_ADDRESS,
+    }
+}
+
+/// The link of the field `of.value` of the entity `of.marks`, which names the person in every row.
+/// A field without one stops the build, in the `const` of `IdOfAnOwnedRecord::LINK`.
+const fn link_of(of: FieldOf) -> Link {
+    let links = of.marks.person_links().links();
+    let mut found = None;
+    let mut at = 0;
+    while at < links.len() {
+        let link = links[at];
+        if found.is_none()
+            && crate::words::same_text(link.field, of.value)
+            && matches!(link.scope, LinkScope::Every)
+        {
+            found = link.link;
+        }
+        at += 1;
+    }
+    assert!(
+        found.is_some(),
+        "the field that names the person of a record carries no #[person(...)]"
+    );
+    match found {
+        Some(word) => word,
+        // Never reached: the assertion above stops the build first.
+        None => Link::Subject,
+    }
 }
 
 macro_rules! ids_of_owned_records {
-    ($($ty:ty => $kind:ident),+ $(,)?) => {
+    ($($ty:ty => $owner:expr),+ $(,)?) => {
         $(
             impl IdOfAnOwnedRecord for $ty {
-                const KIND: RecordKind = RecordKind::$kind;
+                const OWNER: FieldOf = $owner;
             }
-            const _: () = assert!(
-                is_owned(RecordKind::$kind),
-                "a part of a record that is nobody's names nobody"
-            );
+            // A field of the ID that is no part of its record says so with `#[names_no_person]`.
+            impl CanNameAPerson for $ty {}
+            impl CanNameAPerson for Option<$ty> {}
         )+
     };
 }
 
 ids_of_owned_records!(
-    crate::id::DashboardId => Dashboard,
-    crate::id::SavedSearchId => SavedSearch,
+    crate::id::DashboardId => owned(RecordKind::Dashboard),
+    crate::id::SavedSearchId => owned(RecordKind::SavedSearch),
+    crate::id::WorkDayId => owned(RecordKind::WorkDay),
+    crate::id::AccessKeyId => owned(RecordKind::AccessKey),
+    crate::id::GrantId => owned(RecordKind::ConnectedApp),
+    crate::id::StandingRuleId => owned(RecordKind::StandingRule),
+    // A comment is nobody's in `whose` (the people in its events are found by their own links),
+    // yet its versions are its author's, as the comment is: its own link says so.
+    crate::id::CommentId => field_of::<crate::comment::Comment>("author"),
 );
 
 /// A type that holds an e-mail address as text, so a field of it can carry
@@ -183,13 +233,13 @@ pub enum LinkScope {
         /// The type of the own field in whose rows the field names a person.
         field_type: FieldType,
     },
-    /// In the rows that are a part of a record of `kind` that is the person or belongs to them, as
-    /// [`crate::whose::whose`] says: the field holds the ID of that record, and the person is to
-    /// the part what they are to the record (`#[person_for(part_of, link = …)]`). The boxes of a
-    /// dashboard name nobody themselves, yet they are the dashboard's maker's as much as it is.
+    /// In the rows that are a part of a record of the person: the field holds the ID of the record,
+    /// whose person is read where `of` says ([`IdOfAnOwnedRecord`]), and the person is to the part
+    /// what they are to the record (`#[person_for(part_of)]`). The boxes of a dashboard name nobody
+    /// themselves, yet they are the dashboard's maker's as much as it is.
     PartOf {
-        /// The kind of the record the rows are a part of.
-        kind: RecordKind,
+        /// Where the person of the record is read.
+        of: FieldOf,
     },
     /// The field holds an e-mail address; it names the person whose address it is
     /// (`#[person_email(…)]`).
@@ -266,12 +316,12 @@ impl PersonLinks {
         self.links
     }
 
-    /// The kind of the record whose parts the rows are (`LinkScope::PartOf`); none for an entity
+    /// The entity of the record whose parts the rows are (`LinkScope::PartOf`); none for an entity
     /// whose rows are records of their own. A part goes and stays with its record.
     #[must_use]
-    pub fn whole(&self) -> Option<RecordKind> {
+    pub fn whole(&self) -> Option<super::EntityMarks> {
         self.links.iter().find_map(|link| match link.scope {
-            LinkScope::PartOf { kind } => Some(kind),
+            LinkScope::PartOf { of } => Some(of.marks),
             _ => None,
         })
     }

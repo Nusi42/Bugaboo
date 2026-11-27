@@ -46,6 +46,7 @@ pub struct WorkDay {
 pub struct WorkPeriod {
     /// The day.
     #[not_personal]
+    #[person_for(part_of)]
     pub day: WorkDayId,
     /// When it started.
     #[personal(category = "employee_time", basis = "legal_obligation")]
@@ -60,6 +61,7 @@ pub struct WorkPeriod {
 pub struct WorkBreak {
     /// The day.
     #[not_personal]
+    #[person_for(part_of)]
     pub day: WorkDayId,
     /// When it started.
     #[personal(category = "employee_time", basis = "legal_obligation")]

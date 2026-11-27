@@ -1,7 +1,7 @@
-use bb_core::event::{EntityRef, FieldChange, RecordKind};
+use bb_core::event::{EntityRef, FieldChange};
 use bb_core::id::{EntityId, FieldId, SavedSearchId, UserId};
 use bb_core::own_fields::FieldType;
-use bb_core::personal::{Entity, Link, LinkScope, PersonLink};
+use bb_core::personal::{Entity, IdOfAnOwnedRecord, Link, LinkScope, PersonLink};
 
 // An entity that names a person needs the message `personal-kind.<its name>` and, for each field,
 // `personal-field.<its name>.<the field>`, so the examples borrow the names and fields of records
@@ -58,7 +58,7 @@ pub struct SavedSearch {
 #[derive(Entity)]
 pub struct SearchColumn {
     #[not_personal]
-    #[person_for(part_of, link = "author")]
+    #[person_for(part_of)]
     pub search: SavedSearchId,
 }
 
@@ -124,7 +124,8 @@ fn main() {
             LinkScope::Json
         )]
     );
-    // A part takes the kind of its record from the type of the ID.
+    // A part takes whose record it is from the type of the ID, and what the person is to it from
+    // the link of the maker of the search.
     let part = <SearchColumn as Entity>::MARKS.person_links();
     assert_eq!(
         part.links(),
@@ -132,11 +133,11 @@ fn main() {
             "search",
             Some(Link::Author),
             LinkScope::PartOf {
-                kind: RecordKind::SavedSearch
+                of: <SavedSearchId as IdOfAnOwnedRecord>::OWNER
             }
         )]
     );
-    assert_eq!(part.whole(), Some(RecordKind::SavedSearch));
+    assert_eq!(part.whole().map(|whole| whole.name()), Some("SavedSearch"));
     assert_eq!(links.whole(), None);
     // Each field of such a record has the title of its column.
     for marks in [

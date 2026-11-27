@@ -145,6 +145,7 @@ pub struct Comment {
 pub struct CommentVersion {
     /// The comment.
     #[not_personal]
+    #[person_for(part_of)]
     pub comment: CommentId,
     /// The version of the comment this text belonged to.
     #[not_personal]
@@ -163,6 +164,7 @@ pub struct CommentVersion {
 pub struct Mention {
     /// The comment.
     #[not_personal]
+    #[names_no_person]
     pub comment: CommentId,
     /// Who is mentioned.
     #[personal(category = "activity", basis = "legitimate_interests")]

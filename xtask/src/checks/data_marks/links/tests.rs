@@ -12,6 +12,10 @@ names_a_person!(crate::id::UserId, crate::event::Actor);
 refers_to_a_record!(crate::id::EntityId, crate::event::EntityRef);
 carries_changes!(crate::event::FieldChange);
 holds_json!(serde_json::Value);
+ids_of_owned_records!(
+    crate::id::DashboardId => owned(RecordKind::Dashboard),
+    crate::id::CommentId => field_of::<crate::comment::Comment>(\"author\"),
+);
 ";
 
 const MARK: &str = "#[personal(category = \"identity\", basis = \"contract\")]";
@@ -43,7 +47,7 @@ fn note(fields: &str) -> String {
 #[test]
 fn good_example_every_field_that_names_a_person_has_a_link() {
     let entity = note(&format!(
-        "    {MARK}\n    #[person(author)]\n    pub author: UserId,\n    {MARK}\n    #[person(subject)]\n    pub about: Option<Vec<crate::id::UserId>>,\n    #[not_personal]\n    #[person_for(record, link = \"subject\")]\n    pub entity: EntityRef,\n    {MARK}\n    #[person_for(record, kind = \"entity_kind\", link = \"subject\")]\n    pub entity_id: EntityId,\n    {MARK}\n    #[person_for(field_type = \"person\", key = \"field\", link = \"subject\")]\n    #[person_for(field_type = \"people\", key = \"field\", link = \"subject\")]\n    pub value: Option<EntityId>,\n    {MARK}\n    #[person_in_changes]\n    pub changes: Vec<FieldChange>,\n    #[not_personal]\n    #[names_no_person]\n    pub record: EntityId,\n    #[not_personal]\n    #[person_for(part_of, link = \"author\")]\n    pub board: DashboardId,\n    {MARK}\n    #[person_email(subject)]\n    pub email: String,\n    {MARK}\n    pub text: String,\n"
+        "    {MARK}\n    #[person(author)]\n    pub author: UserId,\n    {MARK}\n    #[person(subject)]\n    pub about: Option<Vec<crate::id::UserId>>,\n    #[not_personal]\n    #[person_for(record, link = \"subject\")]\n    pub entity: EntityRef,\n    {MARK}\n    #[person_for(record, kind = \"entity_kind\", link = \"subject\")]\n    pub entity_id: EntityId,\n    {MARK}\n    #[person_for(field_type = \"person\", key = \"field\", link = \"subject\")]\n    #[person_for(field_type = \"people\", key = \"field\", link = \"subject\")]\n    pub value: Option<EntityId>,\n    {MARK}\n    #[person_in_changes]\n    pub changes: Vec<FieldChange>,\n    #[not_personal]\n    #[names_no_person]\n    pub record: EntityId,\n    #[not_personal]\n    #[person_for(part_of)]\n    pub board: DashboardId,\n    #[not_personal]\n    #[names_no_person]\n    pub elsewhere: Option<DashboardId>,\n    #[not_personal]\n    pub id: DashboardId,\n    {MARK}\n    #[person_email(subject)]\n    pub email: String,\n    {MARK}\n    pub text: String,\n"
     ));
     assert_eq!(findings(&entity), "");
 }
@@ -151,4 +155,34 @@ fn bad_example_json_that_does_not_say_whether_it_names_a_person() {
         "{all}"
     );
     assert!(all.contains("its type does not hold JSON"), "{all}");
+}
+
+#[test]
+fn bad_example_an_id_of_an_owned_record_that_says_neither_part_nor_no_person() {
+    let entity = note(
+        "    #[not_personal]\n    pub board: DashboardId,\n    #[not_personal]\n    pub comment: Option<crate::id::CommentId>,\n",
+    );
+    let all = findings(&entity);
+    assert_eq!(
+        all.matches("holds the ID of a record that belongs to a person")
+            .count(),
+        2,
+        "{all}"
+    );
+}
+
+#[test]
+fn good_example_the_own_id_of_an_owned_record_needs_no_mark() {
+    let entity = note("    #[not_personal]\n    pub id: DashboardId,\n");
+    assert_eq!(findings(&entity), "");
+}
+
+#[test]
+fn bad_example_part_of_on_a_type_that_is_no_id_of_an_owned_record() {
+    let entity = note("    #[not_personal]\n    #[person_for(part_of)]\n    pub issue: IssueId,\n");
+    let all = findings(&entity);
+    assert!(
+        all.contains("is not the ID of a record that belongs to a person"),
+        "{all}"
+    );
 }

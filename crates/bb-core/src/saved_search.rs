@@ -446,7 +446,7 @@ impl SavedSearch {
 pub struct SearchCardLimit {
     /// The search. A limit is the search's maker's as much as the search is.
     #[not_personal]
-    #[person_for(part_of, link = "author")]
+    #[person_for(part_of)]
     pub search: SavedSearchId,
     /// Its place among the limits of the search, counted from 0.
     #[not_personal]
@@ -465,7 +465,7 @@ pub struct SearchCardLimit {
 pub struct SearchColumn {
     /// The search. A column is the search's maker's as much as the search is.
     #[not_personal]
-    #[person_for(part_of, link = "author")]
+    #[person_for(part_of)]
     pub search: SavedSearchId,
     /// Its place among the columns of the search, counted from 0.
     #[not_personal]
@@ -554,6 +554,7 @@ impl ShareTarget {
 pub struct SearchShare {
     /// The search.
     #[not_personal]
+    #[person_for(part_of)]
     pub search: SavedSearchId,
     /// The group or the project.
     #[not_personal]
@@ -571,6 +572,7 @@ pub struct ProjectDefaultList {
     pub project: ProjectId,
     /// The search, shared with the project.
     #[not_personal]
+    #[names_no_person]
     pub search: SavedSearchId,
 }
 

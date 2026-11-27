@@ -110,6 +110,7 @@ impl AccessKey {
 pub struct AccessKeyPermission {
     /// The key.
     #[not_personal]
+    #[person_for(part_of)]
     pub key: AccessKeyId,
     /// The key of the permission (`see-projects`).
     #[not_personal]
@@ -121,6 +122,7 @@ pub struct AccessKeyPermission {
 pub struct AccessKeyProject {
     /// The key.
     #[not_personal]
+    #[person_for(part_of)]
     pub key: AccessKeyId,
     /// The project, by ID so moving it changes nothing.
     #[not_personal]

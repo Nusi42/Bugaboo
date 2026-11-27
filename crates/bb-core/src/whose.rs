@@ -35,7 +35,7 @@ pub struct FieldOf {
 }
 
 /// The field `value` of the entity `E`, by its field `id`.
-const fn field_of<E: Entity>(value: &'static str) -> FieldOf {
+pub(crate) const fn field_of<E: Entity>(value: &'static str) -> FieldOf {
     FieldOf {
         marks: E::MARKS,
         id: ID,
