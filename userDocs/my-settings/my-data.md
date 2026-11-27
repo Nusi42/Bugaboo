@@ -12,8 +12,8 @@ You can ask for one file at a time. While one is being created, ask again when i
 
 The file is a ZIP file. Open it on your computer:
 
-- `index.html` opens in your browser and leads to one readable page for each kind of record: your profile and settings, your sign-ins and sessions, the issues you reported, the comments and texts you wrote with every version, your time entries, work days and away times, your notifications, saved searches, agents, the entries of the security log that name you, and more.
-- The folder `data` holds the same records as JSON files, which another program can read.
+- `index.html` opens in your browser and leads to one readable page for each kind of record: your profile and settings, your sign-ins and sessions, the issues you reported, the comments and texts you wrote with every version, your time entries, work days with the times you worked and your breaks, away times, your notifications, saved searches with their columns and shares, dashboards with their boxes and shares, access keys with their permissions and projects, agents, the entries of the security log that name you, and more.
+- The folder `data` holds the same records as JSON files, which another program can read. A field kept in several parts (where a box sits on a dashboard, say) is an object with one member for each part, named as the database names that part.
 - The folder `files` holds the files you uploaded, named by their ID. Their names are in `data/attachment.json`.
 - `README.txt` says what each field means, and for each kind of record why it is kept, on which legal basis, how long it is kept and who receives it.
 
