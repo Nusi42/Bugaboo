@@ -324,6 +324,8 @@ pub async fn remove_in<S: AuthStore, K: KeepPeriods>(
     stop_agents_in::<S>(transaction, person).await?;
     // Stopping leaves the proposals of the agents open; nobody could decide them once they go.
     S::delete_open_proposals_of_agents_of(transaction, person).await?;
+    // The rules go with what they found and their open proposals, which name nobody themselves.
+    S::delete_rules_of(transaction, person).await?;
     // Deleting the agents deletes their keys and says which.
     let keys = S::delete_agents_of(transaction, person).await?;
     taken_back_in::<S, _>(transaction, removal.at, ReplayKind::AccessKey, &keys).await?;

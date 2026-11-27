@@ -66,8 +66,10 @@ impl PersonData for AuthStorage {
         let Some(table) = all.iter().find(|table| table.name == kind) else {
             return Ok(0);
         };
+        // A part is counted with its record, never by the link it takes from the record.
         let arms = arms::arms(table, &all, person, dialect, |link| {
-            link.link().is_some_and(|what| links.contains(&what))
+            !matches!(link.scope(), LinkScope::PartOf { .. })
+                && link.link().is_some_and(|what| links.contains(&what))
         })?;
         if arms.is_empty() {
             return Ok(0);

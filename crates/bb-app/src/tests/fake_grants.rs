@@ -310,6 +310,21 @@ impl GrantStore for super::fake::FakeStore {
         Ok(u64::try_from(before - proposals.len()).unwrap_or(u64::MAX))
     }
 
+    async fn delete_rules_of(tx: &mut Tx, person: UserId) -> Result<u64, FakeError> {
+        let work = &mut tx.state.work;
+        let rules: Vec<StandingRuleId> = work
+            .rules
+            .iter()
+            .filter(|rule| rule.person == person)
+            .map(|rule| rule.id)
+            .collect();
+        work.matches.retain(|found| !rules.contains(&found.rule));
+        work.proposals
+            .retain(|p| !(p.state == ProposalState::Open && rules.contains(&p.rule)));
+        work.rules.retain(|rule| rule.person != person);
+        Ok(u64::try_from(rules.len()).unwrap_or(u64::MAX))
+    }
+
     async fn reopen_proposal(tx: &mut Tx, id: AgentNoteId, by: UserId) -> Result<bool, FakeError> {
         Ok(tx
             .state

@@ -451,6 +451,36 @@ impl GrantStore for AuthStorage {
         transaction.execute(&delete).await
     }
 
+    async fn delete_rules_of(
+        transaction: &mut Transaction,
+        person: UserId,
+    ) -> Result<u64, StoreError> {
+        let rules = || {
+            let mut rules = Query::select();
+            rules
+                .column(StandingRuleRow::Id)
+                .from(StandingRuleRow::Table)
+                .and_where(Expr::col(StandingRuleRow::Person).eq(person.stored()));
+            rules
+        };
+        let mut matches = Query::delete();
+        matches
+            .from_table(RuleMatchRow::Table)
+            .and_where(Expr::col(RuleMatchRow::Rule).in_subquery(rules()));
+        transaction.execute(&matches).await?;
+        let mut proposals = Query::delete();
+        proposals
+            .from_table(ProposalRow::Table)
+            .and_where(Expr::col(ProposalRow::Rule).in_subquery(rules()))
+            .and_where(Expr::col(ProposalRow::State).eq(ProposalState::Open.code()));
+        transaction.execute(&proposals).await?;
+        let mut delete = Query::delete();
+        delete
+            .from_table(StandingRuleRow::Table)
+            .and_where(Expr::col(StandingRuleRow::Person).eq(person.stored()));
+        transaction.execute(&delete).await
+    }
+
     async fn reopen_proposal(
         transaction: &mut Transaction,
         id: AgentNoteId,

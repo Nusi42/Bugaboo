@@ -7,6 +7,8 @@
 use std::collections::BTreeSet;
 
 use bb_app::access::StartingRole;
+use bb_app::agent_work::GrantStore as _;
+use bb_core::id::StandingRuleId;
 use bb_testing::{Failure, TestResult, each_database};
 use serde_json::json;
 
@@ -16,6 +18,7 @@ use super::dashboards_http::{create, share, timer};
 use super::data_exports_http::{MyFile, my_file};
 use super::http::{Browser, rig_and_app};
 use super::issues_site::{Site, id_of, key_of, ok, text_in};
+use super::removal_http::{remove, switch_off};
 use super::rig::{PASSWORD, Rig};
 use super::rules_hand_over_http::{agent_with_limit, rule_over};
 use super::working_hours_http::{MINE, YESTERDAY};
@@ -218,6 +221,68 @@ async fn priv_03_the_file_holds_the_projects_of_a_connected_app_and_the_finds_of
         site.create(&mut ada, "Printer jams").await?;
         rig.run_jobs().await?;
         each_holds_only_their_own(&rig, (&mut tess, &mut uma), AGENT_PARTS).await
+    })
+    .await
+}
+
+/// The titles and counts of one list of a removal plan.
+fn plan_list(plan: &serde_json::Value, list: &str) -> Vec<(String, i64)> {
+    plan[list]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|kind| {
+            (
+                kind["title"].as_str().unwrap_or_default().to_owned(),
+                kind["rows"].as_i64().unwrap_or_default(),
+            )
+        })
+        .collect()
+}
+
+#[tokio::test]
+async fn priv_04_a_removal_deletes_the_rules_with_what_they_found_and_the_plan_says_so()
+-> TestResult {
+    each_database("priv_04_rules_and_finds", async |db| {
+        let (rig, app) = rig_and_app(db).await?;
+        rig.turn_ai_apps_and_agents_on().await?;
+        let (site, mut ada) = Site::start(&rig, &app).await?;
+        let (mut tess, tess_id) = site.person(StartingRole::TeamMember, "tess").await?;
+        let (agent, _) = agent_with_limit(&mut tess, 5).await?;
+        let rule = rule_over(&site, &mut tess, &agent, ("", "Everything"), false).await?;
+        let rule: StandingRuleId = rule.parse().map_err(|_| "no rule ID")?;
+        site.create(&mut ada, "Printer jams").await?;
+        rig.run_jobs().await?;
+        assert_eq!(rig.storage.matches_of(rule, None, 10).await?.len(), 1);
+        switch_off(&mut ada, tess_id).await?;
+        let plan = ada
+            .send(
+                "GET",
+                &format!("/api/v1/people/{tess_id}/removal-plan"),
+                None,
+            )
+            .await?;
+        let gone = plan_list(&plan.body, "deleted_now");
+        let kept = plan_list(&plan.body, "kept_as_former_user");
+        // The rule goes, and what it found goes with it: the plan counts the rule, not its finds.
+        assert!(
+            gone.contains(&("Standing rules".to_owned(), 1)),
+            "{}",
+            plan.body
+        );
+        assert!(
+            !gone
+                .iter()
+                .chain(&kept)
+                .any(|(title, _)| title == "Issues found by standing rules"),
+            "{}",
+            plan.body
+        );
+        let done = remove(&mut ada, tess_id, json!({"comments": "keep"})).await?;
+        assert_eq!(done["status"], 204, "{done}");
+        rig.run_jobs().await?;
+        assert!(rig.storage.matches_of(rule, None, 10).await?.is_empty());
+        Ok(())
     })
     .await
 }

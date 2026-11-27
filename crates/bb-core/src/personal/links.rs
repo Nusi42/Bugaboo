@@ -77,19 +77,30 @@ impl<T: RefersToARecord> RefersToARecord for Option<T> {}
 /// `#[person_for(part_of)]`: the rows that hold it are a part of that record (the boxes of a
 /// dashboard, the breaks of a work day, the versions of a comment) and are the person's when the
 /// record is. `OWNER` says where the person of the record is read, once for the type of its ID; what
-/// the person is to a part is what the field of `OWNER` says they are to the record. A field of such
-/// a type that is no part of its record says `#[names_no_person]` (DATA-MARKS, which reads the list
-/// from `ids_of_owned_records!` below).
+/// the person is to a part is what that field says they are to the record ([`part_link`]). Only
+/// `ids_of_owned_records!` below implements it, so no part can say otherwise. A field of such a type
+/// that is no part of its record says `#[names_no_person]` (DATA-MARKS, which reads the list from
+/// `ids_of_owned_records!`).
 #[diagnostic::on_unimplemented(
     message = "`{Self}` is not the ID of a record a person owns, so it cannot carry `#[person_for(part_of)]`",
-    note = "add the type to `ids_of_owned_records!` in `bb_core::personal`, with where the person of its record is read"
+    note = "add the type to `ids_of_owned_records!` in `bb_core::personal`, with its record and where the person of the record is read"
 )]
-pub trait IdOfAnOwnedRecord {
+pub trait IdOfAnOwnedRecord: listed::Listed {
     /// Where the person of the record is read: its entity, its field of the ID and its field that
     /// names the person.
     const OWNER: FieldOf;
-    /// What the person is to a part: the link of the field of `OWNER` that names them.
-    const LINK: Link = link_of(Self::OWNER);
+}
+
+/// The seal of [`IdOfAnOwnedRecord`]: only the list below implements it.
+mod listed {
+    pub trait Listed {}
+}
+
+/// What the person is to a part of a record whose ID is `T`: the link of the field that names the
+/// person of the record. A field without one stops the build, in the `const` of the marks.
+#[must_use]
+pub const fn part_link<T: IdOfAnOwnedRecord>() -> Link {
+    link_of(T::OWNER)
 }
 
 /// Where the person of a record of `kind` is read, as `whose` says. A kind that is the person
@@ -109,7 +120,6 @@ const fn owned(kind: RecordKind) -> FieldOf {
 }
 
 /// The link of the field `of.value` of the entity `of.marks`, which names the person in every row.
-/// A field without one stops the build, in the `const` of `IdOfAnOwnedRecord::LINK`.
 const fn link_of(of: FieldOf) -> Link {
     let links = of.marks.person_links().links();
     let mut found = None;
@@ -135,12 +145,24 @@ const fn link_of(of: FieldOf) -> Link {
     }
 }
 
+/// Each entry is the type of an ID, its record, and where the person of the record is read. The
+/// build stops when the person is read in another record, or when the record's own ID is of
+/// another type.
 macro_rules! ids_of_owned_records {
-    ($($ty:ty => $owner:expr),+ $(,)?) => {
+    ($($ty:ty => ($record:path, $owner:expr)),+ $(,)?) => {
         $(
+            impl listed::Listed for $ty {}
             impl IdOfAnOwnedRecord for $ty {
                 const OWNER: FieldOf = $owner;
             }
+            const _: () = assert!(
+                crate::words::same_text(
+                    <$record as super::Entity>::MARKS.name(),
+                    <$ty as IdOfAnOwnedRecord>::OWNER.marks.name(),
+                ),
+                "the person of an ID is read in another record than its own"
+            );
+            const _: fn(&$record) -> $ty = |record| record.id;
             // A field of the ID that is no part of its record says so with `#[names_no_person]`.
             impl CanNameAPerson for $ty {}
             impl CanNameAPerson for Option<$ty> {}
@@ -149,15 +171,15 @@ macro_rules! ids_of_owned_records {
 }
 
 ids_of_owned_records!(
-    crate::id::DashboardId => owned(RecordKind::Dashboard),
-    crate::id::SavedSearchId => owned(RecordKind::SavedSearch),
-    crate::id::WorkDayId => owned(RecordKind::WorkDay),
-    crate::id::AccessKeyId => owned(RecordKind::AccessKey),
-    crate::id::GrantId => owned(RecordKind::ConnectedApp),
-    crate::id::StandingRuleId => owned(RecordKind::StandingRule),
+    crate::id::DashboardId => (crate::dashboard::Dashboard, owned(RecordKind::Dashboard)),
+    crate::id::SavedSearchId => (crate::saved_search::SavedSearch, owned(RecordKind::SavedSearch)),
+    crate::id::WorkDayId => (crate::working_time::record::WorkDay, owned(RecordKind::WorkDay)),
+    crate::id::AccessKeyId => (crate::access_key::AccessKey, owned(RecordKind::AccessKey)),
+    crate::id::GrantId => (crate::oauth::OAuthGrant, owned(RecordKind::ConnectedApp)),
+    crate::id::StandingRuleId => (crate::agent_records::StandingRule, owned(RecordKind::StandingRule)),
     // A comment is nobody's in `whose` (the people in its events are found by their own links),
     // yet its versions are its author's, as the comment is: its own link says so.
-    crate::id::CommentId => field_of::<crate::comment::Comment>("author"),
+    crate::id::CommentId => (crate::comment::Comment, field_of::<crate::comment::Comment>("author")),
 );
 
 /// A type that holds an e-mail address as text, so a field of it can carry

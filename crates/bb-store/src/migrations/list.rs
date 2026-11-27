@@ -355,4 +355,9 @@ pub(super) const ALL: &[Definition] = &[
         name: "deadline_drivers",
         steps: || Ok(super::m0070_deadline_drivers::steps()),
     },
+    Definition {
+        version: 71,
+        name: "proposal_by_rule",
+        steps: || Ok(super::m0071_proposal_by_rule::steps()),
+    },
 ];

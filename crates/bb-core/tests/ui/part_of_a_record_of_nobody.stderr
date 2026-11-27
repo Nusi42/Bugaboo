@@ -4,7 +4,7 @@ error[E0277]: `IssueId` is not the ID of a record a person owns, so it cannot ca
 8 |     pub search: IssueId,
   |                 ^^^^^^^ the trait `IdOfAnOwnedRecord` is not implemented for `IssueId`
   |
-  = note: add the type to `ids_of_owned_records!` in `bb_core::personal`, with where the person of its record is read
+  = note: add the type to `ids_of_owned_records!` in `bb_core::personal`, with its record and where the person of the record is read
   = help: the following other types implement trait `IdOfAnOwnedRecord`:
             AccessKeyId
             CommentId
@@ -13,6 +13,11 @@ error[E0277]: `IssueId` is not the ID of a record a person owns, so it cannot ca
             SavedSearchId
             StandingRuleId
             WorkDayId
+note: required by a bound in `part_link`
+ --> src/personal/links.rs
+  |
+  | pub const fn part_link<T: IdOfAnOwnedRecord>() -> Link {
+  |                           ^^^^^^^^^^^^^^^^^ required by this bound in `part_link`
 
 error[E0277]: `IssueId` is not the ID of a record a person owns, so it cannot carry `#[person_for(part_of)]`
  --> tests/ui/part_of_a_record_of_nobody.rs:8:17
@@ -20,7 +25,7 @@ error[E0277]: `IssueId` is not the ID of a record a person owns, so it cannot ca
 8 |     pub search: IssueId,
   |                 ^^^^^^^ the trait `IdOfAnOwnedRecord` is not implemented for `IssueId`
   |
-  = note: add the type to `ids_of_owned_records!` in `bb_core::personal`, with where the person of its record is read
+  = note: add the type to `ids_of_owned_records!` in `bb_core::personal`, with its record and where the person of the record is read
   = help: the following other types implement trait `IdOfAnOwnedRecord`:
             AccessKeyId
             CommentId

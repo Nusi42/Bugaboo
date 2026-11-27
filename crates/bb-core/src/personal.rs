@@ -16,7 +16,7 @@ use jiff::Timestamp;
 
 pub use links::{
     CanNameAPerson, CarriesChanges, HoldsAnAddress, HoldsJson, IdOfAnOwnedRecord, Link, LinkScope,
-    NamesAPerson, PersonLink, PersonLinks, RefersToARecord,
+    NamesAPerson, PersonLink, PersonLinks, RefersToARecord, part_link,
 };
 
 pub use bb_macros::Entity;

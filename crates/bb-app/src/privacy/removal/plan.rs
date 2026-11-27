@@ -10,6 +10,7 @@ use bb_core::id::UserId;
 use bb_core::keeping::{KeepKind, KeptUntil};
 use bb_core::message::{self, Message};
 use bb_core::people_kinds::PeopleKind;
+use bb_core::personal::Link;
 use bb_core::removal::{AtRemoval, at_removal, is_data_export, kept_when_shared};
 
 use bb_core::settings::privacy::{PRIVACY_REMOVED_TEXTS, RemovedTexts};
@@ -144,8 +145,17 @@ pub async fn removal_plan<S: AuthStore>(
     let mut by_law: BTreeMap<KeepKind, u64> = BTreeMap::new();
     for kind in &kinds {
         // A part of a record (a box of a dashboard) goes and stays with its record, which the plan
-        // counts.
-        if kind.marks.person_links().whole().is_some() {
+        // counts; only the rows of a part that name the person by a link of their own (who
+        // decided a proposal) are counted here.
+        let rows = if kind.marks.person_links().whole().is_some() {
+            ctx.store()
+                .rows_linked(input.person, &kind.kind, Link::ALL)
+                .await
+                .map_err(failed)?
+        } else {
+            kind.rows
+        };
+        if rows == 0 {
             continue;
         }
         let shown = |rows| PlanKind {
@@ -165,11 +175,11 @@ pub async fn removal_plan<S: AuthStore>(
                     gone =
                         gone.saturating_sub(ctx.shared_rows_of(&kind.marks, input.person).await?);
                 }
-                (gone, kind.rows.saturating_sub(gone))
+                (gone, rows.saturating_sub(gone))
             }
-            AtRemoval::KeptAsFormerUser => (0, kind.rows),
+            AtRemoval::KeptAsFormerUser => (0, rows),
             AtRemoval::KeptByLaw(period) => {
-                *by_law.entry(period).or_default() += kind.rows;
+                *by_law.entry(period).or_default() += rows;
                 continue;
             }
         };

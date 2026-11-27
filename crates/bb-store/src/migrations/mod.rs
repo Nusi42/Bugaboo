@@ -104,6 +104,7 @@ mod m0067_dashboards;
 mod m0068_search_mail;
 mod m0069_pins;
 mod m0070_deadline_drivers;
+mod m0071_proposal_by_rule;
 mod release_layouts;
 
 pub(crate) use m0057_person_standing::VERSION as REPLAY_WAITING_FROM;

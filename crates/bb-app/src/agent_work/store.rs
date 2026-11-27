@@ -127,6 +127,11 @@ pub trait GrantStore: AgentWorkStore + 'static {
         /// the person's removal: nobody can decide a proposal of an agent that is gone. How many
         /// went.
         fn delete_open_proposals_of_agents_of(person: UserId) -> u64;
+        /// Deletes the standing rules `person` wrote, with what is part of them and serves only
+        /// them: the issues they found and their proposals that are still open. A decided proposal
+        /// is history of its issue and stays. A removal calls it before it deletes by link, which then
+        /// finds no rule left; how many rules went.
+        fn delete_rules_of(person: UserId) -> u64;
         /// Writes down that an issue came under a rule; whether it was new.
         fn insert_match(rule_match: &RuleMatch) -> bool;
         /// Ends every open hand-over and standing rule of an agent.

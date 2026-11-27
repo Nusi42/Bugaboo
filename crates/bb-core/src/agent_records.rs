@@ -359,9 +359,10 @@ pub struct Proposal {
     /// The ID of the proposal.
     #[not_personal]
     pub id: AgentNoteId,
-    /// The rule.
+    /// The rule. A proposal is the rule's writer's as much as the rule is; an open one goes with
+    /// the rule, a decided one stays as the history of its issue.
     #[not_personal]
-    #[names_no_person]
+    #[person_for(part_of)]
     pub rule: StandingRuleId,
     /// The agent that proposed it.
     #[not_personal]

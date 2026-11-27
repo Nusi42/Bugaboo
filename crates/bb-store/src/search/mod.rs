@@ -327,6 +327,8 @@ pub(super) mod tests_agent;
 #[cfg(test)]
 mod tests_agent_history;
 #[cfg(test)]
+mod tests_agent_rule_removal;
+#[cfg(test)]
 mod tests_agent_work;
 #[cfg(test)]
 mod tests_agent_work_count;

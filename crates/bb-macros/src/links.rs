@@ -110,7 +110,7 @@ pub(crate) fn read(field: &Field, name: &str) -> syn::Result<FieldLinks> {
                     of: <#ty as ::bb_core::personal::IdOfAnOwnedRecord>::OWNER,
                 } },
                 quote_spanned! { ty.span() =>
-                Some(<#ty as ::bb_core::personal::IdOfAnOwnedRecord>::LINK) },
+                Some(::bb_core::personal::part_link::<#ty>()) },
             )
         } else {
             let link = one.link.as_ref().map_or_else(

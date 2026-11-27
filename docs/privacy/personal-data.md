@@ -1442,20 +1442,20 @@ A change a standing rule proposes; nothing changes until a person applies it (AI
 
 Defined in `crates/bb-core/src/agent_records.rs`.
 
-A person in its rows: `before` is the subject where its JSON holds their ID; `after` is the subject where its JSON holds their ID; `decided_by` is the actor.
+A person in its rows: `rule` holds the ID of the record the row is a part of, and the person of that record is to the row what they are to the record; `before` is the subject where its JSON holds their ID; `after` is the subject where its JSON holds their ID; `decided_by` is the actor.
 
-| Field        | Personal data | Category   | Legal basis | What it holds                          |
-| ------------ | ------------- | ---------- | ----------- | -------------------------------------- |
-| `id`         | No            | –          | –           | The ID of the proposal.                |
-| `rule`       | No            | –          | –           | The rule.                              |
-| `agent`      | No            | –          | –           | The agent that proposed it.            |
-| `issue`      | No            | –          | –           | The issue.                             |
-| `field`      | No            | –          | –           | The field.                             |
-| `before`     | Yes           | `content`  | `contract`  | The value now, as the proposal saw it. |
-| `after`      | Yes           | `content`  | `contract`  | The value proposed.                    |
-| `state`      | No            | –          | –           | What became of it.                     |
-| `decided_by` | Yes           | `identity` | `contract`  | Who decided.                           |
-| `made_at`    | No            | –          | –           | When it was made.                      |
+| Field        | Personal data | Category   | Legal basis | What it holds                                                                                                                                        |
+| ------------ | ------------- | ---------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`         | No            | –          | –           | The ID of the proposal.                                                                                                                              |
+| `rule`       | No            | –          | –           | The rule. A proposal is the rule's writer's as much as the rule is; an open one goes with the rule, a decided one stays as the history of its issue. |
+| `agent`      | No            | –          | –           | The agent that proposed it.                                                                                                                          |
+| `issue`      | No            | –          | –           | The issue.                                                                                                                                           |
+| `field`      | No            | –          | –           | The field.                                                                                                                                           |
+| `before`     | Yes           | `content`  | `contract`  | The value now, as the proposal saw it.                                                                                                               |
+| `after`      | Yes           | `content`  | `contract`  | The value proposed.                                                                                                                                  |
+| `state`      | No            | –          | –           | What became of it.                                                                                                                                   |
+| `decided_by` | Yes           | `identity` | `contract`  | Who decided.                                                                                                                                         |
+| `made_at`    | No            | –          | –           | When it was made.                                                                                                                                    |
 
 ### Question
 
